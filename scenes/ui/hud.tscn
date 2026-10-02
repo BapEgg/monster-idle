@@ -1,0 +1,24 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Joystick" type="VirtualJoystick" parent="."]
+anchors_preset = 9
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_vertical = 2
+joystick_mode = 1
+action_left = &"move_left"
+action_right = &"move_right"
+action_up = &"move_up"
+action_down = &"move_down"
+
+[node name="Hint" type="Label" parent="."]
+offset_left = 56.0
+offset_top = 28.0
+offset_right = 656.0
+offset_bottom = 56.0
+mouse_filter = 2
