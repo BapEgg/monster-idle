@@ -29,6 +29,8 @@ var _revive_left := 0.0
 # 야생일 때
 ## 돌아다니는 중심(나타난 자리).
 var home := Vector2.ZERO
+## 돌아다니지 않고 제자리에 선다(실행 검사에서 바라보는 방향을 고정할 때 쓴다).
+var hold_still := false
 var _threat := {}  # 공격해 온 상대(Unit) → 위협 점수
 var _fight_target: Unit
 var _returning := false
@@ -190,6 +192,8 @@ func _give_up() -> void:
 
 
 func _wander(delta: float) -> void:
+	if hold_still:
+		return
 	if _wander_goal != Vector2.INF:
 		if walk_to(_wander_goal, 6.0, GameConfig.WILD_WANDER_SPEED_SCALE):
 			_wander_goal = Vector2.INF

@@ -20,6 +20,7 @@ func _ready() -> void:
 	# 조이스틱에 손을 대기만 해도(기울이기 전에도) 수동으로 바뀌게 알려 준다.
 	_hud.joystick.pressed.connect(func() -> void: _player.touching = true)
 	_hud.joystick.released.connect(func(_tilt: Vector2) -> void: _player.touching = false)
+	_hud.control_mode_selected.connect(func(mode: AutoControl.Mode) -> void: _player.control.mode = mode)
 	_hud.bind_player(_player)
 	_hud.set_kills(kills)
 	_spawn_party()

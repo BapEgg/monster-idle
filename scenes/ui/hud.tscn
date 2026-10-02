@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scenes/ui/attack_button.gd" id="2_attack"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -46,3 +47,30 @@ offset_bottom = 80.0
 grow_horizontal = 0
 horizontal_alignment = 2
 mouse_filter = 2
+
+[node name="ModeButtons" type="HBoxContainer" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="FullAuto" type="Button" parent="ModeButtons"]
+focus_mode = 0
+toggle_mode = true
+
+[node name="SemiAuto" type="Button" parent="ModeButtons"]
+focus_mode = 0
+toggle_mode = true
+
+[node name="Manual" type="Button" parent="ModeButtons"]
+focus_mode = 0
+toggle_mode = true
+
+[node name="AttackButton" type="TouchScreenButton" parent="."]
+visible = false
+script = ExtResource("2_attack")
+action = "attack"

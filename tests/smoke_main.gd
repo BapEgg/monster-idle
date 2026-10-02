@@ -1,5 +1,5 @@
 extends SceneTree
-## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 자동 사냥이 되는지 확인한다.
+## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 사냥 방식 버튼, 자동 사냥이 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 20초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다). --shot 을 주면 싸우는 장면을 PNG로 저장한다.
 
@@ -87,7 +87,37 @@ func _run(main: Node) -> void:
 	var wait_text := "바로" if GameConfig.MANUAL_RETURN_SECONDS <= 0.0 else "%.0f초 뒤" % GameConfig.MANUAL_RETURN_SECONDS
 	_expect(not player.control.is_manual(), "손 떼면 %s 자동" % wait_text)
 
-	# 6) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
+	# 6) 사냥 방식 버튼: 세미오토 = 가까운 적은 알아서 공격, 수동 = 공격 버튼을 눌러야 공격
+	#    내 헨치가 끼어들면 누가 때렸는지 가릴 수 없으므로 잠시 멈춰 둔다.
+	var hud: Hud = main.get_node("HUD")
+	_set_party_paused(main, true)
+	_click(hud.mode_button(AutoControl.Mode.SEMI_AUTO))
+	await _physics_frames(2)
+	_expect(player.control.mode == AutoControl.Mode.SEMI_AUTO, "세미오토 버튼 → 세미오토")
+	_expect(player.control.is_manual() and not hud.attack_button.visible, "세미오토: 안 만져도 이동은 직접, 공격 버튼 없음")
+	start = player.position
+	var wild := _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
+	await _physics_frames(10)
+	_expect(wild.hp < wild.stats.max_hp, "세미오토: 사거리 안의 적은 알아서 공격")
+	_expect(player.position.distance_to(start) < 1.0, "세미오토: 스스로 걸어가지 않음")
+	_remove(wild)
+	_click(hud.mode_button(AutoControl.Mode.MANUAL))
+	await _physics_frames(2)
+	_expect(player.control.mode == AutoControl.Mode.MANUAL and hud.attack_button.visible, "수동 버튼 → 수동, 공격 버튼이 보임")
+	wild = _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
+	await _physics_frames(70)
+	_expect(wild.hp == wild.stats.max_hp, "수동: 공격 버튼을 안 누르면 공격하지 않음")
+	_touch(true, hud.attack_button.global_position)
+	await _physics_frames(2)
+	_expect(wild.hp < wild.stats.max_hp, "수동: 공격 버튼을 누르면 공격")
+	_touch(false, hud.attack_button.global_position)
+	_remove(wild)
+	_click(hud.mode_button(AutoControl.Mode.FULL_AUTO))
+	await _physics_frames(2)
+	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO and not hud.attack_button.visible, "풀오토 버튼 → 풀오토, 공격 버튼 숨김")
+	_set_party_paused(main, false)
+
+	# 7) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
 	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
 	Engine.time_scale = 4.0
 	var shot := _shot_path()
@@ -120,6 +150,38 @@ func _is_brawling(player: Player) -> bool:
 		if (node as Hench).is_fighting():
 			return true
 	return false
+
+
+## 검사용 야생 헨치를 주인공 곁(offset, 화면 px)에 세운다. look = 바라보는 방향.
+## 돌아다니지 않게 해 둔다(바라보는 방향이 바뀌지 않게).
+func _spawn_wild(main: Node, id: String, offset: Vector2, look: Vector2) -> Hench:
+	var player: Player = main.get_node("Field/Objects/Player")
+	var wild := Hench.create(HenchDb.get_species(id), Unit.Team.WILD)
+	wild.field = main.get_node("Field")
+	wild.home = player.position + offset
+	wild.position = wild.home
+	wild.facing = look
+	main.get_node("Field/Objects").add_child(wild)
+	wild.reset_physics_interpolation()
+	wild.hold_still = true
+	return wild
+
+
+func _remove(unit: Unit) -> void:
+	unit.remove_from_group(Unit.group_name(unit.team))
+	unit.queue_free()
+
+
+func _set_party_paused(main: Node, stop: bool) -> void:
+	for hench: Hench in main.get("party"):
+		hench.process_mode = Node.PROCESS_MODE_DISABLED if stop else Node.PROCESS_MODE_INHERIT
+
+
+## 마우스로 버튼 한가운데를 눌렀다 뗀다.
+func _click(control: Control) -> void:
+	var at := control.get_global_rect().get_center()
+	_mouse_button(true, at)
+	_mouse_button(false, at)
 
 
 func _expect(condition: bool, label: String) -> void:

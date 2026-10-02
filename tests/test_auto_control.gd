@@ -40,3 +40,31 @@ func test_zero_seconds_returns_immediately() -> void:
 	expect_true(control.is_manual(), "대기 0초여도 만지는 동안은 수동")
 	control.update(0.016, false)
 	expect_true(not control.is_manual(), "대기 0초면 손 떼는 즉시 자동")
+
+
+## 사냥 방식 3단계(사용자 결정 2026-10-02): 풀오토 / 세미오토(이동 직접, 공격 자동) / 수동(이동·공격 직접)
+func test_full_auto_is_default() -> void:
+	var control := AutoControl.new(0.0)
+	expect_true(control.mode == AutoControl.Mode.FULL_AUTO, "기본은 풀오토")
+	expect_true(control.auto_attacks(), "풀오토는 공격 자동")
+
+
+func test_semi_auto_moves_by_hand_attacks_by_itself() -> void:
+	var control := AutoControl.new(0.0, AutoControl.Mode.SEMI_AUTO)
+	control.update(0.016, false)
+	expect_true(control.is_manual(), "세미오토: 안 만져도 이동은 직접")
+	expect_true(control.auto_attacks(), "세미오토: 공격은 자동")
+
+
+func test_manual_attacks_by_hand() -> void:
+	var control := AutoControl.new(0.0, AutoControl.Mode.MANUAL)
+	control.update(0.016, false)
+	expect_true(control.is_manual(), "수동: 이동 직접")
+	expect_true(not control.auto_attacks(), "수동: 공격도 직접")
+
+
+func test_switching_back_to_full_auto() -> void:
+	var control := AutoControl.new(0.0, AutoControl.Mode.MANUAL)
+	control.update(0.016, false)
+	control.mode = AutoControl.Mode.FULL_AUTO
+	expect_true(not control.is_manual(), "풀오토로 바꾸고 손을 안 대고 있으면 바로 자동")

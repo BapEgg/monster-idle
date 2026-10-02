@@ -44,7 +44,17 @@ const JOYSTICK_REST_MARGIN := Vector2(190, 170)
 const JOYSTICK_RADIUS := 90.0
 const JOYSTICK_KNOB_RADIUS := 38.0
 
-# ─── 자동 사냥 / 손대면 수동 ───────────────────────
+# ─── 사냥 방식 버튼 · 공격 버튼 (화면 오른쪽 아래) ──────
+## 사냥 방식 버튼 줄: 화면 오른쪽·아래 가장자리에서 떨어진 거리(px)와 버튼 하나의 크기. 노치를 피해 안쪽에 둔다.
+const MODE_BUTTONS_MARGIN := Vector2(64, 32)
+const MODE_BUTTON_SIZE := Vector2(84, 40)
+## 공격 버튼(수동일 때만 보임): 원의 중심이 화면 오른쪽·아래 가장자리에서 떨어진 거리(px)와 반지름.
+const ATTACK_BUTTON_MARGIN := Vector2(150, 170)
+const ATTACK_BUTTON_RADIUS := 56.0
+
+# ─── 사냥 방식 / 손대면 수동 ───────────────────────
+## 처음 켤 때의 사냥 방식(풀오토 · 세미오토 · 수동). 저장 기능이 생기면 마지막 선택을 기억한다.
+const START_CONTROL_MODE := AutoControl.Mode.FULL_AUTO
 ## 손을 뗀 뒤 몇 초 지나면 자동으로 돌아오나. 0 = 손 떼는 즉시 자동.
 ## 사용자 결정(2026-10-02): 바로 자동으로 돌아온다(기획서의 3·5·10초 대기 대신 0).
 const MANUAL_RETURN_SECONDS := 0.0
