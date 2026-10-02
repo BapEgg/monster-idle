@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://scenes/ui/target_frame.gd" id="5_target"]
 [ext_resource type="Script" path="res://scenes/ui/bag_button.gd" id="6_bag_button"]
 [ext_resource type="PackedScene" path="res://scenes/ui/bag_panel.tscn" id="7_bag_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/mix_panel.tscn" id="8_mix_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/confirm_box.tscn" id="9_confirm"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -134,4 +136,10 @@ shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("6_bag_button")
 
 [node name="BagPanel" parent="." instance=ExtResource("7_bag_panel")]
+visible = false
+
+[node name="MixPanel" parent="." instance=ExtResource("8_mix_panel")]
+visible = false
+
+[node name="ConfirmBox" parent="." instance=ExtResource("9_confirm")]
 visible = false

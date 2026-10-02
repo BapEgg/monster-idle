@@ -38,6 +38,9 @@
 | 2026-10-02 | **코어에 담는 것 = 종 · 접미사 · 빛나는 코어 · 나이.** 나이(어린·성체·늙은)는 외형으로 드러낼 것이지만 아직 그림이 없으므로, 지금은 기록만 하고 대상 창·가방에 글자로 보인다 | `core/core_item.gd`, `scenes/units/hench.gd` |
 | 2026-10-02 | **코어 줍기는 메이플키우기 방식**: 땅에 떨어졌다가 자동으로 주인공에게 빨려 들어온다 | `scenes/effects/core_drop.gd` |
 | 2026-10-02 | **가방은 지금 칸 수 제한이 없다.** 나중에 가방 확장(무료 몇 칸 · 이벤트 · 유료)을 붙인다 | `core/bag.gd` |
+| 2026-10-02 | **코어 가방은 믹스마스터식.** 5열 칸(종족 색 보석 아이콘 + 이름, 배지: 빛나는 테두리 · 나이 · 성별 · 변이), 칸을 누르면 오른쪽 정보창(임시 초상화, “접미사 + 이름”, 종족·역할·등급·나이·성별, LV, HP·MP, 능력치 9종, 고유 액티브·패시브, 버튼: 파티 편성 / 믹스 / 분해 / 잠금), 믹스 버튼은 믹스창(주·보조 2칸, 성별 방향, 결과 미리보기 공개 = 이름 · 힌트 = 실루엣 · 비밀 = ?, 유산 패시브 선택, 골드 비용) | `scenes/ui/bag_panel.gd`, `core_info.gd`, `mix_panel.gd` |
+| 2026-10-02 | **믹스는 성공 확률이 있고, 실패하면 재료(두 코어)가 사라진다** | `core/mix.gd`, `core/workshop.gd` |
+| 2026-10-02 | **아이콘·초상화는 종족별 리소스 경로로 분리한다**(`data/tribes.json` → `art/tribes/<종족>/icon.png` · `portrait.png`). 그림으로 바꿀 때는 같은 이름의 PNG로 덮어쓴다 | `core/tribe_db.gd`, `art/tribes/` |
 
 ## 기술 결정
 
@@ -100,9 +103,11 @@ unzip -o /tmp/godot.zip -d /tmp/godot && GODOT=/tmp/godot/Godot_v4.7.2-stable_li
 | 폴더 | 내용 |
 | --- | --- |
 | `config/` | `game_config.gd` 조절용 수치 · `ui_text.gd` 화면 문구 · `palette.gd` 임시 도형 색 |
-| `core/` | 장면과 상관없는 계산·도우미: `iso.gd` 쿼터뷰 좌표, `combat.gd` 전투 계산(기습 포함), `detection.gd` 선공 시야 감지, `targeting.gd` 대상 고르기, `hp_bar.gd` 체력 바(잔상), `auto_control.gd` 사냥 방식·손대면 수동, `unit_stats.gd` 능력치, `hench_db.gd` 도감 읽기, `suffix_db.gd` 접미사 읽기, `core_item.gd` 코어, `drops.gd` 드랍·나이 굴림, `bag.gd` 가방, `hunt_log.gd` 사냥 기록(하루 처치 수 측정) |
-| `scenes/<기능>/` | 장면(`.tscn`)과 그 스크립트를 기능별로 함께 둔다: `main`(+야생 출현·몹 눌러 대상 지정), `field`, `player`, `units`(Unit 바탕·헨치·이름표와 머리 위 표시), `effects`(숫자·투사체·떨어진 코어), `ui`(HUD 장면 = 화면 배치, 공격 버튼·오토 버튼·스킬 칸·대상 창·가방 버튼·가방 창) |
-| `data/` | 게임 데이터. `henches.json` = 헨치 도감(지금은 용섬 입문 하급 4종), `suffixes.json` = 코어 접미사 9종. 안드로이드로 내보낼 때 “리소스가 아닌 파일” 필터에 `*.json`을 넣어야 한다 |
+| `art/` | 그림 파일. `tribes/<종족>/icon.png`(가방 칸·떨어진 코어) · `portrait.png`(정보창·믹스창, 배경 투명 = 힌트 실루엣). 지금은 `tools/make_placeholder_art.gd`로 만든 임시 그림이고, 같은 이름으로 덮어쓰면 바뀐다. Godot가 만드는 `*.png.import`도 함께 커밋한다 |
+| `tools/` | 개발 도구(임시 그림 생성 등). 게임 빌드에는 넣지 않는다 |
+| `core/` | 장면과 상관없는 계산·도우미: `iso.gd` 쿼터뷰 좌표, `combat.gd` 전투 계산(기습 포함), `detection.gd` 선공 시야 감지, `targeting.gd` 대상 고르기, `hp_bar.gd` 체력 바(잔상), `auto_control.gd` 사냥 방식·손대면 수동, `unit_stats.gd` 능력치, `hench_db.gd` 도감 읽기, `suffix_db.gd` 접미사 읽기, `tribe_db.gd` 종족(색·그림 경로), `core_item.gd` 코어, `drops.gd` 드랍·나이·성별·변이·레벨 굴림, `core_stats.gd` 능력치 9종·HP·MP, `mix.gd` 믹스 규칙, `workshop.gd` 믹스·분해·잠금 처리, `wallet.gd` 골드·코어 조각, `bag.gd` 가방, `hunt_log.gd` 사냥 기록(하루 처치 수 측정) |
+| `scenes/<기능>/` | 장면(`.tscn`)과 그 스크립트를 기능별로 함께 둔다: `main`(+야생 출현·몹 눌러 대상 지정), `field`, `player`, `units`(Unit 바탕·헨치·이름표와 머리 위 표시), `effects`(숫자·투사체·떨어진 코어), `ui`(HUD 장면 = 화면 배치, 공격 버튼·오토 버튼·스킬 칸·대상 창·가방 버튼·가방 창·코어 칸·코어 정보창·믹스창·확인 창) |
+| `data/` | 게임 데이터. `henches.json` = 헨치 도감 64종(믹스 공식 포함), `suffixes.json` = 코어 접미사 9종, `tribes.json` = 종족 8개(색·그림 경로), `dev_starter.json` = 개발 확인용 시작 가방(`GameConfig.DEV_STARTER_BAG`, 출시 전에 끔). 안드로이드로 내보낼 때 “리소스가 아닌 파일” 필터에 `*.json`을 넣어야 한다 |
 | `tests/` | 테스트(`test_*.gd`)와 실행기. 게임 빌드에는 넣지 않는다 |
 | `docs/` | 기획서(읽기 전용) |
 
@@ -167,5 +172,5 @@ unzip -o /tmp/godot.zip -d /tmp/godot && GODOT=/tmp/godot/Godot_v4.7.2-stable_li
 | 2 | 헨치 3마리 따라다니기, 자동 사냥, 손대면 수동 전환 | 방치 느낌 | 완료 (2026-10-02) |
 | 3 | 몬스터 선공·비선공 이름표, “!”·파란 표시, 기습 첫 타 | 긴장감 | 완료 (2026-10-02) |
 | 4 | 코어 드랍과 가방, 하루 처치 수 측정 로그 | 드랍률 확정 근거 | 만듦(로컬 저장 빼고). 사용자 확인 대기, 로컬 저장은 설명 후 결정 대기 |
-| 5 | 믹스 화면 (암수 방향, 유산 패시브 교체) | 핵심 재미 | |
+| 5 | 믹스 화면 (암수 방향, 유산 패시브 교체) | 핵심 재미 | 만듦(믹스마스터식 가방·정보창·믹스창). 사용자 확인 대기 |
 | 6 | 섬의 왕 보스전 (장판 피하기, 역할 그룹 지휘) | 수동 조작 재미 | |

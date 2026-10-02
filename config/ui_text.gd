@@ -45,6 +45,10 @@ const ROLE_SHORT := {"tank": "탱", "melee": "근", "ranged": "원", "healer": "
 # ─── 코어 · 가방 · 사냥 기록 (프로토타입 4) ───────────────
 ## 나이(CoreItem.Age 순서)
 const AGE_NAMES := ["어린", "성체", "늙은"]
+## 성별(CoreItem.Gender 순서). 짧은 글자는 가방 칸 배지
+const GENDER_NAMES := ["암컷", "수컷"]
+const GENDER_SHORT := ["암", "수"]
+const VARIANT := "변이"
 const SHINING := "빛나는"
 ## 코어를 주웠을 때 주인공 머리 위. %s = 종 이름
 const PICKUP := "+%s " + TERM_CORE
@@ -64,3 +68,70 @@ const HUNT_RATES := "시간당 처치: 자동 %s · 수동 %s (%s) · 하루 예
 const HUNT_UNKNOWN := "—"
 ## 수동이 자동보다 얼마나 더 잡는지. %+d = 퍼센트
 const HUNT_ADVANTAGE := "수동 %+d%%"
+
+# ─── 가방 칸 · 코어 정보 · 믹스 (프로토타입 5) ─────────────
+const ROLE_NAMES := {"tank": "탱커", "melee": "근접딜러", "ranged": "원거리딜러", "healer": "힐러", "boss": "보스"}
+const GRADE_NAMES := {"low": "하급", "mid": "중급", "high": "상급", "king": "왕"}
+## 가방 칸 배지
+const BADGE_LOCK := "잠금"
+const BADGE_PARTY := "파티"
+## 가방 창 위: 골드 · 코어 조각
+const MONEY := "골드 %d · " + TERM_CORE + " 조각 %d"
+## 코어 정보창
+const INFO_EMPTY := "칸을 누르면 정보가 보입니다"
+## 종족 · 역할 · 등급
+const INFO_KIND := "%s · %s · %s"
+## 나이 · 성별 (+ 빛나는 · 변이)
+const INFO_BODY := "%s · %s"
+const INFO_LEVEL := "LV %d"
+const INFO_HP_MP := "HP %d · MP %d"
+## 능력치 한 칸: 이름 값
+const INFO_STAT := "%s %d"
+const INFO_ACTIVE := "고유 액티브: %s"
+const INFO_PASSIVE := "고유 패시브: %s"
+## 유산으로 받은 패시브. %s = 원래 주인 종 이름, %s = 패시브
+const INFO_LEGACY := "패시브(유산 · %s): %s"
+const BTN_PARTY := "파티 편성"
+const BTN_PARTY_LEAVE := "파티에서 빼기"
+const BTN_MIX := TERM_MIX
+const BTN_DISMANTLE := "분해"
+const BTN_LOCK := "잠금"
+const BTN_UNLOCK := "잠금 해제"
+const PARTY_PICK := "넣을 자리를 고르세요"
+## %d = 자리 번호, %s = 지금 그 자리의 헨치
+const PARTY_SLOT := "%d번 · %s"
+const BTN_CANCEL := "취소"
+const BTN_OK := "확인"
+const BTN_YES := "예"
+## 분해 확인. %s = 이름, %d = 조각 수
+const DISMANTLE_ASK := "%s\n분해하면 사라지고 " + TERM_CORE + " 조각 %d개를 얻습니다."
+const CANT_DISMANTLE := "잠겼거나 파티에 있는 것은 분해할 수 없습니다"
+## 믹스창
+const MIX_TITLE := TERM_MIX
+const MIX_MAIN := "주 " + TERM_CORE
+const MIX_SUB := "보조 " + TERM_CORE
+const MIX_SLOT_EMPTY := "아래에서 고르세요"
+## 성별 방향: 암컷 이름 / 수컷 이름
+const MIX_DIRECTION := "암컷 %s  ×  수컷 %s"
+const MIX_RESULT := "결과"
+const MIX_HINT_NAME := "???"
+const MIX_SECRET := "?"
+const MIX_SWAP := "주 ↔ 보조"
+const MIX_PASSIVE_TITLE := "패시브 1칸: 무엇을 남길까요?"
+const MIX_KEEP_OWN := "자기 패시브: %s"
+const MIX_KEEP_LEGACY := "유산(주 " + TERM_CORE + "): %s"
+## 비용 / 보유 골드 / 성공 확률
+const MIX_COST := "비용 %d 골드 (보유 %d) · 성공 확률 %s"
+const MIX_WARNING := "실패하면 재료 둘이 모두 사라집니다"
+const MIX_CANDIDATES := "보조 " + TERM_CORE + " 고르기"
+const MIX_GO := TERM_MIX + "하기"
+## 믹스 확인. %s = 성공 확률
+const MIX_ASK := "성공 확률 %s\n실패하면 재료 둘이 모두 사라집니다. " + TERM_MIX + "할까요?"
+## 믹스 결과. %s = 이름, %s = 성별, %s = 나이
+const MIX_SUCCESS := TERM_MIX + " 성공!\n%s(%s · %s) 탄생"
+const MIX_FAIL := TERM_MIX + " 실패…\n재료 둘이 사라졌습니다"
+const PERCENT := "%d%%"
+const UNKNOWN_PERCENT := "?%"
+## 믹스할 수 없는 까닭(Mix.Problem 순서: NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, NO_GOLD)
+const MIX_PROBLEMS := ["", "보조 칸이 비어 있습니다", "같은 것끼리는 안 됩니다", "암수 한 쌍이어야 합니다",
+	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", "골드가 모자랍니다"]

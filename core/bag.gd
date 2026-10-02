@@ -14,5 +14,14 @@ func add(item: CoreItem) -> void:
 	changed.emit()
 
 
+func remove(item: CoreItem) -> void:
+	cores.erase(item)
+	changed.emit()
+
+
+func has(item: CoreItem) -> bool:
+	return item in cores
+
+
 func count() -> int:
 	return cores.size()

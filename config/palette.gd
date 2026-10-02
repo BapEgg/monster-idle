@@ -56,13 +56,30 @@ const CORE_OUTLINE := Color("2b2b33")
 const CORE_GLINT := Color(1, 1, 1, 0.75)
 const CORE_SHINE := Color("ffd84a")
 ## 가방 창: 바탕 / 테두리 / 코어 칸 / 빛나는 코어 칸 테두리 / 흐린 글자
-const PANEL_BG := Color(0.1, 0.11, 0.14, 0.92)
+const PANEL_BG := Color(0.1, 0.11, 0.14, 0.98)
 const PANEL_BORDER := Color(1, 1, 1, 0.25)
 const CARD_BG := Color(1, 1, 1, 0.08)
 const CARD_BORDER := Color(1, 1, 1, 0.15)
 const TEXT_DIM := Color(1, 1, 1, 0.65)
 ## 가방 버튼
 const BAG_BUTTON := Color(0, 0, 0, 0.45)
+## 가방 칸: 고른 칸 바탕·테두리
+const CARD_SELECTED_BG := Color(1, 1, 1, 0.2)
+const CARD_SELECTED_BORDER := Color(1, 1, 1, 0.95)
+## 가방 칸 배지: 나이 / 암컷 / 수컷 / 변이 / 잠금 / 파티, 배지 글자
+const BADGE_AGE := Color(0.25, 0.27, 0.32, 0.95)
+const BADGE_FEMALE := Color("e8558f")
+const BADGE_MALE := Color("3f7fe0")
+const BADGE_VARIANT := Color("9b5de5")
+const BADGE_LOCK := Color(0.45, 0.45, 0.5, 0.95)
+const BADGE_PARTY := Color("2a9d8f")
+const BADGE_TEXT := Color(1, 1, 1)
+## 초상화 틀 바탕
+const PORTRAIT_BG := Color(1, 1, 1, 0.06)
+## 믹스창: 힌트(실루엣) 색 / 실패 경고 글자 / 성공 글자
+const SILHOUETTE := Color(0, 0, 0, 0.9)
+const TEXT_WARNING := Color("ff8a7a")
+const TEXT_GOOD := Color("7dff8a")
 
 # ─── 장식물 ──────────────────────────────────────
 const TREE_TRUNK := Color("8a5a35")

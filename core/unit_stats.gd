@@ -33,7 +33,7 @@ static func for_player() -> UnitStats:
 
 ## 역할(tank·melee·ranged·healer)별 능력치. 야생이면 체력·공격을 깎는다.
 static func for_hench(role: String, wild: bool) -> UnitStats:
-	var row: Dictionary = GameConfig.ROLE_STATS[role]
+	var row: Dictionary = GameConfig.ROLE_STATS.get(role, GameConfig.ROLE_STATS["tank"])  # 섬의 왕(boss)은 아직 필드 능력치가 없다
 	if wild:
 		return from_table(row, GameConfig.HENCH_SPEED, GameConfig.WILD_HP_SCALE, GameConfig.WILD_ATTACK_SCALE)
 	return from_table(row, GameConfig.HENCH_SPEED)

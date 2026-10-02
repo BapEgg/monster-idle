@@ -2,11 +2,14 @@ extends Node2D
 ## 메인 장면: 필드에 주인공과 헨치 3마리를 세우고, 야생 헨치를 풀어 자동 사냥을 돌린다.
 ## 화면에서 몹을 누르면 대상으로 지정한다(TargetPicker).
 ## 처치하면 코어가 떨어져 주인공에게 빨려 들어가 가방에 들어간다. 사냥 기록으로 하루 처치 수를 잰다(프로토타입 4).
+## 가방 창에서 코어를 파티에 넣거나 믹스·분해·잠금한다(프로토타입 5, 실제 처리는 Workshop).
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
 var party: Array[Hench] = []
 var bag := Bag.new()
+var wallet := Wallet.new()
+var workshop := Workshop.new(bag, wallet)
 var hunt_log := HuntLog.new()
 
 ## 드랍 판정용 난수(씨앗이 같으면 같은 순서로 떨어진다). 튀어 나가는 방향 같은 연출은 _fx_rng.
@@ -33,23 +36,85 @@ func _ready() -> void:
 	_hud.bind_player(_player)
 	_picker.setup(_player, _hud)
 	_hud.bind_hunt(bag, hunt_log)
+	_hud.bind_collection(wallet, workshop, party_names)
+	_hud.party_requested.connect(assign_party)
+	_hud.party_leave_requested.connect(leave_party)
 	_hud.set_kills(kills)
 	_loot_rng.seed = GameConfig.FIELD_SEED + 2
 	_fx_rng.randomize()
 	_spawn_party()
+	if GameConfig.DEV_STARTER_BAG:
+		_fill_starter_bag()
 	_spawner.killed.connect(_on_kill)
 	_spawner.setup(_field, _player)
 
 
 func _spawn_party() -> void:
 	for i in GameConfig.PARTY_HENCHES.size():
-		var hench := Hench.create(HenchDb.get_species(GameConfig.PARTY_HENCHES[i]), Unit.Team.PARTY)
-		hench.field = _field
-		hench.leader = _player
-		hench.slot = GameConfig.FOLLOW_SLOTS[i]
-		_field.objects.add_child(hench)
-		hench.place_at(_player.position + hench.slot)
-		party.append(hench)
+		party.append(_spawn_party_member(i, HenchDb.get_species(GameConfig.PARTY_HENCHES[i]), _player.position + GameConfig.FOLLOW_SLOTS[i]))
+
+
+func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2) -> Hench:
+	var hench := Hench.create(species, Unit.Team.PARTY)
+	hench.field = _field
+	hench.leader = _player
+	hench.slot = GameConfig.FOLLOW_SLOTS[slot]
+	_field.objects.add_child(hench)
+	hench.place_at(at)
+	return hench
+
+
+## 파티 자리마다 지금 헨치 이름(가방 창의 파티 편성 고르기에 보인다).
+func party_names() -> PackedStringArray:
+	var names := PackedStringArray()
+	for hench in party:
+		names.append(hench.species.name)
+	return names
+
+
+## 코어를 그 파티 자리에 넣는다. 그 자리에 있던 코어는 파티에서 빠지고, 필드의 헨치가 이 코어의 종으로 바뀐다.
+## 지금은 종(이름·색·역할)만 바뀌고 코어의 레벨·능력치는 아직 전투에 쓰지 않는다(밸런스 단계).
+func assign_party(item: CoreItem, slot: int) -> void:
+	if slot < 0 or slot >= party.size():
+		return
+	if item.in_party():
+		leave_party(item)
+	for other in bag.cores:
+		if other.party_slot == slot:
+			other.party_slot = -1
+	item.party_slot = slot
+	_replace_party_member(slot, item.species())
+	bag.changed.emit()
+
+
+## 코어를 파티에서 뺀다. 그 자리는 처음 헨치(GameConfig.PARTY_HENCHES)로 돌아간다.
+func leave_party(item: CoreItem) -> void:
+	var slot := item.party_slot
+	if slot < 0:
+		return
+	item.party_slot = -1
+	_replace_party_member(slot, HenchDb.get_species(GameConfig.PARTY_HENCHES[slot]))
+	bag.changed.emit()
+
+
+func _replace_party_member(slot: int, species: HenchSpecies) -> void:
+	var old := party[slot]
+	var at := old.position
+	old.remove_from_group(Unit.group_name(Unit.Team.PARTY))
+	old.queue_free()
+	party[slot] = _spawn_party_member(slot, species, at)
+
+
+## 개발 확인용 시작 가방(data/dev_starter.json): 믹스·배지를 바로 시험할 수 있게 코어와 골드를 넣는다.
+func _fill_starter_bag() -> void:
+	var root: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/dev_starter.json"))
+	if not root is Dictionary:
+		push_error("시작 가방 데이터를 읽지 못함")
+		return
+	for row: Variant in root.get("cores", []):
+		if row is Dictionary:
+			bag.add(CoreItem.from_dict(row))
+	wallet.add_gold(int(root.get("gold", 0)))
 
 
 func _physics_process(delta: float) -> void:
@@ -60,7 +125,8 @@ func _on_kill(hench: Hench) -> void:
 	kills += 1
 	_hud.set_kills(kills)
 	hunt_log.add_kill(_player.control.is_manual())
-	var item := Drops.roll_core(_loot_rng, hench.species.id, hench.age)
+	wallet.add_gold(GameConfig.GOLD_PER_KILL)
+	var item := Drops.roll_core(_loot_rng, hench.core_template())
 	if item != null:
 		drop_core(hench.position, item)
 
@@ -70,7 +136,7 @@ func drop_core(at: Vector2, item: CoreItem) -> void:
 	var scatter := Vector2.from_angle(_fx_rng.randf() * TAU) * GameConfig.CORE_POP_SCATTER
 	scatter.y *= GameConfig.TILE_SIZE.y / GameConfig.TILE_SIZE.x  # 땅 위에서 고르게 흩어지도록 세로는 타일 비율만큼
 	var drop := CoreDrop.new()
-	drop.setup(at, scatter, item, HenchDb.get_species(item.species_id).color, _player)
+	drop.setup(at, scatter, item, TribeDb.get_tribe(item.species().tribe).color, _player)
 	drop.collected.connect(_on_core_collected)
 	_field.objects.add_child(drop)
 

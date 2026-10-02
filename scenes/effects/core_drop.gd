@@ -2,11 +2,13 @@ class_name CoreDrop
 extends Node2D
 ## 떨어진 코어(메이플키우기 방식): 몹 자리에서 튀어 올랐다가 땅에 떨어지고, 잠깐 뒤 주인공에게 빨려 들어간다.
 ## 주인공 몸에 닿으면 collected 신호를 보내고 사라진다. 원점 = 땅(그림자 자리)이라 y정렬로 앞뒤가 맞는다.
-## 그림은 종 색 보석으로 대체한다(빛나는 코어는 금빛 테두리와 반짝임). 시간·높이 수치는 GameConfig.CORE_*.
+## 그림은 종족 아이콘(data/tribes.json의 경로, 지금은 임시 보석 그림)을 쓰고, 빛나는 코어는 금빛으로 반짝인다.
+## 시간·높이 수치는 GameConfig.CORE_*.
 
 signal collected(item: CoreItem)
 
-# 임시 도형 치수(px). 그림이 들어오면 사라진다.
+# 그리는 크기(px)
+const ICON_SIZE := Vector2(20, 20)
 const GEM_HALF := Vector2(6, 9)
 const SHADOW_RADIUS := Vector2(7, 3)
 const SHINE_RADIUS := 13.0
@@ -18,6 +20,7 @@ const COLLECT_DISTANCE := 10.0
 enum Phase { POP, REST, FLY }
 
 var item: CoreItem
+## 그림 파일이 없을 때 대신 그리는 보석 색(종족 색)
 var color := Color.WHITE
 ## 빨려 들어갈 대상(주인공)
 var target: Unit
@@ -96,15 +99,20 @@ func _draw() -> void:
 	var lift := Vector2(0, -_height)
 	var shadow := 1.0 - clampf(_height / (GameConfig.CORE_POP_HEIGHT * 2.0), 0.0, 0.7)
 	draw_colored_polygon(Shapes.ellipse(Vector2.ZERO, SHADOW_RADIUS * shadow), Palette.SHADOW)
-	draw_gem(self, lift + Vector2(0, -GEM_HALF.y), color, item.shining, _time)
-
-
-## 보석 하나(코어 임시 그림)를 그린다. 가방 창의 코어 칸도 같이 쓴다. canvas의 _draw() 안에서만 부른다.
-static func draw_gem(canvas: CanvasItem, center: Vector2, fill: Color, shining: bool, time := 0.0) -> void:
-	if shining:
+	var center := lift + Vector2(0, -ICON_SIZE.y * 0.5)
+	if item.shining:
 		var glow := Palette.CORE_SHINE
-		glow.a = 0.25 + 0.15 * sin(time * SHINE_PULSE)
-		canvas.draw_circle(center, SHINE_RADIUS, glow, true, -1.0, true)
+		glow.a = 0.25 + 0.15 * sin(_time * SHINE_PULSE)
+		draw_circle(center, SHINE_RADIUS, glow, true, -1.0, true)
+	var icon := TribeDb.icon(item.species().tribe)
+	if icon != null:
+		draw_texture_rect(icon, Rect2(center - ICON_SIZE * 0.5, ICON_SIZE), false)
+	else:
+		draw_gem(self, center, color, item.shining)
+
+
+## 그림 파일이 없을 때 대신 그리는 보석. canvas의 _draw() 안에서만 부른다.
+static func draw_gem(canvas: CanvasItem, center: Vector2, fill: Color, shining: bool) -> void:
 	var gem := PackedVector2Array([
 		center + Vector2(0, -GEM_HALF.y), center + Vector2(GEM_HALF.x, -GEM_HALF.y * 0.25),
 		center + Vector2(0, GEM_HALF.y), center + Vector2(-GEM_HALF.x, -GEM_HALF.y * 0.25),

@@ -1,0 +1,72 @@
+{
+  "about": "개발 확인용 시작 가방(GameConfig.DEV_STARTER_BAG). 아직 저장이 없어서 게임을 켤 때마다 이 코어들과 골드를 넣는다. 출시 전에 끈다. age: 0 어린 · 1 성체 · 2 늙은, gender: 0 암컷 · 1 수컷.",
+  "gold": 3000,
+  "cores": [
+    {
+      "species": "gochuryong",
+      "suffix": "mighty",
+      "age": 1,
+      "gender": 0,
+      "level": 8
+    },
+    {
+      "species": "kkangtonggeobuk",
+      "suffix": "sturdy",
+      "age": 0,
+      "gender": 1,
+      "level": 3
+    },
+    {
+      "species": "sotmabaem",
+      "suffix": "tough",
+      "age": 1,
+      "gender": 0,
+      "level": 5,
+      "shining": true
+    },
+    {
+      "species": "gombogom",
+      "suffix": "swift",
+      "age": 2,
+      "gender": 1,
+      "level": 7
+    },
+    {
+      "species": "beongaeiri",
+      "suffix": "nimble",
+      "age": 1,
+      "gender": 0,
+      "level": 25
+    },
+    {
+      "species": "dolguana",
+      "suffix": "precise",
+      "age": 2,
+      "gender": 1,
+      "level": 26
+    },
+    {
+      "species": "haemapo",
+      "suffix": "lucky",
+      "age": 0,
+      "gender": 1,
+      "level": 6,
+      "variant": true
+    },
+    {
+      "species": "mangwonbueong",
+      "suffix": "steadfast",
+      "age": 1,
+      "gender": 0,
+      "level": 9
+    },
+    {
+      "species": "jinjuryong",
+      "suffix": "abundant",
+      "age": 1,
+      "gender": 0,
+      "level": 9,
+      "locked": true
+    }
+  ]
+}

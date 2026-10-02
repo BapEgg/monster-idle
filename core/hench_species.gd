@@ -3,7 +3,9 @@ extends RefCounted
 ## 헨치 한 종의 도감 정보(data/henches.json 한 칸).
 
 const TRIBES := ["dragon", "plant", "demon", "beast", "machine", "spirit", "insect", "flying"]
+## 싸우는 역할 4개(필드 능력치가 있는 것). 섬의 왕은 따로 "boss".
 const ROLES := ["tank", "melee", "ranged", "healer"]
+const KING_ROLE := "boss"
 const GRADES := ["low", "mid", "high", "king"]
 
 var id := ""
@@ -19,6 +21,8 @@ var passive := ""
 var level_min := 1
 var level_max := 1
 var habitats := PackedStringArray()
+## 믹스 공식: [암컷 종 id, 수컷 종 id] 쌍 목록. 하급(드랍)은 비어 있고, 왕은 비밀이라 비어 있다.
+var recipes: Array[PackedStringArray] = []
 ## 그림이 들어오기 전까지 쓰는 임시 도형 색.
 var color := Color.WHITE
 
@@ -38,6 +42,8 @@ static func from_dict(row: Dictionary) -> HenchSpecies:
 	s.level_min = int(level[0])
 	s.level_max = int(level[1])
 	s.habitats = PackedStringArray(row.get("habitats", []))
+	for pair: Variant in row.get("recipes", []):
+		s.recipes.append(PackedStringArray(pair))
 	s.color = Color.from_string(str(row.get("color", "")), Color.WHITE)
 	return s
 
@@ -51,10 +57,13 @@ func problems() -> PackedStringArray:
 		result.append("%s: name이 비어 있음" % id)
 	if tribe not in TRIBES:
 		result.append("%s: 모르는 종족 '%s'" % [id, tribe])
-	if role not in ROLES:
+	if role not in ROLES and not (grade == "king" and role == KING_ROLE):
 		result.append("%s: 모르는 역할 '%s'" % [id, role])
 	if grade not in GRADES:
 		result.append("%s: 모르는 등급 '%s'" % [id, grade])
 	if level_min > level_max:
 		result.append("%s: 레벨 범위가 거꾸로 됨" % id)
+	for pair in recipes:
+		if pair.size() != 2:
+			result.append("%s: 믹스 공식은 [암컷, 수컷] 두 종이어야 함" % id)
 	return result

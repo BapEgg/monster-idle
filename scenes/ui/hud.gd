@@ -11,6 +11,9 @@ extends CanvasLayer
 
 ## 오토 버튼으로 사냥 방식을 바꿨을 때. main이 받아 주인공에게 알려 준다.
 signal control_mode_selected(mode: AutoControl.Mode)
+## 가방 창에서 코어를 파티에 넣거나 뺄 때. main이 필드의 헨치를 바꾼다.
+signal party_requested(item: CoreItem, slot: int)
+signal party_leave_requested(item: CoreItem)
 
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
@@ -25,6 +28,9 @@ const CONTROLS_PADDING := 8.0
 @onready var target_frame: TargetFrame = $TargetFrame
 @onready var bag_button: BagButton = $TopControls/BagButton
 @onready var bag_panel: BagPanel = $BagPanel
+@onready var mix_panel: MixPanel = $MixPanel
+@onready var confirm_box: ConfirmBox = $ConfirmBox
+@onready var _controls: Control = $Controls
 @onready var _mode: Label = $Mode
 @onready var _kills: Label = $Kills
 
@@ -37,7 +43,12 @@ func _ready() -> void:
 	_setup_joystick()
 	auto_button.pressed.connect(_on_auto_button)
 	bag_button.pressed.connect(_on_bag_button)
-	bag_panel.visibility_changed.connect(_on_bag_panel_toggled)
+	for modal: Control in _modals():
+		modal.visibility_changed.connect(_on_modal_toggled)
+	bag_panel.mix_requested.connect(mix_panel.open)
+	bag_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
+	bag_panel.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
+	mix_panel.mixed.connect(func(born: CoreItem) -> void: bag_panel.select(born))
 
 
 func bind_player(player: Player) -> void:
@@ -49,6 +60,12 @@ func set_kills(count: int) -> void:
 	_kills.text = UiText.KILLS % count
 
 
+## 지갑·코어 다루기(믹스·분해·잠금)·파티 이름을 가방 창과 믹스창에 이어 준다.
+func bind_collection(wallet: Wallet, workshop: Workshop, party_names: Callable) -> void:
+	bag_panel.bind_collection(wallet, workshop, confirm_box, party_names)
+	mix_panel.bind(workshop, confirm_box)
+
+
 ## 가방과 사냥 기록을 가방 버튼·가방 창에 이어 준다.
 func bind_hunt(bag: Bag, hunt_log: HuntLog) -> void:
 	bag_panel.bind(bag, hunt_log)
@@ -56,11 +73,12 @@ func bind_hunt(bag: Bag, hunt_log: HuntLog) -> void:
 	bag.changed.connect(func() -> void: bag_button.count = bag.count())
 
 
-## 그 자리(화면 좌표)가 버튼(공격 · 오토 · 스킬 칸 · 가방)이나 열린 가방 창 위인가.
+## 그 자리(화면 좌표)가 버튼(공격 · 오토 · 스킬 칸 · 가방)이나 열린 창(가방 · 믹스 · 확인) 위인가.
 ## 이런 곳을 누른 것은 몹 지정이 아니다.
 func is_over_controls(point: Vector2) -> bool:
-	if bag_panel.visible and bag_panel.get_global_rect().has_point(point):
-		return true
+	for modal in _modals():
+		if modal.visible and modal.get_global_rect().has_point(point):
+			return true
 	for node in find_children("*", "TouchScreenButton", true, false):
 		var button := node as TouchScreenButton
 		if button.is_visible_in_tree() and _covers(button, point):
@@ -101,13 +119,25 @@ func _process(_delta: float) -> void:
 func _on_bag_button() -> void:
 	if bag_panel.visible:
 		bag_panel.close()
+		mix_panel.hide()
 	else:
 		bag_panel.open()
 
 
-## 가방 창이 열려 있는 동안은 조이스틱을 숨겨, 창을 누른 손가락이 주인공을 움직이지 않게 한다.
-func _on_bag_panel_toggled() -> void:
-	joystick.visible = not bag_panel.visible
+## 화면을 덮는 창들(가방 · 믹스 · 확인).
+func _modals() -> Array[Control]:
+	return [bag_panel, mix_panel, confirm_box]
+
+
+## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸)을 숨겨,
+## 창을 누른 손가락이 주인공을 움직이거나 공격 버튼을 누르지 않게 한다.
+func _on_modal_toggled() -> void:
+	var any_open := false
+	for modal in _modals():
+		any_open = any_open or modal.visible
+	joystick.visible = not any_open
+	_controls.visible = not any_open
+	target_frame.modulate.a = 0.0 if any_open else 1.0  # 창 위로 겹쳐 보이지 않게
 
 
 func _on_auto_button() -> void:

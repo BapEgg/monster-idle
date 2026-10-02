@@ -4,7 +4,7 @@ extends SceneTree
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
-## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png"로 저장한다.
+## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -226,6 +226,54 @@ func _run(main: Node) -> void:
 	await _tap(hud.bag_button.global_position)
 	await process_frame
 	_expect(hud.bag_panel.visible and hud.bag_panel.card_count() == bag.count(), "가방 버튼 → 가방 창, 코어 %d칸" % bag.count())
+	# 가방 칸 → 오른쪽 정보창, 잠금, 파티 편성, 분해, 믹스(프로토타입 5). 시작 가방(data/dev_starter.json)의 코어로 한다.
+	var info := hud.bag_panel.info()
+	var gochu := _find_core(bag, "gochuryong", CoreItem.Gender.FEMALE)
+	await _tap(hud.bag_panel.card_for(gochu).get_global_rect().get_center())
+	_expect(info.item == gochu and hud.bag_panel.card_for(gochu).selected, "가방 칸을 누르면 오른쪽 정보창에 그 코어")
+	await _tap(_center_of(info, "Lock"))
+	var locked_once := gochu.locked
+	await _tap(_center_of(info, "Lock"))
+	_expect(locked_once and not gochu.locked, "잠금 → 잠김, 다시 누르면 풀림")
+	await _tap(_center_of(info, "Party"))
+	await process_frame
+	var first_slot := (info.find_child("PartySlots", true, false) as HBoxContainer).get_child(0) as Button
+	await _tap(first_slot.get_global_rect().get_center())
+	await _physics_frames(2)
+	var party: Array = main.get("party")
+	_expect(gochu.party_slot == 0 and (party[0] as Hench).species.id == "gochuryong", "파티 편성 → 1번 자리 헨치가 고추룡으로 바뀜")
+	await _tap(_center_of(info, "Party"))
+	await _physics_frames(2)
+	party = main.get("party")
+	_expect(not gochu.in_party() and (party[0] as Hench).species.id == GameConfig.PARTY_HENCHES[0], "파티에서 빼기 → 처음 헨치로 돌아감")
+	var wallet: Wallet = main.get("wallet")
+	var owl := _find_core(bag, "mangwonbueong", CoreItem.Gender.FEMALE)
+	await _tap(hud.bag_panel.card_for(owl).get_global_rect().get_center())
+	var count_before := bag.count()
+	var shards_before := wallet.shards
+	await _tap(_center_of(info, "Dismantle"))
+	_expect(hud.confirm_box.visible, "분해 → 확인 창")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	_expect(not bag.has(owl) and bag.count() == count_before - 1 and wallet.shards == shards_before + Mix.dismantle_shards(owl), "분해 → 가방에서 빠지고 코어 조각 +%d" % Mix.dismantle_shards(owl))
+	await _tap(hud.bag_panel.card_for(gochu).get_global_rect().get_center())
+	await _tap(_center_of(info, "MixButton"))
+	_expect(hud.mix_panel.visible and hud.mix_panel.main_core == gochu, "믹스 → 믹스창, 주 칸 = 고른 코어")
+	var kkang := _find_core(bag, "kkangtonggeobuk", CoreItem.Gender.MALE)
+	await _tap(hud.mix_panel.candidate_for(kkang).get_global_rect().get_center())
+	_expect(hud.mix_panel.sub_core == kkang and Mix.reveal_of(Mix.result_id(gochu, kkang)) == Mix.Reveal.OPEN, "보조 칸 = 깡통거북, 결과 미리보기 = 돌구아나(공개)")
+	await _save_shot("mix")
+	await _seconds(0.2)
+	count_before = bag.count()
+	var gold_before := wallet.gold
+	await _tap(_center_of(hud.mix_panel, "Go"))
+	_expect(hud.confirm_box.visible, "믹스하기 → 확인 창(실패하면 재료가 사라진다는 안내)")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	var born_ok := bag.count() == count_before - 1
+	_expect(not bag.has(gochu) and not bag.has(kkang) and (born_ok or bag.count() == count_before - 2), "믹스 → 재료 둘이 사라지고 %s" % ("돌구아나가 태어남" if born_ok else "실패(재료만 사라짐)"))
+	_expect(wallet.gold == gold_before - Mix.gold_cost("dolguana"), "골드가 비용만큼 나감")
+	_expect(hud.confirm_box.visible and not hud.mix_panel.visible, "믹스창이 닫히고 결과 알림")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	_expect(not hud.confirm_box.visible and hud.bag_panel.visible, "알림 확인 → 가방 창으로 돌아옴")
 	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.
 	var on_panel := hud.bag_panel.get_global_rect().position + Vector2(40, 70)
 	start = player.position
@@ -242,6 +290,9 @@ func _run(main: Node) -> void:
 	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
 
 	# 9) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
+	var hunt_log: HuntLog = main.get("hunt_log")
+	var bag_before_hunt := bag.count()
+	var cores_before_hunt := hunt_log.cores
 	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
 	Engine.time_scale = 4.0
 	var shot := _shot_path()
@@ -257,10 +308,10 @@ func _run(main: Node) -> void:
 	Engine.time_scale = 1.0
 	var kills: int = main.get("kills")
 	_expect(kills >= 3, "자동 사냥 40초 → 3마리 이상 처치 (실제 %d)" % kills)
-	var hunt_log: HuntLog = main.get("hunt_log")
 	_expect(hunt_log.kills() == kills and hunt_log.kills_per_hour(false) > 0.0, "사냥 기록: 처치 %d · 자동 시간당 %.0f마리" % [hunt_log.kills(), hunt_log.kills_per_hour(false)])
 	await _seconds(GameConfig.CORE_POP_SECONDS + GameConfig.CORE_REST_SECONDS + 1.0)
-	_expect(bag.count() - before - 1 == hunt_log.cores - 1 and hunt_log.cores >= 1, "자동 사냥 중 떨어진 코어도 가방에 (%d개)" % (hunt_log.cores - 1))
+	var picked := hunt_log.cores - cores_before_hunt
+	_expect(picked >= 1 and bag.count() - bag_before_hunt == picked, "자동 사냥 중 떨어진 코어도 가방에 (%d개)" % picked)
 	for hench: Hench in main.get("party"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
@@ -305,12 +356,14 @@ func _set_party_paused(main: Node, stop: bool) -> void:
 		hench.process_mode = Node.PROCESS_MODE_DISABLED if stop else Node.PROCESS_MODE_INHERIT
 
 
-## 화면 그 자리를 손가락으로 톡 누른다.
+## 화면 그 자리를 손가락으로 톡 누른다. 누른 뒤 화면 프레임을 두 번 기다려, 창의 배치(컨테이너 정렬)가 바뀐 것을 반영한다.
 func _tap(at: Vector2) -> void:
 	_touch(true, at)
 	await _physics_frames(2)
 	_touch(false, at)
 	await _physics_frames(2)
+	await process_frame
+	await process_frame
 
 
 ## 오토 버튼을 눌러 원하는 사냥 방식으로 바꾼다(누를 때마다 다음 방식).
@@ -319,6 +372,19 @@ func _switch_mode(hud: Hud, player: Player, mode: AutoControl.Mode) -> void:
 		if player.control.mode == mode:
 			return
 		await _tap(hud.auto_button.global_position)
+
+
+## 가방에서 그 종·성별의 첫 코어. 없으면 null.
+func _find_core(bag: Bag, species_id: String, gender: CoreItem.Gender) -> CoreItem:
+	for item in bag.cores:
+		if item.species_id == species_id and item.gender == gender:
+			return item
+	return null
+
+
+## 창 안에서 그 이름의 버튼(또는 칸) 한가운데의 화면 좌표.
+func _center_of(root_node: Node, node_name: String) -> Vector2:
+	return (root_node.find_child(node_name, true, false) as Control).get_global_rect().get_center()
 
 
 ## 필드에 있는 떨어진 코어(가장 최근 것). 없으면 null.

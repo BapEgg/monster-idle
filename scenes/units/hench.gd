@@ -31,9 +31,16 @@ const DOWNED_ALPHA := 0.35
 const DEATH_FADE_SECONDS := 0.5
 
 var species: HenchSpecies
-## 나이(기획서 4장, 야생은 나타날 때 정해진다). 쓰러뜨리면 코어에 그대로 담긴다.
+## 나이·성별·변이·레벨(기획서 4장, 야생은 나타날 때 정해진다). 쓰러뜨리면 코어에 그대로 담긴다.
 ## 나이에 따른 외형(부품·크기)은 그림이 들어오면 붙인다. 지금은 대상 창에 글자로만 보인다.
 var age := CoreItem.Age.ADULT
+var gender := CoreItem.Gender.FEMALE
+var level := 1
+## 변이체: 지금은 색을 뒤집어 그리고 이름 앞에 "변이"를 붙인다(기획서: 색·크기·속성·모션 변이는 그림 단계에서).
+var variant := false:
+	set(value):
+		variant = value
+		display_name = (UiText.VARIANT + " " + species.name) if value else species.name
 
 # 내 파티일 때
 var leader: Player
@@ -326,6 +333,17 @@ func overlay_height() -> float:
 	return -BODY_CENTER.y + BODY_RADIUS + 6.0
 
 
+## 쓰러뜨렸을 때 떨어질 코어의 바탕(종·나이·성별·변이·레벨). 접미사·빛남은 떨어질 때 정해진다.
+func core_template() -> CoreItem:
+	var item := CoreItem.new()
+	item.species_id = species.id
+	item.age = age
+	item.gender = gender
+	item.level = level
+	item.variant = variant
+	return item
+
+
 ## 대상 창 제목: 야생은 나이까지 보여 준다(외형이 없는 동안).
 func title() -> String:
 	if team == Team.WILD:
@@ -360,6 +378,14 @@ func shows_hp_bar() -> bool:
 	return team == Team.PARTY or super()
 
 
+## 몸 색(임시 도형). 변이체는 색상환을 반 바퀴 돌린 색.
+func body_color() -> Color:
+	if not variant:
+		return species.color
+	var c := species.color
+	return Color.from_hsv(fposmod(c.h + 0.5, 1.0), maxf(c.s, 0.45), c.v)
+
+
 func _draw() -> void:
 	draw_colored_polygon(Shapes.ellipse(Vector2.ZERO, SHADOW_RADIUS), Palette.SHADOW)
 	if team == Team.PARTY:
@@ -370,7 +396,7 @@ func _draw() -> void:
 		Shapes.draw_outline(self, Shapes.ellipse(Vector2.ZERO, TARGET_RING_RADIUS), ring, TARGET_RING_WIDTH)
 	var center := BODY_CENTER + _body_offset()
 	draw_circle(center, BODY_RADIUS + OUTLINE_WIDTH, Palette.OUTLINE, true, -1.0, true)
-	draw_circle(center, BODY_RADIUS, Palette.HIT_FLASH if _is_flashing() else species.color, true, -1.0, true)
+	draw_circle(center, BODY_RADIUS, Palette.HIT_FLASH if _is_flashing() else body_color(), true, -1.0, true)
 	# 눈: 바라보는 쪽을 알려 준다(선공 몬스터의 등 뒤로 돌아 들어갈 때 보는 곳).
 	if facing.y > -0.5:
 		var look := center + Vector2(facing.x * EYE_LOOK, -EYE_RAISE)

@@ -1,40 +1,53 @@
 class_name BagPanel
 extends PanelContainer
-## 코어 가방 창: 모은 코어를 칸으로 보여 주고(새로 얻은 것이 앞), 위쪽에 사냥 기록(하루 처치 수 측정)을 보여 준다.
-## 가방 버튼으로 열고 닫는다. 위치·크기는 hud.tscn에서 이 창을 골라 에디터로 정한다.
+## 코어 가방 창(믹스마스터식): 왼쪽은 5열 칸(새로 얻은 것이 앞), 오른쪽은 고른 코어의 정보창.
+## 위쪽에 골드·코어 조각과 사냥 기록(하루 처치 수 측정). 가방 버튼으로 열고 닫는다.
+## 정보창의 버튼: 파티 편성·믹스는 신호로 HUD(→ main · 믹스창)에, 분해·잠금은 여기서 Workshop으로 처리한다.
+## 위치·크기·열 수는 이 장면(bag_panel.tscn)이나 hud.tscn에서 에디터로 정한다.
+
+signal mix_requested(item: CoreItem)
+signal party_requested(item: CoreItem, slot: int)
+signal party_leave_requested(item: CoreItem)
 
 const TITLE_FONT_SIZE := 20
 const TEXT_FONT_SIZE := 14
-const CORNER := 12
 ## 사냥 기록 글자를 다시 쓰는 간격(초)
 const STATS_REFRESH_SECONDS := 0.5
 
 var _bag: Bag
 var _log: HuntLog
+var _wallet: Wallet
+var _workshop: Workshop
+var _confirm: ConfirmBox
+var _selected: CoreItem
 var _refresh_left := 0.0
 
 @onready var _title: Label = %Title
+@onready var _money: Label = %Money
 @onready var _close: Button = %Close
 @onready var _totals: Label = %Totals
 @onready var _rates: Label = %Rates
 @onready var _grid: GridContainer = %Grid
 @onready var _empty: Label = %Empty
+@onready var _info: CoreInfo = %CoreInfo
 
 
 func _ready() -> void:
-	var box := StyleBoxFlat.new()
-	box.bg_color = Palette.PANEL_BG
-	box.border_color = Palette.PANEL_BORDER
-	box.set_border_width_all(1)
-	box.set_corner_radius_all(CORNER)
-	add_theme_stylebox_override("panel", box)
-	_style(_title, TITLE_FONT_SIZE, Palette.TEXT)
-	_style(_totals, TEXT_FONT_SIZE, Palette.TEXT)
-	_style(_rates, TEXT_FONT_SIZE, Palette.TEXT_DIM)
-	_style(_empty, TEXT_FONT_SIZE, Palette.TEXT_DIM)
+	add_theme_stylebox_override("panel", UiKit.panel_box())
+	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
+	UiKit.style_label(_money, TEXT_FONT_SIZE, Palette.CORE_SHINE)
+	UiKit.style_label(_totals, TEXT_FONT_SIZE, Palette.TEXT)
+	UiKit.style_label(_rates, TEXT_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_label(_empty, TEXT_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_button(_close, TEXT_FONT_SIZE)
 	_close.text = UiText.BAG_CLOSE
 	_close.pressed.connect(close)
 	_empty.text = UiText.BAG_EMPTY
+	_info.mix_requested.connect(func(item: CoreItem) -> void: mix_requested.emit(item))
+	_info.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
+	_info.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
+	_info.dismantle_requested.connect(_on_dismantle)
+	_info.lock_requested.connect(func(item: CoreItem) -> void: _workshop.toggle_lock(item))
 
 
 func bind(bag: Bag, hunt_log: HuntLog) -> void:
@@ -43,19 +56,49 @@ func bind(bag: Bag, hunt_log: HuntLog) -> void:
 	_bag.changed.connect(_on_bag_changed)
 
 
+func bind_collection(wallet: Wallet, workshop: Workshop, confirm: ConfirmBox, party_names: Callable) -> void:
+	_wallet = wallet
+	_workshop = workshop
+	_confirm = confirm
+	_info.party_names = party_names
+	_wallet.changed.connect(_update_money)
+
+
 func open() -> void:
 	visible = true
 	_rebuild()
 	_refresh_stats()
+	_update_money()
 
 
 func close() -> void:
 	visible = false
 
 
+## 그 코어를 골라 정보창에 띄운다(null = 고른 것 없음).
+func select(item: CoreItem) -> void:
+	_selected = item
+	for card: CoreCard in _grid.get_children():
+		card.selected = card.item == item
+	_info.show_core(item)
+
+
 ## 지금 보이는 코어 칸 수(실행 검사용).
 func card_count() -> int:
 	return _grid.get_child_count()
+
+
+## 그 코어의 칸(실행 검사용). 없으면 null.
+func card_for(item: CoreItem) -> CoreCard:
+	for card: CoreCard in _grid.get_children():
+		if card.item == item:
+			return card
+	return null
+
+
+## 정보창(실행 검사용).
+func info() -> CoreInfo:
+	return _info
 
 
 func _process(delta: float) -> void:
@@ -67,13 +110,8 @@ func _process(delta: float) -> void:
 
 
 func _on_bag_changed() -> void:
-	if not visible:
-		return
-	# 창이 열려 있으면 새로 얻은 코어를 맨 앞에 붙인다(전부 다시 만들지 않게).
-	var card := CoreCard.create(_bag.cores.back())
-	_grid.add_child(card)
-	_grid.move_child(card, 0)
-	_update_title()
+	if visible:
+		_rebuild()
 
 
 func _rebuild() -> void:
@@ -81,13 +119,25 @@ func _rebuild() -> void:
 		_grid.remove_child(child)
 		child.queue_free()
 	for i in range(_bag.count() - 1, -1, -1):
-		_grid.add_child(CoreCard.create(_bag.cores[i]))
-	_update_title()
-
-
-func _update_title() -> void:
+		var card := CoreCard.create(_bag.cores[i])
+		card.pressed.connect(select.bind(card.item))
+		_grid.add_child(card)
 	_title.text = UiText.BAG_TITLE % _bag.count()
 	_empty.visible = _bag.count() == 0
+	select(_selected if _selected != null and _bag.has(_selected) else null)
+
+
+func _update_money() -> void:
+	if _wallet != null:
+		_money.text = UiText.MONEY % [_wallet.gold, _wallet.shards]
+
+
+func _on_dismantle(item: CoreItem) -> void:
+	if not _workshop.can_dismantle(item):
+		return
+	_confirm.ask(UiText.DISMANTLE_ASK % [item.title(), Mix.dismantle_shards(item)], func() -> void:
+		_workshop.dismantle(item)
+		select(null))
 
 
 func _refresh_stats() -> void:
@@ -104,8 +154,3 @@ func _refresh_stats() -> void:
 
 static func _count_text(value: float) -> String:
 	return UiText.HUNT_UNKNOWN if value < 0.0 else str(roundi(value))
-
-
-static func _style(label: Label, font_size: int, color: Color) -> void:
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)

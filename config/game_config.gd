@@ -111,8 +111,8 @@ const HENCH_REVIVE_SECONDS := 6.0
 const PLAYER_REVIVE_SECONDS := 3.0
 
 # ─── 야생 헨치 ───────────────────────────────────
-## 이 필드(용섬 입문)에 나오는 종.
-const WILD_SPECIES := ["sotmabaem", "gochuryong", "haemapo", "jinjuryong"]
+## 이 필드(용섬 입문)에 나오는 종. 기획서 5~6장 서식지에 "용섬 입문"이 있는 종(깡통거북 = 기계섬 입문 · 용섬 입문).
+const WILD_SPECIES := ["sotmabaem", "gochuryong", "haemapo", "jinjuryong", "kkangtonggeobuk"]
 ## 필드에 동시에 있는 수.
 const WILD_COUNT := 14
 ## 쓰러진 뒤 다른 곳에 새로 나타나기까지(초).
@@ -170,3 +170,56 @@ const CORE_POP_SCATTER := 30.0
 const CORE_REST_SECONDS := 0.5
 const CORE_FLY_SPEED := 150.0
 const CORE_FLY_ACCEL := 1500.0
+## 야생 헨치 성별: 암컷일 확률(임시).
+const FEMALE_CHANCE := 0.5
+## 야생 헨치가 변이체일 확률(임시: 기획서 목표는 월 3~4마리지만, 프로토타입이라 가끔 보이게 높게). 변이체는 코어가 반드시 떨어진다.
+const VARIANT_CHANCE := 0.03
+## 나이에 따른 레벨 보정(기획서 4장: 어린 -2 · 성체 0 · 늙은 +2). 야생 레벨 = 종 레벨대 가운데 + 보정.
+const AGE_LEVEL_OFFSETS := [-2, 0, 2]
+## 처치 골드(임시)
+const GOLD_PER_KILL := 10
+
+# ─── 코어 능력치 (프로토타입 5, 모두 임시 — 밸런스 단계에서 다시 정한다) ─────
+## 역할별 1레벨 기본 능력치. 열쇠는 접미사 id와 같다(신속=공격 속도, 강력=공격, 정밀=명중, 날렵=회피,
+## 단단=방어, 강인=체력, 충만=마나, 굳건=저항, 행운=드랍·코어 확률). 힐러 공격 < 탱커 < 딜러, 탱커가 가장 튼튼(사용자 결정).
+const CORE_BASE_STATS := {
+	"tank": {"swift": 8, "mighty": 8, "precise": 8, "nimble": 6, "sturdy": 16, "tough": 16, "abundant": 8, "steadfast": 12, "lucky": 8},
+	"melee": {"swift": 14, "mighty": 15, "precise": 12, "nimble": 12, "sturdy": 9, "tough": 10, "abundant": 6, "steadfast": 8, "lucky": 8},
+	"ranged": {"swift": 12, "mighty": 13, "precise": 16, "nimble": 10, "sturdy": 7, "tough": 8, "abundant": 10, "steadfast": 8, "lucky": 8},
+	"healer": {"swift": 9, "mighty": 6, "precise": 10, "nimble": 10, "sturdy": 9, "tough": 10, "abundant": 16, "steadfast": 13, "lucky": 9},
+	"boss": {"swift": 12, "mighty": 14, "precise": 12, "nimble": 10, "sturdy": 16, "tough": 18, "abundant": 14, "steadfast": 14, "lucky": 10},
+}
+## 레벨이 1 오를 때마다 기본값의 몇 배씩 늘어나나.
+const CORE_STAT_GROWTH := 0.08
+## 등급 보정(기획서 4장 초안: 등급당 약 +10%).
+const CORE_GRADE_BONUS := {"low": 1.0, "mid": 1.1, "high": 1.2, "king": 1.3}
+## 나이 보정(기획서 4장: 어린 = 몸↑ 스킬↓, 늙은 = 몸↓ 스킬↑). 몸 능력치에 (1 + 값), 스킬 능력치에 (1 - 값)을 곱한다.
+const AGE_STAT_SHIFT := [0.1, 0.0, -0.1]
+const AGE_BODY_STATS := ["mighty", "sturdy", "tough"]
+const AGE_SKILL_STATS := ["abundant", "steadfast"]
+## 접미사가 가리키는 능력치를 이만큼 올린다. 빛나는 코어는 더 크게(기획서 8장: 좋은 접미사).
+const SUFFIX_BONUS := 0.2
+const SHINING_SUFFIX_BONUS := 0.35
+## HP = 체력 × 값, MP = 마나 × 값
+const HP_PER_TOUGH := 10
+const MP_PER_ABUNDANT := 5
+
+# ─── 믹스 · 분해 (프로토타입 5) ─────────────────────
+## 결과 미리보기(기획서 4장 초안): 중급 = 공개(이름), 상급 = 힌트(실루엣), 왕 = 비밀(?)
+const MIX_REVEAL_BY_GRADE := {"mid": "open", "high": "hint", "king": "secret"}
+## 성공 확률(임시). 실패하면 두 재료가 모두 사라진다(사용자 결정 2026-10-02).
+const MIX_SUCCESS_BY_GRADE := {"mid": 0.8, "high": 0.6, "king": 0.4}
+## 골드 비용(임시). 공식이 없는 조합도 같은 값을 받아 비밀과 구별되지 않게 한다.
+const MIX_GOLD_COST_BY_GRADE := {"mid": 100, "high": 400, "king": 1000}
+const MIX_GOLD_COST_UNKNOWN := 100
+## 새로 태어난 코어의 나이·레벨(임시: 새 몸이라 어린 1레벨). 접미사는 주 코어의 것을 받는다.
+const MIX_BORN_AGE := CoreItem.Age.YOUNG
+const MIX_BORN_LEVEL := 1
+## 분해하면 얻는 코어 조각(임시): 기본 + 빛나는 코어 · 변이 코어 덤
+const DISMANTLE_SHARDS := 1
+const DISMANTLE_SHARDS_SHINING_BONUS := 2
+const DISMANTLE_SHARDS_VARIANT_BONUS := 4
+
+# ─── 개발 확인용 ──────────────────────────────────
+## 켜면 게임을 켤 때마다 data/dev_starter.json의 코어와 골드를 가방에 넣는다(아직 저장이 없어서). 출시 전에 끈다.
+const DEV_STARTER_BAG := true

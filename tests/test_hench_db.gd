@@ -23,6 +23,37 @@ func test_real_data_matches_plan() -> void:
 		expect_true(s.tribe == "dragon" and s.grade == "low", "%s 용족 하급" % id)
 
 
+## 기획서 5~6장: 64종 = 8종족 × (하급 4 · 중급 2 · 상급 1 · 왕 1), 하급은 종족마다 4역할이 다 있다.
+func test_all_64_species() -> void:
+	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))
+	expect_true(all.size() == 64, "64종 (실제 %d)" % all.size())
+	for tribe: String in HenchSpecies.TRIBES:
+		var grades := {"low": 0, "mid": 0, "high": 0, "king": 0}
+		var low_roles := {}
+		for s: HenchSpecies in all.values():
+			if s.tribe != tribe:
+				continue
+			grades[s.grade] += 1
+			if s.grade == "low":
+				low_roles[s.role] = true
+		expect_true(grades == {"low": 4, "mid": 2, "high": 1, "king": 1}, "%s: 하급 4 · 중급 2 · 상급 1 · 왕 1" % tribe)
+		expect_true(low_roles.size() == 4, "%s: 하급에 4역할" % tribe)
+		expect_true(TribeDb.get_tribe(tribe) != null, "%s: 종족 데이터(색·그림 경로)가 있다" % tribe)
+
+
+## 믹스 공식: 하급은 드랍(공식 없음), 중급은 2개, 상급은 1개, 왕은 비밀(비어 있음). 공식의 종은 모두 있어야 한다.
+func test_recipes() -> void:
+	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))
+	var expected := {"low": 0, "mid": 2, "high": 1, "king": 0}
+	for s: HenchSpecies in all.values():
+		expect_true(s.recipes.size() == expected[s.grade], "%s(%s): 공식 %d개" % [s.name, s.grade, expected[s.grade]])
+		for pair in s.recipes:
+			expect_true(all.has(pair[0]) and all.has(pair[1]), "%s: 공식의 종 %s · %s가 도감에 있다" % [s.name, pair[0], pair[1]])
+	var dolguana: HenchSpecies = all["dolguana"]
+	expect_true(dolguana.recipes[0] == PackedStringArray(["sotmabaem", "gombogom"]), "돌구아나 = 솥마뱀 + 곰보곰 (기획서 5장)")
+	expect_true(dolguana.recipes[1] == PackedStringArray(["gochuryong", "kkangtonggeobuk"]), "돌구아나 = 고추룡 + 깡통거북")
+
+
 ## 기획서 4장 초안: 하급은 종족당 근접딜러 1종 정도가 선공 → 용섬 입문은 고추룡만.
 func test_aggressive_species() -> void:
 	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))

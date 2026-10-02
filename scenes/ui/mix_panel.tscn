@@ -1,0 +1,184 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/mix_panel.gd" id="1_mix"]
+
+[node name="MixPanel" type="PanelContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -300.0
+offset_right = 450.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mix")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Rows/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Close" type="Button" parent="Margin/Rows/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 36)
+layout_mode = 2
+
+[node name="Pair" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="Main" type="VBoxContainer" parent="Margin/Rows/Pair"]
+layout_mode = 2
+
+[node name="MainLabel" type="Label" parent="Margin/Rows/Pair/Main"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="MainSlot" type="CenterContainer" parent="Margin/Rows/Pair/Main"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="Middle" type="VBoxContainer" parent="Margin/Rows/Pair"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+alignment = 1
+
+[node name="Direction" type="Label" parent="Margin/Rows/Pair/Middle"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Swap" type="Button" parent="Margin/Rows/Pair/Middle"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Sub" type="VBoxContainer" parent="Margin/Rows/Pair"]
+layout_mode = 2
+
+[node name="SubLabel" type="Label" parent="Margin/Rows/Pair/Sub"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SubSlot" type="CenterContainer" parent="Margin/Rows/Pair/Sub"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+
+[node name="Result" type="VBoxContainer" parent="Margin/Rows/Pair"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+
+[node name="ResultLabel" type="Label" parent="Margin/Rows/Pair/Result"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="ResultArt" type="Control" parent="Margin/Rows/Pair/Result"]
+custom_minimum_size = Vector2(120, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="ResultPortrait" type="TextureRect" parent="Margin/Rows/Pair/Result/ResultArt"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ResultSecret" type="Label" parent="Margin/Rows/Pair/Result/ResultArt"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResultName" type="Label" parent="Margin/Rows/Pair/Result"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="PassiveTitle" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="KeepOwn" type="Button" parent="Margin/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+toggle_mode = true
+alignment = 0
+
+[node name="KeepLegacy" type="Button" parent="Margin/Rows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+toggle_mode = true
+alignment = 0
+
+[node name="Cost" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Warning" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CandidatesLabel" type="Label" parent="Margin/Rows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CandidateScroll" type="ScrollContainer" parent="Margin/Rows"]
+custom_minimum_size = Vector2(0, 116)
+layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="Candidates" type="HBoxContainer" parent="Margin/Rows/CandidateScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Footer" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Problem" type="Label" parent="Margin/Rows/Footer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Go" type="Button" parent="Margin/Rows/Footer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 44)
+layout_mode = 2

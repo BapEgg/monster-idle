@@ -1,0 +1,69 @@
+{
+  "about": "종족 8개(기획서 4장): 이름·주제·색과 아이콘·초상화 이미지 경로. 그림을 바꾸려면 경로의 PNG를 같은 이름으로 덮어쓰거나 여기 경로를 바꾼다. 지금 PNG는 tools/make_placeholder_art.gd로 만든 임시 그림이다.",
+  "tribes": [
+    {
+      "id": "dragon",
+      "name": "용족",
+      "theme": "동경",
+      "color": "#e0603a",
+      "icon": "res://art/tribes/dragon/icon.png",
+      "portrait": "res://art/tribes/dragon/portrait.png"
+    },
+    {
+      "id": "plant",
+      "name": "식물족",
+      "theme": "숲과 나무",
+      "color": "#5cb85c",
+      "icon": "res://art/tribes/plant/icon.png",
+      "portrait": "res://art/tribes/plant/portrait.png"
+    },
+    {
+      "id": "demon",
+      "name": "마족",
+      "theme": "두려움",
+      "color": "#8e5bd0",
+      "icon": "res://art/tribes/demon/icon.png",
+      "portrait": "res://art/tribes/demon/portrait.png"
+    },
+    {
+      "id": "beast",
+      "name": "야수족",
+      "theme": "들판의 짐승",
+      "color": "#c98a3e",
+      "icon": "res://art/tribes/beast/icon.png",
+      "portrait": "res://art/tribes/beast/portrait.png"
+    },
+    {
+      "id": "machine",
+      "name": "기계족",
+      "theme": "사람이 만든 도구",
+      "color": "#7f95a8",
+      "icon": "res://art/tribes/machine/icon.png",
+      "portrait": "res://art/tribes/machine/portrait.png"
+    },
+    {
+      "id": "spirit",
+      "name": "정령족",
+      "theme": "믿음",
+      "color": "#4fc6d8",
+      "icon": "res://art/tribes/spirit/icon.png",
+      "portrait": "res://art/tribes/spirit/portrait.png"
+    },
+    {
+      "id": "insect",
+      "name": "곤충족",
+      "theme": "작은 생명들",
+      "color": "#a9b83a",
+      "icon": "res://art/tribes/insect/icon.png",
+      "portrait": "res://art/tribes/insect/portrait.png"
+    },
+    {
+      "id": "flying",
+      "name": "비행족",
+      "theme": "하늘의 새",
+      "color": "#6aa6f0",
+      "icon": "res://art/tribes/flying/icon.png",
+      "portrait": "res://art/tribes/flying/portrait.png"
+    }
+  ]
+}
