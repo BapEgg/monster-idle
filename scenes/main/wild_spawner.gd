@@ -22,6 +22,7 @@ func _spawn_one() -> void:
 	var species := HenchDb.get_species(ids[_rng.randi() % ids.size()])
 	var cell := _field.random_free_cell(_rng, _player.position, GameConfig.WILD_SPAWN_MIN_CELLS)
 	var hench := Hench.create(species, Unit.Team.WILD)
+	hench.age = Drops.roll_age(_rng)
 	hench.field = _field
 	hench.home = Iso.cell_center(cell)
 	hench.position = hench.home

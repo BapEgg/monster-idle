@@ -41,3 +41,26 @@ const MARK_GIVE_UP := "?"
 
 # ─── 역할 한 글자 (헨치 몸에 표시) ─────────────────
 const ROLE_SHORT := {"tank": "탱", "melee": "근", "ranged": "원", "healer": "힐"}
+
+# ─── 코어 · 가방 · 사냥 기록 (프로토타입 4) ───────────────
+## 나이(CoreItem.Age 순서)
+const AGE_NAMES := ["어린", "성체", "늙은"]
+const SHINING := "빛나는"
+## 코어를 주웠을 때 주인공 머리 위. %s = 종 이름
+const PICKUP := "+%s " + TERM_CORE
+## 가방 버튼. %d = 코어 수
+const BAG_BUTTON := "가방 %d"
+## 가방 창 제목. %d = 코어 수
+const BAG_TITLE := TERM_CORE + " 가방 · %d개"
+const BAG_CLOSE := "닫기"
+const BAG_EMPTY := "아직 비어 있습니다. 몹을 쓰러뜨리면 " + TERM_CORE + "가 떨어집니다."
+## 코어 칸 둘째 줄: 접미사 · 나이
+const CORE_DETAIL := "%s · %s"
+## 사냥 기록(가방 창 위쪽). 처치 수 / 코어 수 / 빛나는 코어 수
+const HUNT_TOTALS := "사냥 기록(이번 접속): 처치 %d · " + TERM_CORE + " %d개 (빛나는 %d개)"
+## 시간당 처치: 자동 / 수동 / 수동 이득 / 하루 예상
+const HUNT_RATES := "시간당 처치: 자동 %s · 수동 %s (%s) · 하루 예상(자동 24시간) %s"
+## 아직 잴 수 없을 때
+const HUNT_UNKNOWN := "—"
+## 수동이 자동보다 얼마나 더 잡는지. %+d = 퍼센트
+const HUNT_ADVANTAGE := "수동 %+d%%"

@@ -1,6 +1,6 @@
 class_name Hud
 extends CanvasLayer
-## 화면 위 UI: 가상 조이스틱, 사냥 상태, 처치 수, 대상 창(위 가운데),
+## 화면 위 UI: 가상 조이스틱, 사냥 상태, 처치 수, 가방 버튼·가방 창, 대상 창(위 가운데),
 ## 오른쪽 아래의 공격 버튼(늘 보임) · 오토 버튼 · 스킬 칸(메이플키우기 배치를 따름, 사용자 결정 2026-10-02).
 ## 위치·크기는 이 장면(hud.tscn)을 에디터에서 열어 끌어서 정한다. 코드는 자리를 건드리지 않는다.
 ## 오른쪽 아래 버튼들은 화면 오른쪽 아래 모서리에 붙은 Controls 아래에 있어서, 휴대폰이 길어져도 모서리에서 같은 거리에 남는다.
@@ -23,7 +23,8 @@ const CONTROLS_PADDING := 8.0
 @onready var attack_button: AttackButton = $Controls/AttackButton
 @onready var auto_button: AutoButton = $Controls/AutoButton
 @onready var target_frame: TargetFrame = $TargetFrame
-@onready var _controls: Control = $Controls
+@onready var bag_button: BagButton = $TopControls/BagButton
+@onready var bag_panel: BagPanel = $BagPanel
 @onready var _mode: Label = $Mode
 @onready var _kills: Label = $Kills
 
@@ -35,6 +36,8 @@ func _ready() -> void:
 	_style_label(_kills, KILLS_FONT_SIZE)
 	_setup_joystick()
 	auto_button.pressed.connect(_on_auto_button)
+	bag_button.pressed.connect(_on_bag_button)
+	bag_panel.visibility_changed.connect(_on_bag_panel_toggled)
 
 
 func bind_player(player: Player) -> void:
@@ -46,11 +49,21 @@ func set_kills(count: int) -> void:
 	_kills.text = UiText.KILLS % count
 
 
-## 그 자리(화면 좌표)가 오른쪽 아래 버튼들(공격 · 오토 · 스킬 칸) 위인가.
+## 가방과 사냥 기록을 가방 버튼·가방 창에 이어 준다.
+func bind_hunt(bag: Bag, hunt_log: HuntLog) -> void:
+	bag_panel.bind(bag, hunt_log)
+	bag_button.count = bag.count()
+	bag.changed.connect(func() -> void: bag_button.count = bag.count())
+
+
+## 그 자리(화면 좌표)가 버튼(공격 · 오토 · 스킬 칸 · 가방)이나 열린 가방 창 위인가.
+## 이런 곳을 누른 것은 몹 지정이 아니다.
 func is_over_controls(point: Vector2) -> bool:
-	for node in _controls.get_children():
+	if bag_panel.visible and bag_panel.get_global_rect().has_point(point):
+		return true
+	for node in find_children("*", "TouchScreenButton", true, false):
 		var button := node as TouchScreenButton
-		if button != null and button.visible and _covers(button, point):
+		if button.is_visible_in_tree() and _covers(button, point):
 			return true
 	return false
 
@@ -83,6 +96,18 @@ func _process(_delta: float) -> void:
 		_show_mode(UiText.MODE_MANUAL, Palette.MODE_MANUAL)
 	else:
 		_show_mode(UiText.MODE_RETURNING % ceili(control.seconds_until_auto()), Palette.MODE_MANUAL)
+
+
+func _on_bag_button() -> void:
+	if bag_panel.visible:
+		bag_panel.close()
+	else:
+		bag_panel.open()
+
+
+## 가방 창이 열려 있는 동안은 조이스틱을 숨겨, 창을 누른 손가락이 주인공을 움직이지 않게 한다.
+func _on_bag_panel_toggled() -> void:
+	joystick.visible = not bag_panel.visible
 
 
 func _on_auto_button() -> void:

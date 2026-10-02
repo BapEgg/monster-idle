@@ -40,7 +40,7 @@ func _draw() -> void:
 	if not is_instance_valid(unit):
 		return
 	var number := UiText.TARGET_HP % [ceili(unit.hp), roundi(unit.stats.max_hp)]
-	_draw_frame(unit.display_name, unit.name_color(), _ratio_of(unit), _trail, unit.hp_bar_color(), number)
+	_draw_frame(unit.title(), unit.name_color(), _ratio_of(unit), _trail, unit.hp_bar_color(), number)
 
 
 func _draw_frame(title: String, title_color: Color, ratio: float, trail: float, bar_color: Color, number: String) -> void:

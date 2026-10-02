@@ -50,6 +50,20 @@ const NUMBER_HEAL := Color("7dff8a")
 ## 기습 첫 타 숫자
 const NUMBER_AMBUSH := Color("ffa53d")
 
+# ─── 코어 · 가방 ──────────────────────────────────
+## 코어(임시 도형: 종 색 보석): 테두리 / 반짝이는 면 / 빛나는 코어의 금빛
+const CORE_OUTLINE := Color("2b2b33")
+const CORE_GLINT := Color(1, 1, 1, 0.75)
+const CORE_SHINE := Color("ffd84a")
+## 가방 창: 바탕 / 테두리 / 코어 칸 / 빛나는 코어 칸 테두리 / 흐린 글자
+const PANEL_BG := Color(0.1, 0.11, 0.14, 0.92)
+const PANEL_BORDER := Color(1, 1, 1, 0.25)
+const CARD_BG := Color(1, 1, 1, 0.08)
+const CARD_BORDER := Color(1, 1, 1, 0.15)
+const TEXT_DIM := Color(1, 1, 1, 0.65)
+## 가방 버튼
+const BAG_BUTTON := Color(0, 0, 0, 0.45)
+
 # ─── 장식물 ──────────────────────────────────────
 const TREE_TRUNK := Color("8a5a35")
 const TREE_LEAF := Color("3f9a4a")

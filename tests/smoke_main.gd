@@ -4,7 +4,7 @@ extends SceneTree
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
-## 감지 전구가 차오르는 장면을 "<이름>_detect.png"로 저장한다.
+## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -205,7 +205,43 @@ func _run(main: Node) -> void:
 	_remove(wild)
 	_set_party_paused(main, false)
 
-	# 8) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
+	# 8) 코어 드랍 · 가방(프로토타입 4): 떨어진 코어는 튀어 올랐다 땅에 머물고, 주인공에게 빨려 들어가 가방에 들어간다
+	var bag: Bag = main.get("bag")
+	var before := bag.count()
+	var core := CoreItem.new()
+	core.species_id = "gochuryong"
+	core.suffix_id = "mighty"
+	core.age = CoreItem.Age.OLD
+	core.shining = true
+	main.call("drop_core", player.position + Vector2(160, 0), core)
+	var drop := _find_drop(main)
+	await _seconds(GameConfig.CORE_POP_SECONDS * 0.5)
+	_expect(drop != null and drop.height() > GameConfig.CORE_POP_HEIGHT * 0.5, "코어가 몹 자리에서 튀어 오름")
+	await _seconds(GameConfig.CORE_POP_SECONDS * 0.5 + GameConfig.CORE_REST_SECONDS * 0.5)
+	_expect(is_instance_valid(drop) and drop.height() == 0.0 and bag.count() == before, "땅에 떨어져 잠깐 머묾(아직 가방 밖)")
+	await _seconds(GameConfig.CORE_REST_SECONDS + 1.0)
+	_expect(not is_instance_valid(drop) and bag.count() == before + 1, "주인공에게 빨려 들어가 가방에 들어감")
+	_expect(bag.cores.back().to_dict() == core.to_dict(), "가방의 코어 = 떨어진 코어(종·접미사·나이·빛남)")
+	# 가방 창: 가방 버튼 → 열림(코어 수만큼 칸), 창 위를 눌러도 주인공이 움직이지 않음, 닫기 → 닫힘
+	await _tap(hud.bag_button.global_position)
+	await process_frame
+	_expect(hud.bag_panel.visible and hud.bag_panel.card_count() == bag.count(), "가방 버튼 → 가방 창, 코어 %d칸" % bag.count())
+	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.
+	var on_panel := hud.bag_panel.get_global_rect().position + Vector2(40, 70)
+	start = player.position
+	_touch(true, on_panel)
+	_drag(on_panel + Vector2(-80, 0))
+	await _physics_frames(10)
+	_touch(false, on_panel + Vector2(-80, 0))
+	_expect(not _joystick_down and player.position.distance_to(start) < 1.0, "가방 창 위를 끌어도 조이스틱이 뜨지 않음")
+	await _save_shot("bag")
+	await _seconds(0.2)  # 사진 저장으로 멈췄던 프레임이 따라잡은 뒤에 누른다(누름과 뗌이 한꺼번에 들어가지 않게)
+	var close := hud.bag_panel.find_child("Close", true, false) as Button
+	await _tap(close.get_global_rect().get_center())
+	await process_frame
+	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
+
+	# 9) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
 	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
 	Engine.time_scale = 4.0
 	var shot := _shot_path()
@@ -221,6 +257,10 @@ func _run(main: Node) -> void:
 	Engine.time_scale = 1.0
 	var kills: int = main.get("kills")
 	_expect(kills >= 3, "자동 사냥 40초 → 3마리 이상 처치 (실제 %d)" % kills)
+	var hunt_log: HuntLog = main.get("hunt_log")
+	_expect(hunt_log.kills() == kills and hunt_log.kills_per_hour(false) > 0.0, "사냥 기록: 처치 %d · 자동 시간당 %.0f마리" % [hunt_log.kills(), hunt_log.kills_per_hour(false)])
+	await _seconds(GameConfig.CORE_POP_SECONDS + GameConfig.CORE_REST_SECONDS + 1.0)
+	_expect(bag.count() - before - 1 == hunt_log.cores - 1 and hunt_log.cores >= 1, "자동 사냥 중 떨어진 코어도 가방에 (%d개)" % (hunt_log.cores - 1))
 	for hench: Hench in main.get("party"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
@@ -279,6 +319,15 @@ func _switch_mode(hud: Hud, player: Player, mode: AutoControl.Mode) -> void:
 		if player.control.mode == mode:
 			return
 		await _tap(hud.auto_button.global_position)
+
+
+## 필드에 있는 떨어진 코어(가장 최근 것). 없으면 null.
+func _find_drop(main: Node) -> CoreDrop:
+	var found: CoreDrop = null
+	for child in main.get_node("Field/Objects").get_children():
+		if child is CoreDrop:
+			found = child
+	return found
 
 
 ## 유닛 몸 가운데의 화면 좌표(누를 자리).

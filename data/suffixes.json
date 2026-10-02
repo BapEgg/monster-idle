@@ -1,0 +1,14 @@
+{
+  "about": "코어 접미사 9종(기획서 4장, 순수 스탯 성향, 이름은 가칭). 수치(범위·레벨업 상승)는 능력치 단계에서 정한다.",
+  "suffixes": [
+    {"id": "swift", "name": "신속", "stat": "공격 속도"},
+    {"id": "mighty", "name": "강력", "stat": "공격"},
+    {"id": "precise", "name": "정밀", "stat": "명중"},
+    {"id": "nimble", "name": "날렵", "stat": "회피"},
+    {"id": "sturdy", "name": "단단", "stat": "방어"},
+    {"id": "tough", "name": "강인", "stat": "체력"},
+    {"id": "abundant", "name": "충만", "stat": "마나"},
+    {"id": "steadfast", "name": "굳건", "stat": "저항"},
+    {"id": "lucky", "name": "행운", "stat": "드랍·코어 확률"}
+  ]
+}

@@ -31,6 +31,9 @@ const DOWNED_ALPHA := 0.35
 const DEATH_FADE_SECONDS := 0.5
 
 var species: HenchSpecies
+## 나이(기획서 4장, 야생은 나타날 때 정해진다). 쓰러뜨리면 코어에 그대로 담긴다.
+## 나이에 따른 외형(부품·크기)은 그림이 들어오면 붙인다. 지금은 대상 창에 글자로만 보인다.
+var age := CoreItem.Age.ADULT
 
 # 내 파티일 때
 var leader: Player
@@ -321,6 +324,13 @@ func body_center() -> Vector2:
 
 func overlay_height() -> float:
 	return -BODY_CENTER.y + BODY_RADIUS + 6.0
+
+
+## 대상 창 제목: 야생은 나이까지 보여 준다(외형이 없는 동안).
+func title() -> String:
+	if team == Team.WILD:
+		return "%s · %s" % [display_name, UiText.AGE_NAMES[age]]
+	return display_name
 
 
 func name_color() -> Color:

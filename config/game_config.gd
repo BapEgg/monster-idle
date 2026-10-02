@@ -153,3 +153,20 @@ const AMBUSH_SCALE := 1.5
 ## 머리 위 표시가 떠 있는 시간(초): 알아챔·반격 "!" / 추격 포기(파란 표시)
 const ALERT_MARK_SECONDS := 1.0
 const GIVE_UP_MARK_SECONDS := 1.4
+
+# ─── 코어 드랍 · 가방 (프로토타입 4) ──────────────────────
+## 처치했을 때 코어가 떨어질 확률(임시: 프로토타입이라 자주 보이게 높게 둔다.
+## 실제 값은 하루 처치 수를 잰 뒤 기획서 8장 공식 "드랍률 = 하루 목표 ÷ 하루 처치 수"로 정한다).
+const CORE_DROP_CHANCE := 0.3
+## 떨어진 코어가 빛나는 코어일 확률(임시, 기획서 목표는 주 3개).
+const SHINING_CORE_CHANCE := 0.1
+## 야생 헨치 나이 비율: 어린 · 성체 · 늙은(임시, 기획서는 "랜덤 출현"까지만 정함).
+const AGE_WEIGHTS := [0.25, 0.5, 0.25]
+## 떨어지는 연출(메이플키우기 방식): 몹 자리에서 튀어 올라(초 · 높이 px · 흩어지는 거리 px) 땅에 잠깐 머물렀다가(초)
+## 주인공에게 빨려 들어간다(처음 속력 px/초, 가속 px/초²).
+const CORE_POP_SECONDS := 0.45
+const CORE_POP_HEIGHT := 40.0
+const CORE_POP_SCATTER := 30.0
+const CORE_REST_SECONDS := 0.5
+const CORE_FLY_SPEED := 150.0
+const CORE_FLY_ACCEL := 1500.0

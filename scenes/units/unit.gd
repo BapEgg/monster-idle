@@ -288,6 +288,11 @@ func name_color() -> Color:
 	return Palette.NAME_PASSIVE
 
 
+## 화면 위 대상 창에 보일 제목.
+func title() -> String:
+	return display_name
+
+
 ## 지금 머리 위에 띄울 표시.
 func mark() -> Mark:
 	return Mark.NONE
