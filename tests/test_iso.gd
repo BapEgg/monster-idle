@@ -54,3 +54,9 @@ func test_move_velocity_analog() -> void:
 	expect_vec(Iso.move_velocity(Vector2.ZERO, 200.0, 0.5), Vector2.ZERO, "입력 없음 = 멈춤")
 	expect_vec(Iso.move_velocity(Vector2(0.5, 0), 200.0, 0.5), Vector2(100, 0), "반만 기울이면 반 속력")
 	expect_vec(Iso.move_velocity(Vector2(3, 0), 200.0, 0.5), Vector2(200, 0), "1보다 커도 최대 속력까지만")
+
+
+func test_to_ground() -> void:
+	var ratio := GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y
+	expect_vec(Iso.to_ground(Vector2(30, 20)), Vector2(30, 20 * ratio), "세로만 타일 비율만큼 편다")
+	expect_near(Iso.ground_distance(Vector2(5, 5), Vector2(35, 25)), Iso.to_ground(Vector2(30, 20)).length(), "땅 위 거리 = 편 차이의 길이")

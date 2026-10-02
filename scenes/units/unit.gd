@@ -7,6 +7,8 @@ extends CharacterBody2D
 signal died(unit: Unit)
 
 enum Team { PARTY, WILD }
+## 머리 위 표시: 없음 / 감지 중(전구가 차오름) / 알아채고 덤빔·맞고 반격("!") / 추격 포기(파란 표시)
+enum Mark { NONE, DETECTING, ALERT, GIVE_UP }
 
 ## 충돌 층: 1 = 지형(나무·바위·가장자리), 2 = 유닛. 유닛끼리는 부딪치지 않고 지형에만 막힌다.
 const LAYER_WORLD := 1
@@ -103,6 +105,16 @@ func _on_damaged(_amount: float, _from: Unit) -> void:
 ## 하위 클래스: 쓰러졌을 때.
 func _on_died() -> void:
 	pass
+
+
+## 하위 클래스: 지금 수동 조작 중인가(주인공이 직접 움직이는 중). 기습 보너스는 이때만 준다.
+func is_manually_controlled() -> bool:
+	return false
+
+
+## 하위 클래스: from의 이번 공격이 기습인가(아직 파티를 알아채지 못했고, 수동 조작 중).
+func _is_ambushed_by(_from: Unit) -> bool:
+	return false
 
 
 # ─── 이동 ────────────────────────────────────────
@@ -222,14 +234,19 @@ func try_heal(target: Unit) -> bool:
 	return true
 
 
-## from은 이미 사라졌으면 null일 수 있다.
+## from은 이미 사라졌으면 null일 수 있다. 기습이면 피해가 세지고 숫자가 "기습!"으로 뜬다.
 func take_damage(amount: float, from: Unit) -> void:
 	if not is_alive():
 		return
+	var ambush := is_instance_valid(from) and _is_ambushed_by(from)
+	amount = Combat.hit_damage(amount, ambush)
 	hp = maxf(hp - amount, 0.0)
 	_flash_left = FLASH_SECONDS
-	var color := Palette.NUMBER_DEALT if team == Team.WILD else Palette.NUMBER_TAKEN
-	field.show_number(_number_point(), str(roundi(amount)), color)
+	if ambush:
+		field.show_number(_number_point(), UiText.AMBUSH_NUMBER % roundi(amount), Palette.NUMBER_AMBUSH)
+	else:
+		var color := Palette.NUMBER_DEALT if team == Team.WILD else Palette.NUMBER_TAKEN
+		field.show_number(_number_point(), str(roundi(amount)), color)
 	_on_damaged(amount, from)
 	if hp <= 0.0:
 		stop()
@@ -267,6 +284,16 @@ func overlay_height() -> float:
 
 func name_color() -> Color:
 	return Palette.NAME_PASSIVE
+
+
+## 지금 머리 위에 띄울 표시.
+func mark() -> Mark:
+	return Mark.NONE
+
+
+## 감지 게이지(0~1). Mark.DETECTING일 때 전구가 이만큼 차오른다.
+func detect_ratio() -> float:
+	return 0.0
 
 
 func shows_hp_bar() -> bool:

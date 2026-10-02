@@ -45,11 +45,16 @@ static func field_polygon(cells: Vector2i) -> PackedVector2Array:
 	])
 
 
-## 땅 위에서 잰 거리(px). 화면 세로는 타일 비율만큼 눌려 있으므로 펴서 잰다.
+## 화면 위의 차이(px)를 땅 위의 차이로 편다. 화면 세로는 타일 비율만큼 눌려 있으므로 그만큼 늘린다.
+## 땅 위의 거리·각도(시야)는 이걸로 잰다.
+static func to_ground(screen_offset: Vector2) -> Vector2:
+	return Vector2(screen_offset.x, screen_offset.y * GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y)
+
+
+## 땅 위에서 잰 거리(px).
 ## 사거리·도착 판정은 이걸로 한다(그래서 사거리는 화면에서 원이 아니라 납작한 타원이 된다).
 static func ground_distance(a: Vector2, b: Vector2) -> float:
-	var d := b - a
-	return Vector2(d.x, d.y * GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y).length()
+	return to_ground(b - a).length()
 
 
 ## 화면에서 본 이동 입력(길이 0~1)을 화면 속도(px/초)로 바꾼다.

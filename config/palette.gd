@@ -20,9 +20,18 @@ const PLAYER_SKIN := Color("ffe0c2")
 const PLAYER_HAIR := Color("6b4a2f")
 
 # ─── 헨치·전투 ───────────────────────────────────
-## 이름표: 내 파티 / 비선공 야생(흰색, 기획서) / 선공 야생(빨강, 프로토타입 3)
+## 이름표: 내 파티 / 비선공 야생(흰색, 기획서) / 선공 야생(빨강, 기획서)
 const NAME_ALLY := Color("9fe3ff")
 const NAME_PASSIVE := Color(1, 1, 1)
+const NAME_AGGRESSIVE := Color("ff4a3d")
+## 머리 위 표시: 알아챔·반격 "!"(빨강, 기획서) / 추격 포기(파랑, 기획서)
+const MARK_ALERT := Color("ff3b30")
+const MARK_GIVE_UP := Color("4aa3ff")
+## 감지 전구: 유리 / 차오르는 색(처음 → 다 찼을 때) / 꼭지
+const BULB_GLASS := Color(1, 1, 1, 0.55)
+const BULB_FILL_LOW := Color("ffe14d")
+const BULB_FILL_HIGH := Color("ff7a1a")
+const BULB_SOCKET := Color("9aa0a8")
 ## 내 파티 헨치 발밑 고리
 const ALLY_RING := Color(0.62, 0.89, 1.0, 0.8)
 const HIT_FLASH := Color(1, 1, 1)
@@ -34,6 +43,8 @@ const PROJECTILE := Color("fff3b0")
 const NUMBER_DEALT := Color("fff3b0")
 const NUMBER_TAKEN := Color("ff7a6b")
 const NUMBER_HEAL := Color("7dff8a")
+## 기습 첫 타 숫자
+const NUMBER_AMBUSH := Color("ffa53d")
 
 # ─── 장식물 ──────────────────────────────────────
 const TREE_TRUNK := Color("8a5a35")

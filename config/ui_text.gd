@@ -31,5 +31,12 @@ const MODE_DOWN := "쓰러짐 · 잠시 후 일어납니다"
 ## %d = 처치 수
 const KILLS := "처치 %d"
 
+# ─── 전투 표시 ────────────────────────────────────
+## 기습 첫 타 숫자. %d = 피해량
+const AMBUSH_NUMBER := "기습! %d"
+## 머리 위 표시: 알아채고 덤빌 때·맞고 반격할 때 / 추격을 포기할 때
+const MARK_ALERT := "!"
+const MARK_GIVE_UP := "?"
+
 # ─── 역할 한 글자 (헨치 몸에 표시) ─────────────────
 const ROLE_SHORT := {"tank": "탱", "melee": "근", "ranged": "원", "healer": "힐"}

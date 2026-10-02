@@ -1,5 +1,5 @@
 {
-  "about": "헨치 도감 데이터. 기획서 5~6장 표를 옮긴 것. 이름·수치는 초안. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다. 지금은 프로토타입 2에 필요한 용섬 입문 하급 4종만 있고, 나머지는 믹스 단계에서 옮긴다.",
+  "about": "헨치 도감 데이터. 기획서 5~6장 표를 옮긴 것. 이름·수치는 초안. aggressive = 선공(파티를 알아채면 먼저 덤빔, 빨간 이름표). 기획서 4장 초안: 하급은 종족당 근접딜러 1종 정도. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다. 지금은 프로토타입 2·3에 필요한 용섬 입문 하급 4종만 있고, 나머지는 믹스 단계에서 옮긴다.",
   "henches": [
     {
       "id": "sotmabaem",
@@ -7,6 +7,7 @@
       "tribe": "dragon",
       "grade": "low",
       "role": "tank",
+      "aggressive": false,
       "design": "도마뱀 + 가마솥",
       "active": "솥뚜껑 막기 (방어 비례 보호막)",
       "passive": "피격 시 방어↑",
@@ -20,6 +21,7 @@
       "tribe": "dragon",
       "grade": "low",
       "role": "melee",
+      "aggressive": true,
       "design": "아기 용 + 고추",
       "active": "매운 박치기 (공격 + 화상)",
       "passive": "체력 낮을수록 공격↑",
@@ -33,6 +35,7 @@
       "tribe": "dragon",
       "grade": "low",
       "role": "ranged",
+      "aggressive": false,
       "design": "해마 + 대포",
       "active": "물대포 (명중 비례)",
       "passive": "사거리↑",
@@ -46,6 +49,7 @@
       "tribe": "dragon",
       "grade": "low",
       "role": "healer",
+      "aggressive": false,
       "design": "아기 용 + 진주",
       "active": "진주빛 치유 (마나 비례)",
       "passive": "회복량↑",

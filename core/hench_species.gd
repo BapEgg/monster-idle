@@ -11,6 +11,8 @@ var name := ""
 var tribe := ""
 var grade := ""
 var role := ""
+## 선공: 파티를 알아채면 먼저 덤빈다(빨간 이름표). 아니면 맞아야 반격한다(흰 이름표).
+var aggressive := false
 var design := ""
 var active := ""
 var passive := ""
@@ -28,6 +30,7 @@ static func from_dict(row: Dictionary) -> HenchSpecies:
 	s.tribe = str(row.get("tribe", ""))
 	s.grade = str(row.get("grade", ""))
 	s.role = str(row.get("role", ""))
+	s.aggressive = bool(row.get("aggressive", false))
 	s.design = str(row.get("design", ""))
 	s.active = str(row.get("active", ""))
 	s.passive = str(row.get("passive", ""))

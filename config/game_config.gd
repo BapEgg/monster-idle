@@ -124,3 +124,25 @@ const WILD_WANDER_RADIUS := 140.0
 const WILD_WANDER_PAUSE := Vector2(1.5, 4.0)
 ## 자기 자리에서 이보다 멀어지면 추격을 포기하고 돌아간다(땅 위 px).
 const WILD_LEASH := 520.0
+
+# ─── 선공 감지 · 기습 (프로토타입 3, 사용자 결정 2026-10-02) ──────
+## 선공 몬스터는 바라보는 방향 기준의 시야로 파티를 알아챈다. 정면은 빨리, 주변시는 늦게, 등 뒤는 못 본다.
+## 감지 게이지(머리 위 전구)가 다 차면 덤빈다("!"). 너무 빠르지도 느리지도 않게 아래 값으로 맞춘다.
+## 이 거리(땅 위 px) 안에 있어야 보인다.
+const DETECT_RANGE := 300.0
+## 정면 시야: 바라보는 방향에서 한쪽으로 몇 도까지(양쪽을 합치면 두 배).
+const DETECT_FRONT_HALF_ANGLE := 35.0
+## 주변시: 한쪽으로 몇 도까지. 이보다 뒤는 등 뒤라 못 본다.
+const DETECT_SIDE_HALF_ANGLE := 110.0
+## 다 알아채기까지 걸리는 시간(초): 정면 / 주변시.
+const DETECT_FRONT_SECONDS := 0.6
+const DETECT_SIDE_SECONDS := 1.8
+## 시야에서 벗어났을 때 꽉 찬 게이지가 다 빠지기까지(초).
+const DETECT_FORGET_SECONDS := 2.0
+## 알아챘을 때 그 상대에게 얹는 위협 점수. 작게 둬서, 실제로 때린 상대가 생기면 그쪽을 노린다.
+const DETECT_THREAT := 1.0
+## 기습 첫 타 배율. 아직 알아채지 못한 적에게, 수동 조작 중에 넣은 첫 타에만(자동 사냥은 없음).
+const AMBUSH_SCALE := 1.5
+## 머리 위 표시가 떠 있는 시간(초): 알아챔·반격 "!" / 추격 포기(파란 표시)
+const ALERT_MARK_SECONDS := 1.0
+const GIVE_UP_MARK_SECONDS := 1.4

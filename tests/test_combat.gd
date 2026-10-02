@@ -57,3 +57,10 @@ func test_heal_has_its_own_interval() -> void:
 	expect_near(healer.heal_interval, float(GameConfig.ROLE_STATS["healer"]["heal_interval"]), "힐러 회복 간격은 설정값")
 	var tank := UnitStats.for_hench("tank", false)
 	expect_near(tank.heal_interval, tank.attack_interval, "회복 간격이 없으면 공격 간격을 쓴다")
+
+
+## 사용자 결정(2026-10-02): 기습 첫 타는 1.5배로 시작, 수동 중일 때만.
+func test_ambush_damage() -> void:
+	expect_near(GameConfig.AMBUSH_SCALE, 1.5, "기습 배율 1.5")
+	expect_near(Combat.hit_damage(12.0, true), 18.0, "기습이면 12 → 18")
+	expect_near(Combat.hit_damage(12.0, false), 12.0, "기습이 아니면 그대로")

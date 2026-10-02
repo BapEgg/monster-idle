@@ -1,7 +1,9 @@
 extends SceneTree
-## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 사냥 방식 버튼, 자동 사냥이 되는지 확인한다.
+## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 사냥 방식 버튼,
+## 선공 감지·기습, 자동 사냥이 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
-## 창이 20초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다). --shot 을 주면 싸우는 장면을 PNG로 저장한다.
+## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
+## --shot 을 주면 싸우는 장면을 그 경로에, 감지 전구가 차오르는 장면을 "<이름>_detect.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -115,9 +117,65 @@ func _run(main: Node) -> void:
 	_click(hud.mode_button(AutoControl.Mode.FULL_AUTO))
 	await _physics_frames(2)
 	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO and not hud.attack_button.visible, "풀오토 버튼 → 풀오토, 공격 버튼 숨김")
+
+	# 7) 선공 감지 · 기습(프로토타입 3). 주인공은 수동으로 가만히 세워 두고, 내 헨치는 멈춰 둔다.
+	_click(hud.mode_button(AutoControl.Mode.MANUAL))
+	await _physics_frames(2)
+	# 정면: 고추룡(선공)이 주인공 쪽(왼쪽)을 보고 있으면 금방 알아채고 덤빈다
+	wild = _spawn_wild(main, "gochuryong", Vector2(200, 0), Vector2.LEFT)
+	await _seconds(GameConfig.DETECT_FRONT_SECONDS * 0.5)
+	_expect(wild.name_color() == Palette.NAME_AGGRESSIVE, "선공 = 빨간 이름표")
+	_expect(wild.mark() == Unit.Mark.DETECTING and wild.detect_ratio() > 0.2, "정면: 전구가 차오름 (%.2f)" % wild.detect_ratio())
+	await _seconds(GameConfig.DETECT_FRONT_SECONDS * 0.5 + 0.1)
+	_expect(not wild.is_unaware() and wild.mark() == Unit.Mark.ALERT, "정면: %.1f초 만에 알아채고 덤빔(\"!\")" % GameConfig.DETECT_FRONT_SECONDS)
+	# 추격 포기: 자기 자리에서 너무 멀어지면 포기하고 돌아간다
+	wild.home = wild.position + Vector2(GameConfig.WILD_LEASH + 100.0, 0)
+	await _physics_frames(3)
+	_expect(wild.mark() == Unit.Mark.GIVE_UP and not wild.is_fighting(), "너무 멀리 쫓아가면 포기(파란 표시)")
+	_remove(wild)
+	# 등 뒤: 반대쪽을 보고 있으면 오래 있어도 못 알아챈다
+	wild = _spawn_wild(main, "gochuryong", Vector2(200, 0), Vector2.RIGHT)
+	await _seconds(GameConfig.DETECT_SIDE_SECONDS + 0.5)
+	_expect(wild.is_unaware() and wild.mark() == Unit.Mark.NONE, "등 뒤: %.1f초가 지나도 못 알아챔" % (GameConfig.DETECT_SIDE_SECONDS + 0.5))
+	_remove(wild)
+	# 주변시: 옆(화면 위쪽)을 보고 있으면 늦게 알아챈다
+	wild = _spawn_wild(main, "gochuryong", Vector2(200, 0), Vector2.UP)
+	await _seconds(GameConfig.DETECT_FRONT_SECONDS + 0.2)
+	_expect(wild.is_unaware() and wild.mark() == Unit.Mark.DETECTING, "주변시: 정면보다 늦게 차오름 (%.2f)" % wild.detect_ratio())
+	await _save_shot("detect")
+	await _seconds(GameConfig.DETECT_SIDE_SECONDS - GameConfig.DETECT_FRONT_SECONDS)
+	_expect(not wild.is_unaware(), "주변시: %.1f초쯤 지나면 알아챔" % GameConfig.DETECT_SIDE_SECONDS)
+	_remove(wild)
+	# 기습: 수동 중에, 아직 알아채지 못한 적에게 넣은 첫 타는 배율만큼 세다. 맞은 비선공은 "!" 하고 반격한다.
+	var hit := player.stats.attack
+	wild = _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
+	await _physics_frames(2)
+	Input.action_press("attack")
+	await _physics_frames(2)
+	Input.action_release("attack")
+	var lost := wild.stats.max_hp - wild.hp
+	_expect(is_equal_approx(lost, hit * GameConfig.AMBUSH_SCALE), "수동: 알아채기 전 첫 타 = 기습 %.1f배 (%.0f → %.0f)" % [GameConfig.AMBUSH_SCALE, hit, lost])
+	_expect(wild.mark() == Unit.Mark.ALERT and not wild.is_unaware(), "비선공: 맞으면 \"!\" 하고 반격")
+	Input.action_press("attack")
+	await _seconds(player.stats.attack_interval + 0.1)
+	Input.action_release("attack")
+	lost = wild.stats.max_hp - wild.hp - lost
+	_expect(is_equal_approx(lost, hit), "두 번째 타부터는 보통 (%.0f)" % lost)
+	_remove(wild)
+	# 자동 사냥(풀오토)은 기습 보너스가 없다(손해가 아니라 보너스가 없을 뿐)
+	_click(hud.mode_button(AutoControl.Mode.FULL_AUTO))
+	await _seconds(player.stats.attack_interval)
+	wild = _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
+	for i in 120:
+		await physics_frame
+		if wild.hp < wild.stats.max_hp:
+			break
+	lost = wild.stats.max_hp - wild.hp
+	_expect(is_equal_approx(lost, hit), "풀오토: 알아채기 전이어도 첫 타는 보통 (%.0f)" % lost)
+	_remove(wild)
 	_set_party_paused(main, false)
 
-	# 7) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
+	# 8) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
 	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
 	Engine.time_scale = 4.0
 	var shot := _shot_path()
@@ -193,6 +251,21 @@ func _expect(condition: bool, label: String) -> void:
 func _physics_frames(count: int) -> void:
 	for i in count:
 		await physics_frame
+
+
+func _seconds(seconds: float) -> void:
+	await _physics_frames(ceili(seconds * Engine.physics_ticks_per_second))
+
+
+## --shot 경로 이름 뒤에 _<suffix>를 붙여 지금 화면을 저장한다(--shot 이 없으면 넘어간다).
+func _save_shot(suffix: String) -> void:
+	var path := _shot_path()
+	if path == "":
+		return
+	path = path.get_basename() + "_" + suffix + "." + path.get_extension()
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(path)
+	print("스크린샷: ", path)
 
 
 func _touch(pressed: bool, at: Vector2) -> void:

@@ -23,6 +23,16 @@ func test_real_data_matches_plan() -> void:
 		expect_true(s.tribe == "dragon" and s.grade == "low", "%s 용족 하급" % id)
 
 
+## 기획서 4장 초안: 하급은 종족당 근접딜러 1종 정도가 선공 → 용섬 입문은 고추룡만.
+func test_aggressive_species() -> void:
+	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))
+	expect_true((all["gochuryong"] as HenchSpecies).aggressive, "고추룡(근접딜러)은 선공")
+	for id: String in ["sotmabaem", "haemapo", "jinjuryong"]:
+		expect_true(not (all[id] as HenchSpecies).aggressive, "%s는 비선공" % id)
+	var missing := HenchSpecies.from_dict({"id": "x", "name": "x", "tribe": "beast", "grade": "low", "role": "tank"})
+	expect_true(not missing.aggressive, "선공 칸이 없으면 비선공")
+
+
 func test_config_ids_exist() -> void:
 	for id: String in GameConfig.PARTY_HENCHES + GameConfig.WILD_SPECIES:
 		expect_true(HenchDb.get_species(id) != null, "설정의 %s가 데이터에 있음" % id)

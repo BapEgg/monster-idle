@@ -54,6 +54,10 @@ func _think(delta: float) -> void:
 		_attack_on_button()
 
 
+func is_manually_controlled() -> bool:
+	return control.is_manual()
+
+
 ## 직접 조작 중에는 밀려나지 않는다(내가 누른 대로만 움직이게).
 func _uses_personal_space() -> bool:
 	return not control.is_manual()
