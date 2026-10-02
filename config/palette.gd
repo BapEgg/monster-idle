@@ -38,6 +38,10 @@ const HIT_FLASH := Color(1, 1, 1)
 const HP_BAR_BACK := Color(0, 0, 0, 0.55)
 const HP_BAR_PARTY := Color("6fdc6f")
 const HP_BAR_WILD := Color("ff6b5b")
+## 체력 바: 방금 깎인 만큼 남는 잔상
+const HP_BAR_TRAIL := Color(1, 1, 1, 0.75)
+## 대상 발밑 고리
+const TARGET_RING := Color(1.0, 0.85, 0.2, 0.95)
 const PROJECTILE := Color("fff3b0")
 ## 떠오르는 숫자: 야생에게 준 피해 / 내 파티가 받은 피해 / 회복
 const NUMBER_DEALT := Color("fff3b0")
@@ -61,11 +65,12 @@ const JOYSTICK_KNOB_IDLE := Color(1, 1, 1, 0.35)
 const JOYSTICK_BASE := Color(1, 1, 1, 0.18)
 const JOYSTICK_RING := Color(1, 1, 1, 0.6)
 const JOYSTICK_KNOB := Color(1, 1, 1, 0.8)
-## 사냥 방식 버튼: 안 고른 것 / 고른 것
-const MODE_BUTTON := Color(0, 0, 0, 0.35)
-const MODE_BUTTON_ON := Color(1, 1, 1, 0.85)
-const MODE_BUTTON_TEXT := Color(1, 1, 1)
-const MODE_BUTTON_TEXT_ON := Color("2b2b33")
+## 오토 버튼: 사냥 방식별 바탕색(AutoControl.Mode 순서: 풀오토, 세미오토, 수동)과 글자색
+const AUTO_BUTTON_FILLS := [Color(0.49, 1.0, 0.54, 0.85), Color(1.0, 0.82, 0.37, 0.85), Color(0, 0, 0, 0.4)]
+const AUTO_BUTTON_TEXTS := [Color("2b2b33"), Color("2b2b33"), Color(1, 1, 1)]
+## 스킬 칸(빈 자리)
+const SKILL_SLOT := Color(0, 0, 0, 0.3)
+const SKILL_SLOT_BORDER := Color(1, 1, 1, 0.35)
 ## 공격 버튼: 평소 / 누르는 중
 const ATTACK_BUTTON := Color(1, 0.42, 0.33, 0.35)
 const ATTACK_BUTTON_DOWN := Color(1, 0.42, 0.33, 0.75)

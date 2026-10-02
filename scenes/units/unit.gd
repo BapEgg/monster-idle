@@ -30,6 +30,8 @@ var hp := 0.0
 var field: Field
 ## 바라보는 화면 방향(길이 1).
 var facing := Vector2.DOWN
+## 주인공의 대상으로 지정됐나(발밑 고리, 체력 바를 늘 보임).
+var targeted := false
 
 var _delta := 0.0
 var _cooldown := 0.0
@@ -297,7 +299,7 @@ func detect_ratio() -> float:
 
 
 func shows_hp_bar() -> bool:
-	return hp < stats.max_hp
+	return hp < stats.max_hp or targeted
 
 
 func hp_bar_color() -> Color:

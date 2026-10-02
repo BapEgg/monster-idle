@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="4_player"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
 [ext_resource type="Script" path="res://scenes/main/wild_spawner.gd" id="6_spawner"]
+[ext_resource type="Script" path="res://scenes/main/target_picker.gd" id="7_picker"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -28,3 +29,6 @@ z_index = 10
 script = ExtResource("6_spawner")
 
 [node name="HUD" parent="." instance=ExtResource("5_hud")]
+
+[node name="TargetPicker" type="Node" parent="."]
+script = ExtResource("7_picker")

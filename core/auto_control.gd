@@ -1,6 +1,6 @@
 class_name AutoControl
 extends RefCounted
-## 사냥 방식(화면 오른쪽 아래 3단계 버튼)과 "손대면 수동" 판단. 사용자 결정(2026-10-02).
+## 사냥 방식(공격 버튼 위의 오토 버튼, 누를 때마다 다음 방식)과 "손대면 수동" 판단. 사용자 결정(2026-10-02).
 ## - 풀오토: 자동 사냥. 조작(입력)이 있는 동안만 수동이고, 손을 뗀 뒤 return_seconds가 지나면 자동으로 돌아온다.
 ##   return_seconds = 0이면 손을 떼는 즉시 자동이다(현재 기본값).
 ## - 세미오토: 이동은 직접, 사거리 안의 적은 자동으로 공격한다.
@@ -20,6 +20,11 @@ var _held := false
 func _init(seconds: float, start_mode := Mode.FULL_AUTO) -> void:
 	return_seconds = seconds
 	mode = start_mode
+
+
+## 오토 버튼을 누르면 바뀌는 다음 방식: 풀오토 → 세미오토 → 수동 → 풀오토.
+static func next_mode(current: Mode) -> Mode:
+	return ((current + 1) % Mode.size()) as Mode
 
 
 ## 매 프레임 부른다. has_input = 지금 키·조이스틱을 만지고 있나.

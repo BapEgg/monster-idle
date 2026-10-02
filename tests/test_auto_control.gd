@@ -68,3 +68,10 @@ func test_switching_back_to_full_auto() -> void:
 	control.update(0.016, false)
 	control.mode = AutoControl.Mode.FULL_AUTO
 	expect_true(not control.is_manual(), "풀오토로 바꾸고 손을 안 대고 있으면 바로 자동")
+
+
+## 오토 버튼(사용자 결정 2026-10-02): 누를 때마다 풀오토 → 세미오토 → 수동 → 풀오토
+func test_auto_button_cycles_modes() -> void:
+	expect_true(AutoControl.next_mode(AutoControl.Mode.FULL_AUTO) == AutoControl.Mode.SEMI_AUTO, "풀오토 → 세미오토")
+	expect_true(AutoControl.next_mode(AutoControl.Mode.SEMI_AUTO) == AutoControl.Mode.MANUAL, "세미오토 → 수동")
+	expect_true(AutoControl.next_mode(AutoControl.Mode.MANUAL) == AutoControl.Mode.FULL_AUTO, "수동 → 풀오토")

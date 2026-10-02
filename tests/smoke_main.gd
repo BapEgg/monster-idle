@@ -1,9 +1,10 @@
 extends SceneTree
-## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 사냥 방식 버튼,
-## 선공 감지·기습, 자동 사냥이 되는지 확인한다.
+## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 오토 버튼·공격 버튼,
+## 몹을 눌러 대상 지정, 선공 감지·기습, 자동 사냥이 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
-## --shot 을 주면 싸우는 장면을 그 경로에, 감지 전구가 차오르는 장면을 "<이름>_detect.png"로 저장한다.
+## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
+## 감지 전구가 차오르는 장면을 "<이름>_detect.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -89,38 +90,57 @@ func _run(main: Node) -> void:
 	var wait_text := "바로" if GameConfig.MANUAL_RETURN_SECONDS <= 0.0 else "%.0f초 뒤" % GameConfig.MANUAL_RETURN_SECONDS
 	_expect(not player.control.is_manual(), "손 떼면 %s 자동" % wait_text)
 
-	# 6) 사냥 방식 버튼: 세미오토 = 가까운 적은 알아서 공격, 수동 = 공격 버튼을 눌러야 공격
+	# 6) 오토 버튼(공격 버튼 위): 누를 때마다 풀오토 → 세미오토 → 수동. 공격 버튼은 늘 보인다.
 	#    내 헨치가 끼어들면 누가 때렸는지 가릴 수 없으므로 잠시 멈춰 둔다.
 	var hud: Hud = main.get_node("HUD")
 	_set_party_paused(main, true)
-	_click(hud.mode_button(AutoControl.Mode.SEMI_AUTO))
-	await _physics_frames(2)
-	_expect(player.control.mode == AutoControl.Mode.SEMI_AUTO, "세미오토 버튼 → 세미오토")
-	_expect(player.control.is_manual() and not hud.attack_button.visible, "세미오토: 안 만져도 이동은 직접, 공격 버튼 없음")
+	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO and hud.attack_button.visible, "풀오토에서도 공격 버튼이 보임")
+	await _tap(hud.auto_button.global_position)
+	_expect(player.control.mode == AutoControl.Mode.SEMI_AUTO and hud.auto_button.mode == AutoControl.Mode.SEMI_AUTO, "오토 버튼 → 세미오토")
+	_expect(player.control.is_manual(), "세미오토: 안 만져도 이동은 직접")
 	start = player.position
 	var wild := _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
 	await _physics_frames(10)
-	_expect(wild.hp < wild.stats.max_hp, "세미오토: 사거리 안의 적은 알아서 공격")
+	_expect(wild.hp < wild.stats.max_hp and player.target == wild, "세미오토: 사거리 안의 적은 알아서 공격하고 대상이 됨")
 	_expect(player.position.distance_to(start) < 1.0, "세미오토: 스스로 걸어가지 않음")
 	_remove(wild)
-	_click(hud.mode_button(AutoControl.Mode.MANUAL))
-	await _physics_frames(2)
-	_expect(player.control.mode == AutoControl.Mode.MANUAL and hud.attack_button.visible, "수동 버튼 → 수동, 공격 버튼이 보임")
-	wild = _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
+	await _tap(hud.auto_button.global_position)
+	_expect(player.control.mode == AutoControl.Mode.MANUAL and hud.attack_button.visible, "오토 버튼 → 수동")
+	# 수동: 공격 버튼은 사거리 밖의 적에게도 다가가 공격한다(사용자 피드백: 다가가기 전에는 아무 일도 없었음)
+	wild = _spawn_wild(main, "sotmabaem", Vector2(220, 0), Vector2.RIGHT)
 	await _physics_frames(70)
-	_expect(wild.hp == wild.stats.max_hp, "수동: 공격 버튼을 안 누르면 공격하지 않음")
-	_touch(true, hud.attack_button.global_position)
-	await _physics_frames(2)
-	_expect(wild.hp < wild.stats.max_hp, "수동: 공격 버튼을 누르면 공격")
-	_touch(false, hud.attack_button.global_position)
+	_expect(wild.hp == wild.stats.max_hp and player.target == null, "수동: 공격 버튼을 안 누르면 아무것도 안 함")
+	start = player.position
+	await _tap(hud.attack_button.global_position)
+	_expect(player.target == wild, "수동: 공격 버튼 → 가까운 적이 대상이 됨")
+	await _seconds(2.0)
+	_expect(wild.hp < wild.stats.max_hp, "수동: 공격 버튼을 한 번 누르면 다가가 공격 (%.0fpx 걸어감)" % player.position.distance_to(start))
 	_remove(wild)
-	_click(hud.mode_button(AutoControl.Mode.FULL_AUTO))
 	await _physics_frames(2)
-	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO and not hud.attack_button.visible, "풀오토 버튼 → 풀오토, 공격 버튼 숨김")
+	_expect(player.target == null, "대상이 사라지면 대상 창도 비움")
+	# 몹을 눌러 대상 지정: 화면 왼쪽(조이스틱 영역)의 몹을 눌러도 조이스틱 대신 대상 지정
+	wild = _spawn_wild(main, "gochuryong", Vector2(-260, -40), Vector2.LEFT)
+	var other := _spawn_wild(main, "sotmabaem", Vector2(200, 40), Vector2.RIGHT)
+	await _physics_frames(2)
+	var at := _screen_of(wild)
+	await _tap(at)
+	await process_frame  # 대상 창은 화면 프레임(_process)에서 바뀐다
+	_expect(at.x < get_root().get_visible_rect().size.x * 0.5 and player.target == wild and not _joystick_down, "화면 왼쪽의 몹을 누르면 조이스틱 대신 대상 지정")
+	_expect(hud.target_frame.visible and hud.target_frame.unit == wild, "화면 위 대상 창에 그 몹이 보임")
+	_expect(wild.targeted and wild.shows_hp_bar(), "대상은 발밑 고리, 다치지 않아도 머리 위 체력 바")
+	await _save_shot("target")
+	at = _screen_of(other)
+	_mouse_button(true, at)
+	_mouse_button(false, at)
+	await _physics_frames(2)
+	_expect(player.target == other and not wild.targeted, "마우스로 다른 몹을 클릭 → 대상이 바뀜")
+	_remove(wild)
+	_remove(other)
+	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
+	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO, "오토 버튼 → 다시 풀오토")
 
 	# 7) 선공 감지 · 기습(프로토타입 3). 주인공은 수동으로 가만히 세워 두고, 내 헨치는 멈춰 둔다.
-	_click(hud.mode_button(AutoControl.Mode.MANUAL))
-	await _physics_frames(2)
+	await _switch_mode(hud, player, AutoControl.Mode.MANUAL)
 	# 정면: 고추룡(선공)이 주인공 쪽(왼쪽)을 보고 있으면 금방 알아채고 덤빈다
 	wild = _spawn_wild(main, "gochuryong", Vector2(200, 0), Vector2.LEFT)
 	await _seconds(GameConfig.DETECT_FRONT_SECONDS * 0.5)
@@ -163,7 +183,7 @@ func _run(main: Node) -> void:
 	_expect(is_equal_approx(lost, hit), "두 번째 타부터는 보통 (%.0f)" % lost)
 	_remove(wild)
 	# 자동 사냥(풀오토)은 기습 보너스가 없다(손해가 아니라 보너스가 없을 뿐)
-	_click(hud.mode_button(AutoControl.Mode.FULL_AUTO))
+	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
 	await _seconds(player.stats.attack_interval)
 	wild = _spawn_wild(main, "sotmabaem", Vector2(40, 0), Vector2.RIGHT)
 	for i in 120:
@@ -235,11 +255,25 @@ func _set_party_paused(main: Node, stop: bool) -> void:
 		hench.process_mode = Node.PROCESS_MODE_DISABLED if stop else Node.PROCESS_MODE_INHERIT
 
 
-## 마우스로 버튼 한가운데를 눌렀다 뗀다.
-func _click(control: Control) -> void:
-	var at := control.get_global_rect().get_center()
-	_mouse_button(true, at)
-	_mouse_button(false, at)
+## 화면 그 자리를 손가락으로 톡 누른다.
+func _tap(at: Vector2) -> void:
+	_touch(true, at)
+	await _physics_frames(2)
+	_touch(false, at)
+	await _physics_frames(2)
+
+
+## 오토 버튼을 눌러 원하는 사냥 방식으로 바꾼다(누를 때마다 다음 방식).
+func _switch_mode(hud: Hud, player: Player, mode: AutoControl.Mode) -> void:
+	for i in AutoControl.Mode.size():
+		if player.control.mode == mode:
+			return
+		await _tap(hud.auto_button.global_position)
+
+
+## 유닛 몸 가운데의 화면 좌표(누를 자리).
+func _screen_of(unit: Unit) -> Vector2:
+	return unit.get_viewport().get_canvas_transform() * (unit.global_position + unit.body_center())
 
 
 func _expect(condition: bool, label: String) -> void:

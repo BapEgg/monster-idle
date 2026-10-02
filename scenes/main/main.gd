@@ -1,5 +1,6 @@
 extends Node2D
-## 메인 장면(프로토타입 2): 필드에 주인공과 헨치 3마리를 세우고, 야생 헨치를 풀어 자동 사냥을 돌린다.
+## 메인 장면: 필드에 주인공과 헨치 3마리를 세우고, 야생 헨치를 풀어 자동 사냥을 돌린다.
+## 화면에서 몹을 누르면 대상으로 지정한다(TargetPicker).
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
@@ -9,6 +10,7 @@ var party: Array[Hench] = []
 @onready var _player: Player = $Field/Objects/Player
 @onready var _hud: Hud = $HUD
 @onready var _spawner: WildSpawner = $WildSpawner
+@onready var _picker: TargetPicker = $TargetPicker
 
 
 func _ready() -> void:
@@ -22,6 +24,7 @@ func _ready() -> void:
 	_hud.joystick.released.connect(func(_tilt: Vector2) -> void: _player.touching = false)
 	_hud.control_mode_selected.connect(func(mode: AutoControl.Mode) -> void: _player.control.mode = mode)
 	_hud.bind_player(_player)
+	_picker.setup(_player, _hud)
 	_hud.set_kills(kills)
 	_spawn_party()
 	_spawner.killed.connect(_on_kill)

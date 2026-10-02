@@ -12,6 +12,10 @@ const BODY_RADIUS := 15.0
 const BODY_CENTER := Vector2(0, -17)
 const SHADOW_RADIUS := Vector2(16, 7)
 const RING_RADIUS := Vector2(20, 9)
+## 대상 고리(주인공의 대상일 때 발밑): 크기·굵기, 깜빡이는 빠르기
+const TARGET_RING_RADIUS := Vector2(25, 12)
+const TARGET_RING_WIDTH := 3.0
+const TARGET_RING_PULSE := 6.0
 const OUTLINE_WIDTH := 2.0
 const LETTER_SIZE := 13
 ## 역할 글자를 몸 가운데보다 이만큼 아래에(위쪽은 눈 자리)
@@ -118,9 +122,8 @@ func _pick_enemy() -> Unit:
 		var wild := node as Hench
 		if wild.is_alive() and wild.is_fighting():
 			candidates.append(wild)
-	var hunted := leader.hunt_target
-	if is_instance_valid(hunted) and hunted.is_alive() and hunted not in candidates:
-		candidates.append(hunted)
+	if is_instance_valid(leader.hunt_target) and leader.hunt_target.is_alive() and leader.hunt_target not in candidates:
+		candidates.append(leader.hunt_target)
 	var best: Unit = null
 	var best_distance := INF
 	for enemy in candidates:
@@ -351,6 +354,10 @@ func _draw() -> void:
 	draw_colored_polygon(Shapes.ellipse(Vector2.ZERO, SHADOW_RADIUS), Palette.SHADOW)
 	if team == Team.PARTY:
 		Shapes.draw_outline(self, Shapes.ellipse(Vector2.ZERO, RING_RADIUS), Palette.ALLY_RING, 2.0)
+	if targeted:
+		var ring := Palette.TARGET_RING
+		ring.a *= 0.75 + 0.25 * sin(Time.get_ticks_msec() * 0.001 * TARGET_RING_PULSE)
+		Shapes.draw_outline(self, Shapes.ellipse(Vector2.ZERO, TARGET_RING_RADIUS), ring, TARGET_RING_WIDTH)
 	var center := BODY_CENTER + _body_offset()
 	draw_circle(center, BODY_RADIUS + OUTLINE_WIDTH, Palette.OUTLINE, true, -1.0, true)
 	draw_circle(center, BODY_RADIUS, Palette.HIT_FLASH if _is_flashing() else species.color, true, -1.0, true)

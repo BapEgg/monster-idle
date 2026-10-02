@@ -2,6 +2,9 @@
 
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scenes/ui/attack_button.gd" id="2_attack"]
+[ext_resource type="Script" path="res://scenes/ui/auto_button.gd" id="3_auto"]
+[ext_resource type="Script" path="res://scenes/ui/skill_slots.gd" id="4_slots"]
+[ext_resource type="Script" path="res://scenes/ui/target_frame.gd" id="5_target"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -19,9 +22,9 @@ action_down = &"move_down"
 
 [node name="Hint" type="Label" parent="."]
 offset_left = 56.0
-offset_top = 28.0
-offset_right = 656.0
-offset_bottom = 56.0
+offset_top = 24.0
+offset_right = 456.0
+offset_bottom = 90.0
 mouse_filter = 2
 
 [node name="Mode" type="Label" parent="."]
@@ -48,29 +51,21 @@ grow_horizontal = 0
 horizontal_alignment = 2
 mouse_filter = 2
 
-[node name="ModeButtons" type="HBoxContainer" parent="."]
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 0
-grow_vertical = 0
+[node name="TargetFrame" type="Control" parent="."]
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+grow_horizontal = 2
 mouse_filter = 2
+script = ExtResource("5_target")
 
-[node name="FullAuto" type="Button" parent="ModeButtons"]
-focus_mode = 0
-toggle_mode = true
-
-[node name="SemiAuto" type="Button" parent="ModeButtons"]
-focus_mode = 0
-toggle_mode = true
-
-[node name="Manual" type="Button" parent="ModeButtons"]
-focus_mode = 0
-toggle_mode = true
+[node name="SkillSlots" type="Node2D" parent="."]
+script = ExtResource("4_slots")
 
 [node name="AttackButton" type="TouchScreenButton" parent="."]
-visible = false
 script = ExtResource("2_attack")
 action = "attack"
+
+[node name="AutoButton" type="TouchScreenButton" parent="."]
+script = ExtResource("3_auto")

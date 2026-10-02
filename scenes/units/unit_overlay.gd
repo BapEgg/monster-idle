@@ -1,12 +1,13 @@
 class_name UnitOverlay
 extends Node2D
 ## 유닛 머리 위의 체력 바, 이름표, 표시(감지 전구 · "!" · 추격 포기 파란 표시).
+## 체력 바는 다쳤을 때와 주인공의 대상일 때 보인다. 방금 깎인 만큼은 잔상으로 잠깐 남는다(HpBar).
 ## z_index를 높여 유닛·나무보다 위에 그린다(나무 뒤에 서도 이름표는 보인다).
 
 const Z := 5
 const FONT_SIZE := 13
 const FONT_OUTLINE := 4
-const BAR_SIZE := Vector2(36, 5)
+const BAR_SIZE := Vector2(42, 6)
 const GAP := 4.0
 # 표시(임시 도형): "!"·"?" 글자 크기, 전구 유리 반지름·꼭지 크기, 이름표와의 간격
 const MARK_FONT_SIZE := 26
@@ -18,13 +19,20 @@ const BULB_LINE := 2.0
 
 var unit: Unit
 
+var _trail := 1.0  # 체력 바 잔상(0~1)
+
 
 func _ready() -> void:
 	z_index = Z
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_trail = HpBar.next_trail(_trail, _hp_ratio(), delta)
 	queue_redraw()
+
+
+func _hp_ratio() -> float:
+	return clampf(unit.hp / unit.stats.max_hp, 0.0, 1.0)
 
 
 func _draw() -> void:
@@ -32,9 +40,7 @@ func _draw() -> void:
 		return
 	var y := -unit.overlay_height()
 	if unit.shows_hp_bar():
-		var bar := Rect2(Vector2(-BAR_SIZE.x * 0.5, y - BAR_SIZE.y), BAR_SIZE)
-		draw_rect(bar.grow(1.0), Palette.HP_BAR_BACK)
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * unit.hp / unit.stats.max_hp, bar.size.y)), unit.hp_bar_color())
+		HpBar.draw(self, Rect2(Vector2(-BAR_SIZE.x * 0.5, y - BAR_SIZE.y), BAR_SIZE), _hp_ratio(), _trail, unit.hp_bar_color())
 		y -= BAR_SIZE.y + GAP
 	if unit.display_name != "":
 		_draw_text(unit.display_name, y - 2.0, FONT_SIZE, FONT_OUTLINE, unit.name_color())
