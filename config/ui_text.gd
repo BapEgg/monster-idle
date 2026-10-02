@@ -10,4 +10,16 @@ const TERM_HENCH := "헨치"
 const TERM_MIX := "믹스"
 
 # ─── 조작 안내 ────────────────────────────────────
-const HINT_MOVE := "이동: WASD · 방향키   /   화면 왼쪽을 누른 채 끌기(조이스틱)"
+const HINT_MOVE := "가만히 두면 자동 사냥  ·  이동: WASD · 방향키 / 화면 왼쪽 끌기(조이스틱)"
+
+# ─── 사냥 상태 ────────────────────────────────────
+const MODE_AUTO := "자동 사냥"
+const MODE_MANUAL := "수동 조작"
+## %d = 자동으로 돌아오기까지 남은 초
+const MODE_RETURNING := "수동 · %d초 뒤 자동"
+const MODE_DOWN := "쓰러짐 · 잠시 후 일어납니다"
+## %d = 처치 수
+const KILLS := "처치 %d"
+
+# ─── 역할 한 글자 (헨치 몸에 표시) ─────────────────
+const ROLE_SHORT := {"tank": "탱", "melee": "근", "ranged": "원", "healer": "힐"}

@@ -26,6 +26,15 @@ func test_field_polygon() -> void:
 	expect_vec(corners[2], Vector2(0, GameConfig.TILE_SIZE.y * 10), "아래 꼭짓점 = 정확히 아래")
 
 
+func test_ground_distance() -> void:
+	var ratio := GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y
+	expect_near(Iso.ground_distance(Vector2.ZERO, Vector2(100, 0)), 100.0, "가로는 그대로")
+	expect_near(Iso.ground_distance(Vector2.ZERO, Vector2(0, 50)), 50.0 * ratio, "세로는 타일 비율만큼 펴서 잰다")
+	var cell_step := Iso.grid_to_screen(Vector2(1, 0))
+	var cell_step_other := Iso.grid_to_screen(Vector2(0, 1))
+	expect_near(Iso.ground_distance(Vector2.ZERO, cell_step), Iso.ground_distance(Vector2.ZERO, cell_step_other), "격자 두 축 한 칸 길이가 같다")
+
+
 func test_move_velocity_axes() -> void:
 	expect_vec(Iso.move_velocity(Vector2.RIGHT, 200.0, 0.5), Vector2(200, 0), "오른쪽 = 제 속력")
 	expect_vec(Iso.move_velocity(Vector2.LEFT, 200.0, 0.5), Vector2(-200, 0), "왼쪽 = 제 속력")

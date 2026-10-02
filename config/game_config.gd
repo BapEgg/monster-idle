@@ -43,3 +43,72 @@ const JOYSTICK_REST_MARGIN := Vector2(190, 170)
 ## 받침 반지름(px). 손잡이를 이만큼 끌면 최대 속력.
 const JOYSTICK_RADIUS := 90.0
 const JOYSTICK_KNOB_RADIUS := 38.0
+
+# ─── 자동 사냥 / 손대면 수동 ───────────────────────
+## 손을 뗀 뒤 몇 초 지나면 자동으로 돌아오나. 0 = 손 떼는 즉시 자동.
+## 사용자 결정(2026-10-02): 바로 자동으로 돌아온다(기획서의 3·5·10초 대기 대신 0).
+const MANUAL_RETURN_SECONDS := 0.0
+
+# ─── 전투 (프로토타입 2 임시값, 레벨·스킬·접미사 없음) ──────
+## 체력, 공격력, 공격 간격(초), 사거리(땅 위 px), 회복량.
+const PLAYER_STATS := {"hp": 300.0, "attack": 12.0, "attack_interval": 1.0, "attack_range": 60.0}
+## 헨치 역할별 능력치. 종마다 다른 값은 나중에 data/의 도감 데이터로 옮긴다.
+const ROLE_STATS := {
+	"tank": {"hp": 260.0, "attack": 6.0, "attack_interval": 1.2, "attack_range": 56.0},
+	"melee": {"hp": 160.0, "attack": 11.0, "attack_interval": 0.9, "attack_range": 56.0},
+	"ranged": {"hp": 130.0, "attack": 9.0, "attack_interval": 1.1, "attack_range": 230.0},
+	"healer": {"hp": 140.0, "attack": 4.0, "attack_interval": 1.5, "attack_range": 210.0, "heal": 18.0},
+}
+## 사거리가 이보다 길면 투사체를 쏜다(짧으면 몸으로 부딪쳐 때린다).
+const MELEE_RANGE_MAX := 90.0
+const PROJECTILE_SPEED := 700.0
+## 힐러는 체력이 이 비율 아래로 떨어진 동료부터 회복한다.
+const HEAL_THRESHOLD := 0.75
+## 탱커가 때리면 위협 점수를 몇 배로 얻나(야생 헨치가 탱커를 노리게).
+const TANK_THREAT_SCALE := 3.0
+## 개인 공간(땅 위 px): 유닛끼리 이보다 가까우면 서로 살짝 밀어낸다(겹쳐서 이름표가 안 보이는 것 방지).
+## 근접 사거리보다 작아야 밀려나도 공격이 끊기지 않는다.
+const PERSONAL_SPACE := 44.0
+## 밀어내는 힘의 최대치(이동 입력 길이 기준 0~1).
+const PERSONAL_SPACE_PUSH := 0.6
+
+# ─── 내 파티 ─────────────────────────────────────
+## 함께 다니는 헨치 3마리(data/henches.json의 id).
+const PARTY_HENCHES := ["sotmabaem", "haemapo", "jinjuryong"]
+## 헨치 이동 속력. 주인공보다 조금 빨라야 뒤처지지 않는다.
+const HENCH_SPEED := 250.0
+## 따라다닐 때 주인공 기준 자리(화면 px). PARTY_HENCHES 순서대로.
+const FOLLOW_SLOTS := [Vector2(-70, 26), Vector2(70, 26), Vector2(0, 56)]
+## 자리에서 이만큼(땅 위 px) 벗어나면 다시 따라간다.
+const FOLLOW_SLACK := 30.0
+## 주인공과 이만큼 멀어지면 빨리 달려 따라잡는다.
+const FOLLOW_CATCHUP_DISTANCE := 260.0
+const FOLLOW_CATCHUP_SPEED_SCALE := 1.4
+## 주인공에게서 이보다 먼 적은 쫓지 않는다(땅 위 px).
+const PARTY_LEASH := 420.0
+## 쓰러진 헨치가 다시 일어나기까지(초).
+const HENCH_REVIVE_SECONDS := 6.0
+## 주인공이 쓰러지면 몇 초 뒤 파티 전체가 시작 지점에서 다시 일어난다(기획서: 패배해도 페널티 없음).
+const PLAYER_REVIVE_SECONDS := 3.0
+
+# ─── 야생 헨치 ───────────────────────────────────
+## 이 필드(용섬 입문)에 나오는 종.
+const WILD_SPECIES := ["sotmabaem", "gochuryong", "haemapo", "jinjuryong"]
+## 필드에 동시에 있는 수.
+const WILD_COUNT := 14
+## 쓰러진 뒤 다른 곳에 새로 나타나기까지(초).
+const WILD_RESPAWN_SECONDS := 4.0
+## 주인공에게서 최소 몇 칸 떨어진 곳에 나타나나.
+const WILD_SPAWN_MIN_CELLS := 6.0
+## 야생은 파티보다 약하게: 체력·공격 배율.
+const WILD_HP_SCALE := 0.4
+const WILD_ATTACK_SCALE := 0.6
+## 추격·돌아다닐 때 속력 배율(HENCH_SPEED 기준).
+const WILD_CHASE_SPEED_SCALE := 0.7
+const WILD_WANDER_SPEED_SCALE := 0.3
+## 자기 자리에서 이만큼(px) 안을 돌아다닌다.
+const WILD_WANDER_RADIUS := 140.0
+## 한 번 걷고 나서 쉬는 시간(초, 최소~최대).
+const WILD_WANDER_PAUSE := Vector2(1.5, 4.0)
+## 자기 자리에서 이보다 멀어지면 추격을 포기하고 돌아간다(땅 위 px).
+const WILD_LEASH := 520.0

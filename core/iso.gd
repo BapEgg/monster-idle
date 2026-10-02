@@ -45,6 +45,13 @@ static func field_polygon(cells: Vector2i) -> PackedVector2Array:
 	])
 
 
+## 땅 위에서 잰 거리(px). 화면 세로는 타일 비율만큼 눌려 있으므로 펴서 잰다.
+## 사거리·도착 판정은 이걸로 한다(그래서 사거리는 화면에서 원이 아니라 납작한 타원이 된다).
+static func ground_distance(a: Vector2, b: Vector2) -> float:
+	var d := b - a
+	return Vector2(d.x, d.y * GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y).length()
+
+
 ## 화면에서 본 이동 입력(길이 0~1)을 화면 속도(px/초)로 바꾼다.
 ## 화면 방향은 입력 그대로 두고, 세로 성분을 vertical_ratio로 펴서 잰 "땅 위 속력"이
 ## 어느 방향이든 ground_speed가 되도록 맞춘다. 그래서 가로는 제 속력, 세로는 ratio배 속력이 된다.

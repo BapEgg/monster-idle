@@ -1,7 +1,7 @@
 extends SceneTree
-## 메인 장면을 실제로 띄워 주인공이 키보드·조이스틱(터치·마우스)으로 움직이는지 확인한다.
+## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 자동 사냥이 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
-## 창이 잠깐 떴다 닫힌다. --shot 을 주면 조이스틱을 누른 순간의 화면을 PNG로 저장한다.
+## 창이 20초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다). --shot 을 주면 싸우는 장면을 PNG로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -25,6 +25,11 @@ func _run(main: Node) -> void:
 	var joystick: VirtualJoystick = main.get_node("HUD/Joystick")
 	joystick.pressed.connect(func() -> void: _joystick_down = true)
 	joystick.released.connect(func(_v: Vector2) -> void: _joystick_down = false)
+	# 이동 검사(1~4) 동안은 야생 헨치를 치워 둔다. 손을 떼면 바로 자동 사냥이 시작돼
+	# 주인공이 사냥감 쪽으로 움직이면 "누른 방향으로만 움직였나"를 잴 수 없기 때문이다. 6)에서 다시 풀어 놓는다.
+	for node in get_nodes_in_group(&"wild"):
+		node.remove_from_group(&"wild")
+		node.queue_free()
 	await _physics_frames(10)
 	var seconds := float(WALK_FRAMES) / Engine.physics_ticks_per_second
 	var full_speed := GameConfig.PLAYER_SPEED * seconds
@@ -46,15 +51,9 @@ func _run(main: Node) -> void:
 	await _physics_frames(WALK_FRAMES)
 	moved = player.position - start
 	_expect(_joystick_down, "왼쪽 화면 터치 → 조이스틱 눌림")
+	_expect(player.control.is_manual(), "조이스틱을 누르는 동안 = 수동")
 	_expect(moved.y < -vertical_speed * 0.8 and absf(moved.x) < 1.0, "조이스틱 위 → 위로 %.0fpx쯤 (실제 %s)" % [vertical_speed, moved])
 	_expect(player.facing.y < -0.5, "위로 걸으면 뒤돌아 선다")
-
-	var shot := _shot_path()
-	if shot != "":
-		await RenderingServer.frame_post_draw
-		root.get_texture().get_image().save_png(shot)
-		print("스크린샷: ", shot)
-
 	_touch(false, Vector2(300, 260))
 	await _physics_frames(3)
 	_expect(not _joystick_down and player.read_move_input() == Vector2.ZERO, "손 떼면 멈춤")
@@ -77,10 +76,50 @@ func _run(main: Node) -> void:
 	_expect(not _joystick_down and player.read_move_input() == Vector2.ZERO, "오른쪽 화면 터치 → 조이스틱 안 뜸")
 	_touch(false, Vector2(1000, 150))
 
+	# 5) 손대면 수동: 만지는 동안 수동, 손을 떼면 MANUAL_RETURN_SECONDS 뒤(기본 0 = 바로) 자동
+	await _physics_frames(5)
+	_expect(not player.control.is_manual(), "아무것도 안 만지면 = 자동")
+	Input.action_press("move_left")
+	await _physics_frames(2)
+	_expect(player.control.is_manual(), "키를 누르는 동안 = 수동")
+	Input.action_release("move_left")
+	await _physics_frames(ceili(GameConfig.MANUAL_RETURN_SECONDS * Engine.physics_ticks_per_second) + 2)
+	var wait_text := "바로" if GameConfig.MANUAL_RETURN_SECONDS <= 0.0 else "%.0f초 뒤" % GameConfig.MANUAL_RETURN_SECONDS
+	_expect(not player.control.is_manual(), "손 떼면 %s 자동" % wait_text)
+
+	# 6) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
+	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
+	Engine.time_scale = 4.0
+	var shot := _shot_path()
+	var frames := int(40.0 * Engine.physics_ticks_per_second / Engine.time_scale)
+	for i in frames:
+		await physics_frame
+		# 싸우는 장면 한 장: 주인공이 대상을 때리는 중이고 헨치도 싸움에 붙었을 때
+		if shot != "" and i * 3 > frames and _is_brawling(player):
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png(shot)
+			print("스크린샷: ", shot)
+			shot = ""
+	Engine.time_scale = 1.0
+	var kills: int = main.get("kills")
+	_expect(kills >= 3, "자동 사냥 40초 → 3마리 이상 처치 (실제 %d)" % kills)
+	for hench: Hench in main.get("party"):
+		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
+		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
+
 	for failure in _failures:
 		printerr("실패: ", failure)
 	print("스모크: 실패 %d개" % _failures.size())
 	quit(1 if _failures.size() > 0 else 0)
+
+
+func _is_brawling(player: Player) -> bool:
+	if not is_instance_valid(player.hunt_target) or not player.in_reach(player.hunt_target, player.stats.attack_range):
+		return false
+	for node in get_nodes_in_group(&"wild"):
+		if (node as Hench).is_fighting():
+			return true
+	return false
 
 
 func _expect(condition: bool, label: String) -> void:

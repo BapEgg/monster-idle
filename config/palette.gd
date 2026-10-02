@@ -19,6 +19,22 @@ const PLAYER_BODY := Color("3d6fd6")
 const PLAYER_SKIN := Color("ffe0c2")
 const PLAYER_HAIR := Color("6b4a2f")
 
+# ─── 헨치·전투 ───────────────────────────────────
+## 이름표: 내 파티 / 비선공 야생(흰색, 기획서) / 선공 야생(빨강, 프로토타입 3)
+const NAME_ALLY := Color("9fe3ff")
+const NAME_PASSIVE := Color(1, 1, 1)
+## 내 파티 헨치 발밑 고리
+const ALLY_RING := Color(0.62, 0.89, 1.0, 0.8)
+const HIT_FLASH := Color(1, 1, 1)
+const HP_BAR_BACK := Color(0, 0, 0, 0.55)
+const HP_BAR_PARTY := Color("6fdc6f")
+const HP_BAR_WILD := Color("ff6b5b")
+const PROJECTILE := Color("fff3b0")
+## 떠오르는 숫자: 야생에게 준 피해 / 내 파티가 받은 피해 / 회복
+const NUMBER_DEALT := Color("fff3b0")
+const NUMBER_TAKEN := Color("ff7a6b")
+const NUMBER_HEAL := Color("7dff8a")
+
 # ─── 장식물 ──────────────────────────────────────
 const TREE_TRUNK := Color("8a5a35")
 const TREE_LEAF := Color("3f9a4a")
@@ -34,5 +50,8 @@ const JOYSTICK_KNOB_IDLE := Color(1, 1, 1, 0.35)
 const JOYSTICK_BASE := Color(1, 1, 1, 0.18)
 const JOYSTICK_RING := Color(1, 1, 1, 0.6)
 const JOYSTICK_KNOB := Color(1, 1, 1, 0.8)
+const MODE_AUTO := Color("7dff8a")
+const MODE_MANUAL := Color("ffd25e")
+const MODE_DOWN := Color("ff7a6b")
 const TEXT := Color(1, 1, 1)
 const TEXT_OUTLINE := Color(0, 0, 0, 0.6)

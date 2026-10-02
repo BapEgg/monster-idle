@@ -1,0 +1,57 @@
+{
+  "about": "헨치 도감 데이터. 기획서 5~6장 표를 옮긴 것. 이름·수치는 초안. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다. 지금은 프로토타입 2에 필요한 용섬 입문 하급 4종만 있고, 나머지는 믹스 단계에서 옮긴다.",
+  "henches": [
+    {
+      "id": "sotmabaem",
+      "name": "솥마뱀",
+      "tribe": "dragon",
+      "grade": "low",
+      "role": "tank",
+      "design": "도마뱀 + 가마솥",
+      "active": "솥뚜껑 막기 (방어 비례 보호막)",
+      "passive": "피격 시 방어↑",
+      "level": [1, 10],
+      "habitats": ["용섬 입문", "기계섬 입문"],
+      "color": "#c9803e"
+    },
+    {
+      "id": "gochuryong",
+      "name": "고추룡",
+      "tribe": "dragon",
+      "grade": "low",
+      "role": "melee",
+      "design": "아기 용 + 고추",
+      "active": "매운 박치기 (공격 + 화상)",
+      "passive": "체력 낮을수록 공격↑",
+      "level": [3, 12],
+      "habitats": ["용섬 입문"],
+      "color": "#e0483a"
+    },
+    {
+      "id": "haemapo",
+      "name": "해마포",
+      "tribe": "dragon",
+      "grade": "low",
+      "role": "ranged",
+      "design": "해마 + 대포",
+      "active": "물대포 (명중 비례)",
+      "passive": "사거리↑",
+      "level": [5, 14],
+      "habitats": ["용섬 입문", "비행섬 입문"],
+      "color": "#3fa3b5"
+    },
+    {
+      "id": "jinjuryong",
+      "name": "진주룡",
+      "tribe": "dragon",
+      "grade": "low",
+      "role": "healer",
+      "design": "아기 용 + 진주",
+      "active": "진주빛 치유 (마나 비례)",
+      "passive": "회복량↑",
+      "level": [7, 16],
+      "habitats": ["용섬 입문", "정령섬 입문"],
+      "color": "#f0b7c8"
+    }
+  ]
+}

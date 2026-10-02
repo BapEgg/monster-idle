@@ -1,0 +1,39 @@
+extends "res://tests/suite.gd"
+## core/hench_db.gd 테스트: data/henches.json이 기획서 도감과 맞는지, 잘못된 데이터를 걸러내는지.
+
+
+func test_real_data_matches_plan() -> void:
+	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))
+	# 기획서 5장 용족 하급 4종: 이름, 역할, 레벨대
+	var expected := {
+		"sotmabaem": ["솥마뱀", "tank", 1, 10],
+		"gochuryong": ["고추룡", "melee", 3, 12],
+		"haemapo": ["해마포", "ranged", 5, 14],
+		"jinjuryong": ["진주룡", "healer", 7, 16],
+	}
+	for id: String in expected:
+		var s: HenchSpecies = all.get(id)
+		expect_true(s != null, "%s 있음" % id)
+		if s == null:
+			continue
+		var row: Array = expected[id]
+		expect_true(s.name == row[0], "%s 이름 = %s" % [id, row[0]])
+		expect_true(s.role == row[1], "%s 역할 = %s" % [id, row[1]])
+		expect_true(s.level_min == row[2] and s.level_max == row[3], "%s 레벨 %d~%d" % [id, row[2], row[3]])
+		expect_true(s.tribe == "dragon" and s.grade == "low", "%s 용족 하급" % id)
+
+
+func test_config_ids_exist() -> void:
+	for id: String in GameConfig.PARTY_HENCHES + GameConfig.WILD_SPECIES:
+		expect_true(HenchDb.get_species(id) != null, "설정의 %s가 데이터에 있음" % id)
+	expect_true(GameConfig.FOLLOW_SLOTS.size() >= GameConfig.PARTY_HENCHES.size(), "파티 수만큼 따라다닐 자리가 있음")
+
+
+func test_bad_rows_are_detected() -> void:
+	var text := JSON.stringify({"henches": [
+		{"id": "ok", "name": "좋음", "tribe": "beast", "grade": "low", "role": "tank", "level": [1, 5]},
+		{"id": "bad", "name": "나쁨", "tribe": "robot", "grade": "low", "role": "tank", "level": [1, 5]},
+	]})
+	var species := HenchSpecies.from_dict(JSON.parse_string(text)["henches"][1])
+	expect_true(not species.problems().is_empty(), "모르는 종족은 문제로 잡힌다")
+	expect_true(HenchSpecies.from_dict(JSON.parse_string(text)["henches"][0]).problems().is_empty(), "올바른 칸은 문제없음")
