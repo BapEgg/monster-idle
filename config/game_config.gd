@@ -44,33 +44,20 @@ const JOYSTICK_REST_MARGIN := Vector2(190, 170)
 const JOYSTICK_RADIUS := 90.0
 const JOYSTICK_KNOB_RADIUS := 38.0
 
-# ─── 공격 버튼 · 오토 버튼 · 스킬 칸 (화면 오른쪽 아래, 메이플키우기 배치) ──────
-## 공격 버튼(늘 보임): 원의 중심이 화면 오른쪽·아래 가장자리에서 떨어진 거리(px)와 반지름. 노치를 피해 안쪽에 둔다.
-const ATTACK_BUTTON_MARGIN := Vector2(140, 130)
-const ATTACK_BUTTON_RADIUS := 60.0
-## 오토 버튼(누를 때마다 풀오토 → 세미오토 → 수동): 크기와, 공격 버튼 가운데에서 떨어진 자리(px).
-const AUTO_BUTTON_SIZE := Vector2(96, 34)
-const AUTO_BUTTON_OFFSET := Vector2(0, -94)
-## 스킬 칸(지금은 빈 자리): 칸 수, 한 줄에 몇 칸, 한 칸 크기·간격(px), 공격 버튼과의 간격(px).
-const SKILL_SLOT_COUNT := 6
-const SKILL_SLOT_COLUMNS := 3
-const SKILL_SLOT_SIZE := 52.0
-const SKILL_SLOT_GAP := 10.0
-const SKILL_SLOTS_GAP_TO_ATTACK := 18.0
+# ─── 공격 버튼 · 오토 버튼 · 스킬 칸 · 대상 창 ──────────
+## 위치·크기는 여기 두지 않고 scenes/ui/hud.tscn에서 에디터로 끌어서 정한다(사용자 결정 2026-10-02).
 
-# ─── 대상 지정 · 대상 창 ─────────────────────────────
+# ─── 대상 지정 ──────────────────────────────────
 ## 화면에서 몹을 누를 때, 몸 가운데에서 이 거리(화면 px) 안을 누르면 그 몹을 대상으로 지정한다.
 const TAP_PICK_RADIUS := 34.0
 ## 공격 버튼을 눌렀는데 대상이 없으면, 이 거리(땅 위 px) 안에서 가장 가까운 적을 대상으로 고른다.
 const ATTACK_ASSIST_RANGE := 420.0
 ## 직접 조작 중에 대상이 이보다 멀어지면(땅 위 px) 대상을 놓는다.
 const TARGET_KEEP_RANGE := 800.0
+## 같은 몹을 이 시간(초) 안에 두 번 누르면(더블 탭) 공격 버튼 없이 바로 다가가 공격한다.
+const DOUBLE_TAP_SECONDS := 0.35
 ## 체력 바 잔상(방금 깎인 만큼)이 줄어드는 빠르기(1초에 체력 바 비율).
 const HP_TRAIL_SPEED := 0.6
-## 화면 위 가운데 대상 창: 너비, 체력 바 높이, 위 가장자리에서 떨어진 거리(px).
-const TARGET_FRAME_WIDTH := 300.0
-const TARGET_FRAME_BAR_HEIGHT := 10.0
-const TARGET_FRAME_TOP := 18.0
 
 # ─── 사냥 방식 / 손대면 수동 ───────────────────────
 ## 처음 켤 때의 사냥 방식(풀오토 · 세미오토 · 수동, 오토 버튼으로 바꾼다). 저장 기능이 생기면 마지막 선택을 기억한다.

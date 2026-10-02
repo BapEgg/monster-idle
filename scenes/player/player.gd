@@ -5,7 +5,8 @@ extends Unit
 ##   손을 떼면 GameConfig.MANUAL_RETURN_SECONDS 뒤(기본 0 = 바로) 다시 자동 사냥으로 돌아온다.
 ## - 세미오토(그리고 풀오토에서 만지는 동안): 이동은 직접, 공격은 사거리 안에 들어온 야생 헨치를 자동으로 한다.
 ## - 수동: 이동도 공격도 직접 한다.
-## 대상: 화면에서 몹을 눌러 지정하거나(set_target), 자동 사냥·공격 버튼이 고른다. 발밑 고리와 화면 위 대상 창으로 보인다.
+## 대상: 화면에서 몹을 눌러 지정하거나(set_target, 두 번 누르면 attack_target), 자동 사냥·공격 버튼이 고른다.
+## 발밑 고리와 화면 위 대상 창으로 보인다.
 ## 공격 버튼(attack 액션: 화면 공격 버튼·Space): 대상(없으면 가까운 적)에게 다가가 쓰러질 때까지 싸운다.
 ##   한 번 누르면 그 대상과 끝까지 싸우고, 누르고 있으면 다음 적으로 이어 간다. 조이스틱으로 움직이면 다가가기를 멈춘다.
 ## 원점 = 발밑(y정렬 기준). 그림은 도형(그림자 + 몸 + 머리)으로 대체한다.
@@ -113,6 +114,12 @@ func _drop_lost_target(check_distance: bool) -> void:
 		hunt_target = null
 	set_target(null)
 	_chasing = false
+
+
+## 몹을 두 번 눌렀을 때(더블 탭): 대상으로 지정하고, 공격 버튼을 누른 것처럼 다가가 싸운다.
+func attack_target(unit: Unit) -> void:
+	set_target(unit)
+	_engage()
 
 
 ## 그 거리(땅 위 px) 안에서 가장 가까운 야생 헨치. 없으면 null.

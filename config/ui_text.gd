@@ -9,9 +9,6 @@ const TERM_CORE := "코어"
 const TERM_HENCH := "헨치"
 const TERM_MIX := "믹스"
 
-# ─── 조작 안내 (화면 왼쪽 위) ─────────────────────────
-const HINT := "이동: WASD · 방향키 / 화면 왼쪽 끌기\n공격: Space / 공격 버튼 · 몹을 누르면 대상 지정\n오토 버튼: 풀오토 → 세미오토 → 수동"
-
 # ─── 공격 버튼 · 오토 버튼 (화면 오른쪽 아래) ─────────────
 ## 오토 버튼 글자(AutoControl.Mode 순서)
 const CONTROL_MODE_NAMES := ["풀오토", "세미오토", "수동"]
@@ -20,6 +17,8 @@ const ATTACK_BUTTON := "공격"
 # ─── 대상 창 (화면 위 가운데) ──────────────────────────
 ## %d / %d = 남은 체력 / 최대 체력
 const TARGET_HP := "%d / %d"
+## 에디터에서 대상 창 자리를 잡을 때 보이는 예시 이름
+const TARGET_PREVIEW_NAME := "대상 이름(에디터 예시)"
 
 # ─── 사냥 상태 ────────────────────────────────────
 const MODE_AUTO := "자동 사냥"

@@ -135,6 +135,16 @@ func _run(main: Node) -> void:
 	await _physics_frames(2)
 	_expect(player.target == other and not wild.targeted, "마우스로 다른 몹을 클릭 → 대상이 바뀜")
 	_remove(wild)
+	# 더블 탭: 한 번 누르면 지정만, 같은 몹을 빨리 두 번 누르면 공격 버튼 없이 다가가 공격
+	await _seconds(GameConfig.DOUBLE_TAP_SECONDS + 0.1)
+	start = player.position
+	await _tap(_screen_of(other))
+	await _seconds(GameConfig.DOUBLE_TAP_SECONDS + 0.1)
+	_expect(player.target == other and other.hp == other.stats.max_hp and player.position.distance_to(start) < 1.0, "몹을 한 번 누르면 지정만(공격 안 함)")
+	await _tap(_screen_of(other))
+	await _tap(_screen_of(other))
+	await _seconds(2.0)
+	_expect(other.hp < other.stats.max_hp, "같은 몹을 두 번 누르면 바로 다가가 공격")
 	_remove(other)
 	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
 	_expect(player.control.mode == AutoControl.Mode.FULL_AUTO, "오토 버튼 → 다시 풀오토")

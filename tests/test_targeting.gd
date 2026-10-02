@@ -21,3 +21,11 @@ func test_hp_trail() -> void:
 	expect_near(HpBar.next_trail(1.0, 0.6, 0.1), 1.0 - GameConfig.HP_TRAIL_SPEED * 0.1, "깎이면 잔상이 천천히 따라 내려옴")
 	expect_near(HpBar.next_trail(1.0, 0.6, 10.0), 0.6, "잔상은 체력 아래로 내려가지 않음")
 	expect_near(HpBar.next_trail(0.4, 0.7, 0.1), 0.7, "회복하면 바로 따라 올라감")
+
+
+## 사용자 결정(2026-10-02): 같은 몹을 빨리 두 번 누르면 공격 버튼 없이 바로 공격
+func test_double_tap() -> void:
+	var window := roundi(GameConfig.DOUBLE_TAP_SECONDS * 1000.0)
+	expect_true(Targeting.is_double_tap(1000, 1000 + window - 50, true), "같은 몹을 빨리 다시 누르면 더블 탭")
+	expect_true(not Targeting.is_double_tap(1000, 1000 + window + 50, true), "너무 늦게 누르면 아님")
+	expect_true(not Targeting.is_double_tap(1000, 1100, false), "다른 몹이면 아님")

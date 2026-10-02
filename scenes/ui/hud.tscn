@@ -3,8 +3,17 @@
 [ext_resource type="Script" path="res://scenes/ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://scenes/ui/attack_button.gd" id="2_attack"]
 [ext_resource type="Script" path="res://scenes/ui/auto_button.gd" id="3_auto"]
-[ext_resource type="Script" path="res://scenes/ui/skill_slots.gd" id="4_slots"]
+[ext_resource type="Script" path="res://scenes/ui/skill_slot.gd" id="4_slot"]
 [ext_resource type="Script" path="res://scenes/ui/target_frame.gd" id="5_target"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
+radius = 60.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_auto"]
+size = Vector2(96, 34)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_slot"]
+size = Vector2(52, 52)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -19,13 +28,6 @@ action_left = &"move_left"
 action_right = &"move_right"
 action_up = &"move_up"
 action_down = &"move_down"
-
-[node name="Hint" type="Label" parent="."]
-offset_left = 56.0
-offset_top = 24.0
-offset_right = 456.0
-offset_bottom = 90.0
-mouse_filter = 2
 
 [node name="Mode" type="Label" parent="."]
 anchors_preset = 1
@@ -52,20 +54,64 @@ horizontal_alignment = 2
 mouse_filter = 2
 
 [node name="TargetFrame" type="Control" parent="."]
-visible = false
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
+offset_left = -150.0
+offset_top = 18.0
+offset_right = 150.0
+offset_bottom = 78.0
 grow_horizontal = 2
 mouse_filter = 2
 script = ExtResource("5_target")
 
-[node name="SkillSlots" type="Node2D" parent="."]
-script = ExtResource("4_slots")
+[node name="Controls" type="Control" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
 
-[node name="AttackButton" type="TouchScreenButton" parent="."]
-script = ExtResource("2_attack")
+[node name="AttackButton" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-140, -130)
+shape = SubResource("CircleShape2D_attack")
 action = "attack"
+script = ExtResource("2_attack")
 
-[node name="AutoButton" type="TouchScreenButton" parent="."]
+[node name="AutoButton" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-140, -224)
+shape = SubResource("RectangleShape2D_auto")
 script = ExtResource("3_auto")
+
+[node name="SkillSlot1" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-368, -161)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")
+
+[node name="SkillSlot2" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-306, -161)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")
+
+[node name="SkillSlot3" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-244, -161)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")
+
+[node name="SkillSlot4" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-368, -99)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")
+
+[node name="SkillSlot5" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-306, -99)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")
+
+[node name="SkillSlot6" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-244, -99)
+shape = SubResource("RectangleShape2D_slot")
+script = ExtResource("4_slot")

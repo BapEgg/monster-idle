@@ -1,7 +1,9 @@
 class_name Hud
 extends CanvasLayer
-## 화면 위 UI: 가상 조이스틱, 조작 안내 문구, 사냥 상태, 처치 수, 대상 창(위 가운데),
+## 화면 위 UI: 가상 조이스틱, 사냥 상태, 처치 수, 대상 창(위 가운데),
 ## 오른쪽 아래의 공격 버튼(늘 보임) · 오토 버튼 · 스킬 칸(메이플키우기 배치를 따름, 사용자 결정 2026-10-02).
+## 위치·크기는 이 장면(hud.tscn)을 에디터에서 열어 끌어서 정한다. 코드는 자리를 건드리지 않는다.
+## 오른쪽 아래 버튼들은 화면 오른쪽 아래 모서리에 붙은 Controls 아래에 있어서, 휴대폰이 길어져도 모서리에서 같은 거리에 남는다.
 ## 조이스틱은 Godot 4.7 기본 노드(VirtualJoystick, 동적 모드)를 쓴다.
 ## 자기 영역(화면 왼쪽)을 누르면 그 자리에 생기고, 기울인 만큼 move_* 입력 액션을 눌러 준다.
 ## 그래서 주인공은 키보드와 똑같이 Input.get_vector()로 읽는다.
@@ -10,7 +12,6 @@ extends CanvasLayer
 ## 오토 버튼으로 사냥 방식을 바꿨을 때. main이 받아 주인공에게 알려 준다.
 signal control_mode_selected(mode: AutoControl.Mode)
 
-const HINT_FONT_SIZE := 15
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
 const OUTLINE_SIZE := 6
@@ -19,11 +20,10 @@ const JOYSTICK_RING_WIDTH := 3
 const CONTROLS_PADDING := 8.0
 
 @onready var joystick: VirtualJoystick = $Joystick
-@onready var attack_button: AttackButton = $AttackButton
-@onready var auto_button: AutoButton = $AutoButton
+@onready var attack_button: AttackButton = $Controls/AttackButton
+@onready var auto_button: AutoButton = $Controls/AutoButton
 @onready var target_frame: TargetFrame = $TargetFrame
-@onready var _skill_slots: SkillSlots = $SkillSlots
-@onready var _hint: Label = $Hint
+@onready var _controls: Control = $Controls
 @onready var _mode: Label = $Mode
 @onready var _kills: Label = $Kills
 
@@ -31,15 +31,10 @@ var _player: Player
 
 
 func _ready() -> void:
-	_hint.text = UiText.HINT
-	_style_label(_hint, HINT_FONT_SIZE)
 	_style_label(_mode, MODE_FONT_SIZE)
 	_style_label(_kills, KILLS_FONT_SIZE)
 	_setup_joystick()
-	_setup_target_frame()
 	auto_button.pressed.connect(_on_auto_button)
-	get_viewport().size_changed.connect(_place_controls)
-	_place_controls()
 
 
 func bind_player(player: Player) -> void:
@@ -53,13 +48,22 @@ func set_kills(count: int) -> void:
 
 ## 그 자리(화면 좌표)가 오른쪽 아래 버튼들(공격 · 오토 · 스킬 칸) 위인가.
 func is_over_controls(point: Vector2) -> bool:
-	var center := attack_button.position
-	if point.distance_to(center) <= GameConfig.ATTACK_BUTTON_RADIUS + CONTROLS_PADDING:
-		return true
-	if auto_button.area().grow(CONTROLS_PADDING).has_point(point):
-		return true
-	var slots := _skill_slots.bounds()
-	return Rect2(slots.position + center, slots.size).grow(CONTROLS_PADDING).has_point(point)
+	for node in _controls.get_children():
+		var button := node as TouchScreenButton
+		if button != null and button.visible and _covers(button, point):
+			return true
+	return false
+
+
+## 버튼 모양(shape) 안인가(둘레 CONTROLS_PADDING까지).
+static func _covers(button: TouchScreenButton, point: Vector2) -> bool:
+	var local := button.get_global_transform().affine_inverse() * point
+	if button.shape is CircleShape2D:
+		return local.length() <= (button.shape as CircleShape2D).radius + CONTROLS_PADDING
+	if button.shape is RectangleShape2D:
+		var size := (button.shape as RectangleShape2D).size
+		return Rect2(-size * 0.5, size).grow(CONTROLS_PADDING).has_point(local)
+	return false
 
 
 func _process(_delta: float) -> void:
@@ -97,26 +101,6 @@ func _style_label(label: Label, font_size: int) -> void:
 	label.add_theme_color_override("font_color", Palette.TEXT)
 	label.add_theme_color_override("font_outline_color", Palette.TEXT_OUTLINE)
 	label.add_theme_constant_override("outline_size", OUTLINE_SIZE)
-
-
-# ─── 오른쪽 아래 버튼 · 대상 창 ─────────────────────
-
-## 공격 버튼·오토 버튼·스킬 칸은 Node2D라 앵커(화면 모서리에 붙이는 기능)가 없으므로,
-## 화면 크기가 바뀔 때마다 오른쪽 아래 기준으로 다시 놓는다.
-func _place_controls() -> void:
-	var center := get_viewport().get_visible_rect().size - GameConfig.ATTACK_BUTTON_MARGIN
-	attack_button.position = center
-	auto_button.position = center + GameConfig.AUTO_BUTTON_OFFSET
-	_skill_slots.position = center
-
-
-## 대상 창은 위 가운데에 붙여 둔다(앵커 = 화면 가로 가운데).
-func _setup_target_frame() -> void:
-	var half := GameConfig.TARGET_FRAME_WIDTH * 0.5
-	target_frame.offset_left = -half
-	target_frame.offset_right = half
-	target_frame.offset_top = GameConfig.TARGET_FRAME_TOP
-	target_frame.offset_bottom = GameConfig.TARGET_FRAME_TOP + TargetFrame.NAME_FONT_SIZE + TargetFrame.NAME_GAP + GameConfig.TARGET_FRAME_BAR_HEIGHT + TargetFrame.NUMBER_FONT_SIZE + 4.0
 
 
 # ─── 조이스틱 ────────────────────────────────────
