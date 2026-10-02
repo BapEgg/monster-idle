@@ -9,6 +9,8 @@ var attack_interval := 1.0
 ## 사거리(땅 위 px). GameConfig.MELEE_RANGE_MAX보다 길면 투사체를 쏜다.
 var attack_range := 0.0
 var heal := 0.0
+## 회복 한 번 뒤 다음까지 기다리는 시간(초). 기본 공격과 따로 센다(힐러는 회복하면서도 공격한다).
+var heal_interval := 1.0
 ## 이동 속력(px/초, 화면 가로 기준).
 var speed := 0.0
 
@@ -20,6 +22,7 @@ static func from_table(row: Dictionary, move_speed: float, hp_scale := 1.0, atta
 	s.attack_interval = float(row["attack_interval"])
 	s.attack_range = float(row["attack_range"])
 	s.heal = float(row.get("heal", 0.0)) * attack_scale
+	s.heal_interval = float(row.get("heal_interval", row["attack_interval"]))
 	s.speed = move_speed
 	return s
 

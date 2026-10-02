@@ -1,7 +1,8 @@
 class_name Hench
 extends Unit
 ## 헨치. 그림은 색 원 + 역할 글자 + 이름표로 대체한다.
-## 내 파티(PARTY): 주인공을 따라다니다가, 주인공이 노리는 적이나 파티를 공격하는 적과 싸운다. 힐러는 다친 동료부터 회복한다.
+## 내 파티(PARTY): 주인공을 따라다니다가, 주인공이 노리는 적이나 파티를 공격하는 적과 싸운다.
+##   모든 헨치가 기본 공격을 한다. 힐러는 그와 함께(대기 시간이 따로) 다친 동료를 회복한다.
 ## 야생(WILD): 자기 자리 주변을 돌아다니다가, 맞으면 위협 점수가 가장 높은 상대에게 반격한다(먼저 덤비지는 않는다).
 
 # 임시 도형 치수(px)
@@ -70,18 +71,18 @@ func _think(delta: float) -> void:
 func _think_party() -> void:
 	if not is_instance_valid(leader) or not leader.is_alive():
 		return
-	if species.role == "healer" and _heal_someone():
-		return
+	# 회복은 역할 특성이라 기본 공격과 따로 한다. 다친 동료가 멀면 그쪽으로 걸어가는 게 먼저다.
+	var going_to_patient := stats.heal > 0.0 and _heal_someone()
 	var enemy := _pick_enemy()
 	if enemy != null:
 		_following = false
 		if in_reach(enemy, stats.attack_range):
-			face(enemy.position)
 			try_attack(enemy)
-		else:
+		elif not going_to_patient:
 			walk_to(enemy.position, stats.attack_range * 0.9)
 		return
-	_follow_leader()
+	if not going_to_patient:
+		_follow_leader()
 
 
 ## 싸울 상대: 파티를 공격 중인 야생 헨치와 주인공이 노리는 대상 중 나에게 가장 가까운 것.
@@ -107,7 +108,7 @@ func _pick_enemy() -> Unit:
 	return best
 
 
-## 체력이 낮은 동료가 있으면 다가가 회복한다. 회복할 동료가 있으면 true.
+## 체력이 낮은 동료가 있으면 회복한다. 사거리 밖이라 그쪽으로 걸어가는 중이면 true.
 func _heal_someone() -> bool:
 	var allies: Array[Unit] = []
 	var ratios: Array[float] = []
@@ -120,12 +121,11 @@ func _heal_someone() -> bool:
 	if index < 0:
 		return false
 	var patient := allies[index]
-	_following = false
 	if in_reach(patient, stats.attack_range):
-		face(patient.position)
 		try_heal(patient)
-	else:
-		walk_to(patient.position, stats.attack_range * 0.9)
+		return false
+	_following = false
+	walk_to(patient.position, stats.attack_range * 0.9)
 	return true
 
 

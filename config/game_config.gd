@@ -50,14 +50,16 @@ const JOYSTICK_KNOB_RADIUS := 38.0
 const MANUAL_RETURN_SECONDS := 0.0
 
 # ─── 전투 (프로토타입 2 임시값, 레벨·스킬·접미사 없음) ──────
-## 체력, 공격력, 공격 간격(초), 사거리(땅 위 px), 회복량.
+## 체력, 공격력, 공격 간격(초), 사거리(땅 위 px), 회복량, 회복 간격(초).
+## 모든 헨치는 기본 공격을 한다. 역할은 "잘하는 것"이고 차이는 나중에 스킬로 드러낸다(사용자 결정 2026-10-02).
+## 밸런스는 프로토타입이 어느 정도 완성된 뒤 잡는다.
 const PLAYER_STATS := {"hp": 300.0, "attack": 12.0, "attack_interval": 1.0, "attack_range": 60.0}
 ## 헨치 역할별 능력치. 종마다 다른 값은 나중에 data/의 도감 데이터로 옮긴다.
 const ROLE_STATS := {
 	"tank": {"hp": 260.0, "attack": 6.0, "attack_interval": 1.2, "attack_range": 56.0},
 	"melee": {"hp": 160.0, "attack": 11.0, "attack_interval": 0.9, "attack_range": 56.0},
 	"ranged": {"hp": 130.0, "attack": 9.0, "attack_interval": 1.1, "attack_range": 230.0},
-	"healer": {"hp": 140.0, "attack": 4.0, "attack_interval": 1.5, "attack_range": 210.0, "heal": 18.0},
+	"healer": {"hp": 140.0, "attack": 4.0, "attack_interval": 1.5, "attack_range": 210.0, "heal": 18.0, "heal_interval": 1.5},
 }
 ## 사거리가 이보다 길면 투사체를 쏜다(짧으면 몸으로 부딪쳐 때린다).
 const MELEE_RANGE_MAX := 90.0

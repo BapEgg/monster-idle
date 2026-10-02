@@ -31,6 +31,7 @@ var facing := Vector2.DOWN
 
 var _delta := 0.0
 var _cooldown := 0.0
+var _heal_cooldown := 0.0
 var _desired := Vector2.ZERO  # 이번 프레임 이동(화면 방향, 길이 0~1)
 var _speed_scale := 1.0
 var _path := PackedVector2Array()
@@ -62,6 +63,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_delta = delta
 	_cooldown = maxf(_cooldown - delta, 0.0)
+	_heal_cooldown = maxf(_heal_cooldown - delta, 0.0)
 	_desired = Vector2.ZERO
 	_speed_scale = 1.0
 	if is_alive():
@@ -210,11 +212,11 @@ func try_attack(target: Unit) -> bool:
 	return true
 
 
-## 회복 대기가 끝났으면 회복한다(공격과 대기 시간을 같이 쓴다).
+## 회복 대기가 끝났으면 회복한다. 기본 공격과 대기 시간을 따로 쓰므로 같은 때에 공격도 할 수 있다.
 func try_heal(target: Unit) -> bool:
-	if _cooldown > 0.0 or not target.is_alive():
+	if _heal_cooldown > 0.0 or not target.is_alive():
 		return false
-	_cooldown = stats.attack_interval
+	_heal_cooldown = stats.heal_interval
 	face(target.position)
 	target.receive_heal(stats.heal)
 	return true

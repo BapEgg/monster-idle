@@ -37,3 +37,23 @@ func test_only_ranged_roles_shoot() -> void:
 func test_personal_space_smaller_than_melee_reach() -> void:
 	expect_true(GameConfig.PERSONAL_SPACE < UnitStats.for_player().attack_range, "개인 공간 < 주인공 사거리")
 	expect_true(GameConfig.PERSONAL_SPACE < UnitStats.for_hench("tank", false).attack_range, "개인 공간 < 근접 사거리")
+
+
+## 사용자 결정(2026-10-02): 모든 헨치는 기본 공격을 한다. 힐러는 딜러·탱커보다 약하고, 탱커는 딜러보다 약하지만 튼튼하다.
+func test_every_role_has_basic_attack() -> void:
+	for role: String in HenchSpecies.ROLES:
+		expect_true(UnitStats.for_hench(role, false).attack > 0.0, "%s도 기본 공격을 한다" % role)
+	var tank := UnitStats.for_hench("tank", false)
+	var healer := UnitStats.for_hench("healer", false)
+	for dealer: String in ["melee", "ranged"]:
+		var d := UnitStats.for_hench(dealer, false)
+		expect_true(healer.attack < tank.attack and healer.attack < d.attack, "힐러 공격 < 탱커·%s" % dealer)
+		expect_true(tank.attack < d.attack, "탱커 공격 < %s" % dealer)
+		expect_true(tank.max_hp > d.max_hp, "탱커 체력 > %s" % dealer)
+
+
+func test_heal_has_its_own_interval() -> void:
+	var healer := UnitStats.for_hench("healer", false)
+	expect_near(healer.heal_interval, float(GameConfig.ROLE_STATS["healer"]["heal_interval"]), "힐러 회복 간격은 설정값")
+	var tank := UnitStats.for_hench("tank", false)
+	expect_near(tank.heal_interval, tank.attack_interval, "회복 간격이 없으면 공격 간격을 쓴다")
