@@ -32,15 +32,22 @@
 | 명령 실행·로그 확인(Claude) | `C:\Users\lkhej\Downloads\Godot_v4.7.2-stable_win64_console.exe` |
 
 Claude는 콘솔 실행 파일로 아래 순서대로 확인한다(Git Bash 기준).
+**실행할 때는 꼭 `-d`(디버그 모드)를 붙인다.** 빼면 GDScript 경고(`WARNING`)가 출력되지 않아, 사용자가 F5를 눌렀을 때에야 경고가 보인다.
+`< /dev/null`은 오류가 났을 때 디버거가 입력을 기다리며 멈추지 않게 하려는 것이다.
 
 ```bash
 # 1. 가져오기 + 클래스 목록 갱신 (class_name 스크립트를 새로 만들었으면 꼭)
 "/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" --headless --path /c/dev/monster-idle --import
-# 2. 순수 함수 테스트 (tests/test_*.gd 전부)
-"/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" --headless --path /c/dev/monster-idle --script res://tests/run_tests.gd
-# 3. 메인 장면을 실제로 띄워 조작 확인 (창이 잠깐 뜬다. --shot 을 주면 화면을 PNG로 저장해 눈으로 확인)
-"/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" --path /c/dev/monster-idle --script res://tests/smoke_main.gd -- --shot=<스크래치패드>/shot.png
+# 2. 게임 본체를 잠깐 실행해 경고·오류 확인 (F5와 같은 장면, 60프레임 후 종료)
+"/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" --headless -d --path /c/dev/monster-idle --quit-after 60 < /dev/null
+# 3. 순수 함수 테스트 (tests/test_*.gd 전부)
+"/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" --headless -d --path /c/dev/monster-idle --script res://tests/run_tests.gd < /dev/null
+# 4. 메인 장면을 실제로 띄워 조작 확인 (창이 잠깐 뜬다. --shot 을 주면 화면을 PNG로 저장해 눈으로 확인)
+#    터치 입력은 창이 있어야 전달되므로 --headless 를 붙이지 않는다. 검사 창은 실제 마우스·키보드를 받지 않게 해 두었다.
+"/c/Users/lkhej/Downloads/Godot_v4.7.2-stable_win64_console.exe" -d --path /c/dev/monster-idle --script res://tests/smoke_main.gd < /dev/null -- --shot=<스크래치패드>/shot.png
 ```
+
+넘기는 기준: 출력에 `WARNING`·`ERROR`·`SCRIPT ERROR`가 하나도 없고, 테스트와 실행 검사의 실패가 0개.
 
 ## 폴더 구조
 
@@ -94,7 +101,7 @@ Claude는 콘솔 실행 파일로 아래 순서대로 확인한다(Git Bash 기�
 ## 작업 방식
 
 1. **기능 하나씩 만든다.** 끝나면 멈추고 사용자가 Godot에서 직접 확인하게 한다.
-2. 넘기기 전에 Claude가 먼저 확인한다: 가져오기 → 테스트 → 메인 장면 실행(스크린샷 보기). **오류·경고 0일 때만 넘긴다.**
+2. 넘기기 전에 Claude가 먼저 확인한다: 가져오기 → 본체 실행 → 테스트 → 메인 장면 실행(스크린샷 보기). 모두 `-d`로 돌려 **오류·경고 0일 때만 넘긴다.**
 3. 보고는 짧게, 이 순서로 쓴다.
    - **확인 방법**: F5(전체 실행) / F6(현재 장면 실행), 조작 방법, 무엇을 보면 되는지
    - **이번에 바뀐 점**: 항목별 목록. 사용자가 항목마다 한줄평을 주면 반영한다
