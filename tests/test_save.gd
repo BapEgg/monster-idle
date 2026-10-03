@@ -80,7 +80,7 @@ func test_capture_and_restore_round_trip() -> void:
 	var codex2 := Codex.new()
 	var progress2 := PlayerProgress.new()
 	var world2 := WorldState.new()
-	var dropped := GameSave.restore(parsed, bag2, wallet2, GameConfig.PARTY_HENCHES.size(), mastery2, codex2, progress2, null, world2)
+	var dropped := GameSave.restore(parsed, bag2, wallet2, GameConfig.PARTY_SIZE, mastery2, codex2, progress2, null, world2)
 	expect_true(world2.island == "dragon" and world2.region == "special" and world2.is_island_open("plant"), "섬 · 지역 · 열린 섬을 기억한다")
 	expect_true(progress2.level == 3 and progress2.exp_points == 5, "주인공 레벨 · 경험치를 기억한다 (Lv %d, %d)" % [progress2.level, progress2.exp_points])
 	expect_true(wallet2.exp_shards == 7, "경험치 조각을 기억한다")

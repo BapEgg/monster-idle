@@ -121,7 +121,6 @@ func _ready() -> void:
 	mix_panel.core_shown.connect(bag_panel.select)
 	bag_panel.info().skill_detail_requested.connect(skill_window.open)
 	mix_panel.info().skill_detail_requested.connect(skill_window.open)
-	mix_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 
 
 func bind_player(player: Player) -> void:
@@ -172,7 +171,7 @@ func bind_job(job: JobState, progress: PlayerProgress) -> void:
 func bind_collection(wallet: Wallet, workshop: Workshop, party_names: Callable) -> void:
 	currency_bar.bind(wallet)
 	bag_panel.bind_collection(wallet, workshop, confirm_box, party_names)
-	mix_panel.bind(workshop, confirm_box, party_names)
+	mix_panel.bind(workshop, confirm_box)
 
 
 ## 가방을 가방 버튼·가방 창에, 사냥 기록을 디버그 화면에 이어 준다.

@@ -266,7 +266,7 @@ static func effect_sentence(effect: Dictionary, stats: UnitStats) -> String:
 		"revive":
 			var count := int(effect.get("count", 1))
 			var hp := _b(_pct(float(effect.get("hp", 0.5))))
-			text = UiText.TIP_REVIVE % [count, hp] if count < GameConfig.PARTY_HENCHES.size() else UiText.TIP_REVIVE_ALL % hp
+			text = UiText.TIP_REVIVE % [count, hp] if count < GameConfig.PARTY_SIZE else UiText.TIP_REVIVE_ALL % hp
 		"buff":
 			var parts := PackedStringArray()
 			for key: String in JobRules.BUFF_KEYS:

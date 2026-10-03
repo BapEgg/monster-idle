@@ -9,14 +9,12 @@ extends Control
 ##   고르면 그 칸에 들어가고 서랍이 닫힌다. 서랍 밖을 누르면 닫힌다. 믹스창을 열 때 주 코어가 비어 있으면 서랍을 바로 연다.
 ## 오른쪽 정보 카드(가방 창의 CoreInfo를 버튼 없이 재사용): 결과 이름 ⓘ = "결과 미리보기", 서랍 안 코어를 길게 누르면 "재료 정보".
 ## 믹스: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 두 재료가 플라스크로 빨려 들며 액체가 쭉 차오르고 →
-##   성공 = 번쩍이며 태어난 헨치가 플라스크 안에 짠 → 성공 카드(패시브 고르기 · 파티에 넣기 강조 · 정보 보기 · 계속 믹스),
+##   성공 = 번쩍이며 태어난 헨치가 플라스크 안에 짠 → 성공 카드(패시브 고르기 · 정보 보기 · 계속 믹스). 파티에 넣을지는 가방에서 사용자가 정한다,
 ##   실패 = 플라스크가 깨지고(금 · 유리 조각, 액체가 탁해짐) 안의 주 코어가 운다 → 실패 카드(잃은 재료 · 얻은 숙련 경험치).
 ## 실제 처리는 Workshop(믹스 · 숙련도 · 도감 · 패시브 고르기). 자리·크기는 mix_panel.tscn을 에디터에서 연다. 수치는 GameConfig.MIX_*.
 
 ## 결과 카드의 "정보 보기": 가방 창에서 그 코어를 보여 준다.
 signal core_shown(item: CoreItem)
-## 결과 카드의 "파티에 넣기"
-signal party_requested(item: CoreItem, slot: int)
 
 ## 재료 정렬(UiText.MIX_SORTS 순서)
 enum Sort { LEVEL, GRADE, SHINING }
@@ -51,8 +49,6 @@ var main_core: CoreItem
 var sub_core: CoreItem
 ## 마지막 믹스에서 태어난 코어(실패면 null)
 var last_born: CoreItem
-## 파티 자리마다 지금 헨치 이름(결과 카드의 "파티에 넣기")
-var party_names := Callable()
 
 var _workshop: Workshop
 var _confirm: ConfirmBox
@@ -140,8 +136,6 @@ var _result_plain := ""  # 결과 이름(ⓘ 빼고)
 @onready var _keep_own: Button = %KeepOwn
 @onready var _keep_legacy: Button = %KeepLegacy
 @onready var _card_mastery: Label = %CardMastery
-@onready var _card_party: HBoxContainer = %CardParty
-@onready var _to_party: Button = %ToParty
 @onready var _show_info: Button = %ShowInfo
 @onready var _again: Button = %Again
 
@@ -181,12 +175,12 @@ func _ready() -> void:
 	_warning_big.text = UiText.MIX_WARNING
 	UiKit.style_label(_warning_small, SMALL_FONT_SIZE - 2, Palette.TEXT_WARNING)
 	_warning_small.text = UiText.MIX_WARNING
-	for button: BaseButton in [_close, _recipe_button, _mastery_close, _recipe_close, _to_party, _show_info, _again, _tribe_filter, _sort, _keep_own, _keep_legacy, _drawer_clear, _drawer_close, _info_close]:
+	for button: BaseButton in [_close, _recipe_button, _mastery_close, _recipe_close, _show_info, _again, _tribe_filter, _sort, _keep_own, _keep_legacy, _drawer_clear, _drawer_close, _info_close]:
 		UiKit.style_button(button, BUTTON_FONT_SIZE)
 	UiKit.style_button(_swap, SWAP_FONT_SIZE)
 	UiKit.style_button(_mastery_button, SMALL_FONT_SIZE)
 	_mastery_button.add_theme_color_override("font_color", Palette.MIX_MASTERY_BAR)
-	_accent(_to_party, Palette.MIX_ACCENT_BG, Palette.MIX_ACCENT_BORDER, Palette.TEXT)  # 결과 카드에서는 "파티에 넣기"만 강조색
+	_accent(_again, Palette.MIX_ACCENT_BG, Palette.MIX_ACCENT_BORDER, Palette.TEXT)  # 결과 카드에서는 "계속 믹스"만 강조색(파티 편성은 가방에서)
 	_close.text = UiText.BAG_CLOSE
 	_drawer_close.text = UiText.BAG_CLOSE
 	_info_close.text = UiText.BAG_CLOSE
@@ -195,7 +189,6 @@ func _ready() -> void:
 	_recipe_close.text = UiText.BAG_CLOSE
 	_swap.text = UiText.MIX_SWAP
 	_recipe_button.text = UiText.MIX_RECIPE_BUTTON
-	_to_party.text = UiText.BTN_TO_PARTY
 	_show_info.text = UiText.BTN_SHOW_INFO
 	_again.text = UiText.BTN_MIX_AGAIN
 	_chance_tip.add_theme_stylebox_override("panel", _choice_box(Palette.MIX_TIP_BG, Palette.PANEL_BORDER))
@@ -252,15 +245,13 @@ func _ready() -> void:
 	_material_scroll.resized.connect(func() -> void: _layout_materials(_materials.get_child_count()))
 	_tribe_filter.item_selected.connect(func(_index: int) -> void: _rebuild_materials())
 	_sort.item_selected.connect(func(_index: int) -> void: _rebuild_materials())
-	_to_party.pressed.connect(_on_to_party)
 	_show_info.pressed.connect(_on_show_info)
 	_again.pressed.connect(_close_result)
 
 
-func bind(workshop: Workshop, confirm: ConfirmBox, names: Callable) -> void:
+func bind(workshop: Workshop, confirm: ConfirmBox) -> void:
 	_workshop = workshop
 	_confirm = confirm
-	party_names = names
 	_workshop.bag.changed.connect(_refresh_if_open)
 	_workshop.wallet.changed.connect(_refresh_if_open)
 
@@ -1032,11 +1023,10 @@ func _flash_screen(color: Color) -> void:
 
 
 ## 결과 카드(성공 · 실패 같은 모양): 이름 + 종족·역할·등급 + 내용 + (성공이면 패시브 고르기) + 얻은 숙련 경험치 + 버튼.
-## 성공 = (NEW) 초상화 · LV·나이·성별 · 계승 스탯 · 패시브 카드 두 장(자기 / 유산), 버튼 셋(파티에 넣기만 강조).
+## 성공 = (NEW) 초상화 · LV·나이·성별 · 계승 스탯 · 패시브 카드 두 장(자기 / 유산), 버튼 둘(계속 믹스만 강조).
 ## 실패 = 잃은 재료 두 칸 · "재료 둘이 사라졌습니다", 흔들림, 계속 믹스만.
 func _show_result_card() -> void:
 	_result_layer.visible = true
-	_card_party.visible = false
 	var born := last_born
 	var success := born != null
 	_new_badge.visible = success and _workshop.last_mix_new
@@ -1045,7 +1035,6 @@ func _show_result_card() -> void:
 	_card_passive_title.visible = success
 	_card_passives.visible = success
 	_card_passive_note.visible = success
-	_to_party.visible = success
 	_show_info.visible = success
 	var mastery := _workshop.mastery
 	var exp_text := UiText.MIX_MASTERY_MAX if mastery.is_max() else UiText.MIX_MASTERY_EXP % [mastery.exp_points, mastery.exp_to_next()]
@@ -1132,29 +1121,6 @@ func result_card_texts() -> PackedStringArray:
 	if _card_passives.visible:
 		passive = _keep_legacy.text if _keep_legacy.button_pressed else _keep_own.text
 	return PackedStringArray([_card_title.text, _card_kind.text, _card_info.text, passive, _card_mastery.text])
-
-
-## 파티에 넣기: 넣을 자리 버튼(지금 헨치 이름) + 취소.
-func _on_to_party() -> void:
-	for child in _card_party.get_children():
-		child.queue_free()
-	var names: PackedStringArray = party_names.call() if party_names.is_valid() else PackedStringArray()
-	for slot in names.size():
-		var button := Button.new()
-		button.text = UiText.PARTY_SLOT % [slot + 1, names[slot]]
-		button.custom_minimum_size.y = BUTTON_FONT_SIZE * 2.4
-		UiKit.style_button(button, BUTTON_FONT_SIZE)
-		button.pressed.connect(func() -> void:
-			party_requested.emit(last_born, slot)
-			_close_result())
-		_card_party.add_child(button)
-	var cancel := Button.new()
-	cancel.text = UiText.BTN_CANCEL
-	cancel.custom_minimum_size.y = BUTTON_FONT_SIZE * 2.4
-	UiKit.style_button(cancel, BUTTON_FONT_SIZE)
-	cancel.pressed.connect(func() -> void: _card_party.visible = false)
-	_card_party.add_child(cancel)
-	_card_party.visible = true
 
 
 ## 정보 보기: 믹스창을 닫고 가방 창에서 그 코어를 보여 준다.

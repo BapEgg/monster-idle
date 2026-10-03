@@ -1,5 +1,5 @@
 {
-  "about": "개발 확인용 시작 가방(GameConfig.DEV_STARTER_BAG). 아직 저장이 없어서 게임을 켤 때마다 이 코어들과 골드를 넣는다. 출시 전에 끈다. age: 0 어린 · 1 성체 · 2 늙은, gender: 0 암컷 · 1 수컷.",
+  "about": "개발 확인용 시작 가방(GameConfig.DEV_STARTER_BAG). 아직 저장이 없어서 게임을 켤 때마다 이 코어들과 골드를 넣는다. 출시 전에 끈다. age: 0 어린 · 1 성체 · 2 늙은, gender: 0 암컷 · 1 수컷. 마지막 세 코어(솥마뱀 · 해마포 · 진주룡, Lv 1)는 파티 1~3번 자리에 넣은 채로 시작한다(party_slot, 기본 헨치가 없어져서 — 사용자 결정 2026-10-03).",
   "gold": 3000,
   "cores": [
     {
@@ -67,6 +67,30 @@
       "gender": 0,
       "level": 9,
       "locked": true
+    },
+    {
+      "species": "sotmabaem",
+      "suffix": "sturdy",
+      "age": 1,
+      "gender": 1,
+      "level": 1,
+      "party_slot": 0
+    },
+    {
+      "species": "haemapo",
+      "suffix": "precise",
+      "age": 1,
+      "gender": 0,
+      "level": 1,
+      "party_slot": 1
+    },
+    {
+      "species": "jinjuryong",
+      "suffix": "abundant",
+      "age": 1,
+      "gender": 1,
+      "level": 1,
+      "party_slot": 2
     }
   ]
 }

@@ -217,6 +217,11 @@ func _run(main: Node) -> void:
 	# 7-2) 스킬(헨치 고유 액티브): 스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 주인공 직업 액티브(Lv 1 전사는 방패 밀치기 하나), 궁극기 칸.
 	#      수동·세미오토에서는 칸을 눌러야 쓰고, 풀오토는 알아서 쓴다.
 	var squad: Array = main.get("party")
+	# 시작 파티 = 시작 가방에서 자리에 넣어 둔 코어 셋(기본 헨치는 없다). 다른 코어를 넣었다 빼면 자리가 비므로 이 코어들을 다시 넣는다.
+	var starters: Array[CoreItem] = []
+	for i in GameConfig.PARTY_SIZE:
+		starters.append(main.call("_party_core", i))
+	_expect(squad.size() == GameConfig.PARTY_SIZE and starters.all(func(item: CoreItem) -> bool: return item != null) and (main.call("members") as Array).size() == 3, "시작 파티 = 가방 코어 3마리(자리에 넣어 둔 코어)")
 	var slots_ok := true
 	for i in 3:
 		slots_ok = slots_ok and hud.skill_slot(i).skill != null and hud.skill_slot(i).skill == (squad[i] as Hench).skill
@@ -253,6 +258,7 @@ func _run(main: Node) -> void:
 	await _seconds(0.2)
 	_remove(wild)
 	main.call("leave_party", stunner)
+	main.call("assign_party", starters[0], 0)
 	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
 
 	# 8) 코어 드랍 · 가방(프로토타입 4): 떨어진 코어는 튀어 올랐다 땅에 머물고, 주인공에게 빨려 들어가 가방에 들어간다
@@ -350,7 +356,16 @@ func _run(main: Node) -> void:
 	await _tap(_center_of(info, "Party"))
 	await _physics_frames(2)
 	party = main.get("party")
-	_expect(not gochu.in_party() and (party[0] as Hench).species.id == GameConfig.PARTY_HENCHES[0], "파티에서 빼기 → 처음 헨치로 돌아감")
+	_expect(not gochu.in_party() and party[0] == null and (main.call("party_names") as PackedStringArray)[0] == UiText.PARTY_SLOT_EMPTY, "파티에서 빼기 → 1번 자리가 빔(기본 헨치로 바뀌지 않음)")
+	# 0마리도 된다: 남은 둘도 빼 보고, 다시 넣는다
+	main.call("leave_party", starters[1])
+	main.call("leave_party", starters[2])
+	await _physics_frames(2)
+	_expect((main.call("members") as Array).is_empty() and hud.skill_slot(0).skill == null and hud.skill_slot(2).skill == null and is_instance_valid(player) and player.is_alive(), "파티를 다 빼도 됨(헨치 0마리 · 스킬 칸 1~3 빔)")
+	for i in GameConfig.PARTY_SIZE:
+		main.call("assign_party", starters[i], i)
+	await _physics_frames(2)
+	_expect((main.call("members") as Array).size() == 3 and (main.get("party") as Array)[0].species.id == starters[0].species_id, "다시 넣으면 그 자리에 헨치가 섬")
 	var wallet: Wallet = main.get("wallet")
 	var owl := _find_core(bag, "mangwonbueong", CoreItem.Gender.FEMALE)
 	await _tap(hud.bag_panel.card_for(owl).get_global_rect().get_center())
@@ -507,6 +522,7 @@ func _run(main: Node) -> void:
 		_expect(card_texts[1].contains(UiText.ROLE_NAMES[born.species().role]) and card_texts[3].begins_with(UiText.MIX_CHOSEN % "") and born.passive_owner_id() == born.species_id and (mixer.find_child("CardPassiveNote", true, false) as Label).visible, "성공 카드: 종족·역할·등급(%s), 패시브는 먼저 자기 것(체크) + 나중에 못 바꾼다는 안내" % card_texts[1])
 		await _tap(mixer.passive_choice(1).get_global_rect().get_center())
 		_expect(born.passive_owner_id() == "kkangtonggeobuk" and mixer.result_card_texts()[3].contains(HenchDb.get_species("kkangtonggeobuk").passive), "성공 카드에서 유산을 고름 → 주 코어(깡통거북)의 패시브")
+		_expect(mixer.find_child("ToParty", true, false) == null and not born.in_party() and (main.call("members") as Array).size() == 3, "성공해도 파티는 그대로(파티에 넣기 버튼 없음, 넣을지는 가방에서)")
 		await _save_shot("mix_result")
 		await _seconds(0.2)
 		# 실패 카드도 같은 모양인지 본다(연출 확인용으로 실패 카드를 한 번 띄운다)
@@ -515,7 +531,7 @@ func _run(main: Node) -> void:
 		await _physics_frames(3)
 		card_texts = mixer.result_card_texts()
 		var lost_row := mixer.find_child("CardLost", true, false) as HBoxContainer
-		_expect(lost_row.visible and lost_row.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()] and not (mixer.find_child("ToParty", true, false) as Button).visible, "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치, 계속 믹스만")
+		_expect(lost_row.visible and lost_row.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()] and not (mixer.find_child("ShowInfo", true, false) as Button).visible, "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치, 계속 믹스만")
 		await _seconds(GameConfig.MIX_FX_SHAKE_SECONDS + 0.1)
 		await _save_shot("mix_fail")
 		await _seconds(0.2)
@@ -785,12 +801,13 @@ func _run(main: Node) -> void:
 	_expect(progress.level > level_before_hunt or progress.exp_points > exp_before_hunt, "처치 → 경험치가 쌓임 (Lv %d · %d/%d)" % [progress.level, progress.exp_points, progress.exp_to_next()])
 	_expect(hunter.level > hunter_before.x or hunter.exp_points > hunter_before.y, "파티 헨치(곰보곰)도 처치 경험치를 받음 (Lv %d · %d/%d)" % [hunter.level, hunter.exp_points, Growth.exp_to_next(hunter.level)])
 	main.call("leave_party", hunter)
+	main.call("assign_party", starters[1], 1)
 	_expect(hunt_log.kills() == kills and hunt_log.kills_per_hour(false) > 0.0, "사냥 기록: 처치 %d · 자동 시간당 %.0f마리" % [hunt_log.kills(), hunt_log.kills_per_hour(false)])
 	await _seconds(GameConfig.CORE_POP_SECONDS + GameConfig.CORE_REST_SECONDS + 1.0)
 	var picked := hunt_log.cores - cores_before_hunt
 	_expect(picked >= 1 and bag.count() - bag_before_hunt == picked, "자동 사냥 중 떨어진 코어도 가방에 (%d개)" % picked)
 	var casts := 0
-	for hench: Hench in main.get("party"):
+	for hench: Hench in main.call("members"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음 (땅 위 거리 %.0f)" % [hench.display_name, Iso.ground_distance(hench.position, player.position)])
 		casts += hench.skill_casts
@@ -818,7 +835,7 @@ func _run(main: Node) -> void:
 	await _seconds(lightning_windup + 0.2)
 	var henches_alive := 0
 	var henches_hit := 0
-	for hench: Hench in main.get("party"):
+	for hench: Hench in main.call("members"):
 		if hench.is_alive():
 			henches_alive += 1
 			henches_hit += 1 if boss.last_hits.has(hench) else 0
@@ -836,7 +853,7 @@ func _run(main: Node) -> void:
 	# 지휘: 원거리조 버튼을 필드로 끌어다 놓으면 그 자리로 가서 버팀, 근접조를 섬의 왕 위에 놓으면 섬의 왕을 침, 전원을 짧게 누르면 모여
 	var ranged: Array[Hench] = []
 	var melee: Array[Hench] = []
-	for hench: Hench in main.get("party"):
+	for hench: Hench in main.call("members"):
 		if hench.is_alive():
 			if hench.stats.attack_range > GameConfig.MELEE_RANGE_MAX:
 				ranged.append(hench)
@@ -868,7 +885,7 @@ func _run(main: Node) -> void:
 	_expect(focused, "근접조를 섬의 왕 위에 놓음 → 섬의 왕을 침")
 	await _tap(hud.command_button(0).global_position)
 	var regrouped := true
-	for hench: Hench in main.get("party"):
+	for hench: Hench in main.call("members"):
 		regrouped = regrouped and not hench.is_holding() and hench.get("_focus") == null
 	_expect(regrouped, "전원을 짧게 누름 → 모여(버티기 풀림)")
 	# 용오름(보스 둘레 고리, 곁은 안전) + 낙뢰가 한꺼번에 깔린 장면
@@ -1059,7 +1076,7 @@ func _remove(unit: Unit) -> void:
 
 
 func _set_party_paused(main: Node, stop: bool) -> void:
-	for hench: Hench in main.get("party"):
+	for hench: Hench in main.call("members"):
 		hench.process_mode = Node.PROCESS_MODE_DISABLED if stop else Node.PROCESS_MODE_INHERIT
 
 

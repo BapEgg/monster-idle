@@ -16,6 +16,7 @@ extends Node2D
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
+## 파티 자리마다 헨치(GameConfig.PARTY_SIZE칸, 빈 자리 = null). 자리에 넣은 코어의 헨치만 나온다(사용자 결정 2026-10-03: 기본 헨치 없음).
 var party: Array[Hench] = []
 var bag := Bag.new()
 var wallet := Wallet.new()
@@ -95,12 +96,20 @@ func _ready() -> void:
 	_hud.command_tapped.connect(_on_command_tapped)
 
 
-## 파티 자리마다: 그 자리에 넣어 둔 코어가 있으면 그 코어의 헨치, 없으면 처음 헨치(GameConfig.PARTY_HENCHES).
+## 파티 자리마다: 그 자리에 넣어 둔 코어가 있으면 그 코어의 헨치, 없으면 빈 자리(null).
 func _spawn_party() -> void:
-	for i in GameConfig.PARTY_HENCHES.size():
+	for i in GameConfig.PARTY_SIZE:
 		var item := _party_core(i)
-		var species := item.species() if item != null else HenchDb.get_species(GameConfig.PARTY_HENCHES[i])
-		party.append(_spawn_party_member(i, species, _player.position + GameConfig.FOLLOW_SLOTS[i], item))
+		party.append(_spawn_party_member(i, item, _player.position + GameConfig.FOLLOW_SLOTS[i]) if item != null else null)
+
+
+## 파티에 있는 헨치들(빈 자리 빼고, 자리 차례).
+func members() -> Array[Hench]:
+	var list: Array[Hench] = []
+	for hench in party:
+		if is_instance_valid(hench):
+			list.append(hench)
+	return list
 
 
 func _party_core(slot: int) -> CoreItem:
@@ -110,18 +119,14 @@ func _party_core(slot: int) -> CoreItem:
 	return null
 
 
-## item이 있으면 그 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다.
-## 없으면 역할 표의 능력치를 주인공 레벨만큼 키워서 싸운다(코어를 넣기 전 임시 헨치). 직업 패시브(진찰 · 전우애)도 받는다.
-func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: CoreItem = null) -> Hench:
-	var hench := Hench.create(species, Unit.Team.PARTY)
-	hench.stats = _member_stats(species, item)
-	if item != null:
-		hench.level = item.level
-		hench.age = item.age
-		hench.gender = item.gender
-		hench.variant = item.variant
-	else:
-		hench.level = progress.level
+## 그 코어의 헨치를 세운다: 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다. 직업 패시브(진찰 · 전우애)도 받는다.
+func _spawn_party_member(slot: int, item: CoreItem, at: Vector2) -> Hench:
+	var hench := Hench.create(item.species(), Unit.Team.PARTY)
+	hench.stats = _member_stats(item)
+	hench.level = item.level
+	hench.age = item.age
+	hench.gender = item.gender
+	hench.variant = item.variant
 	_apply_job_to_hench(hench, job.mods(progress.level))
 	hench.field = _field
 	hench.leader = _player
@@ -131,11 +136,11 @@ func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: Co
 	return hench
 
 
-## 파티 자리마다 지금 헨치 이름(가방 창의 파티 편성 고르기에 보인다).
+## 파티 자리마다 지금 헨치 이름(가방 창의 파티 편성 고르기에 보인다). 빈 자리는 "빈 자리".
 func party_names() -> PackedStringArray:
 	var names := PackedStringArray()
 	for hench in party:
-		names.append(hench.species.name)
+		names.append(hench.species.name if is_instance_valid(hench) else UiText.PARTY_SLOT_EMPTY)
 	return names
 
 
@@ -150,28 +155,31 @@ func assign_party(item: CoreItem, slot: int) -> void:
 		if other.party_slot == slot:
 			other.party_slot = -1
 	item.party_slot = slot
-	_replace_party_member(slot, item.species(), item)
+	_replace_party_member(slot, item)
 	bag.changed.emit()
 	_save_schedule.mark_dirty(true)
 
 
-## 코어를 파티에서 뺀다. 그 자리는 처음 헨치(GameConfig.PARTY_HENCHES)로 돌아간다.
+## 코어를 파티에서 뺀다. 그 자리는 빈다(사용자 결정 2026-10-03: 기본 헨치로 바뀌지 않는다).
 func leave_party(item: CoreItem) -> void:
 	var slot := item.party_slot
 	if slot < 0:
 		return
 	item.party_slot = -1
-	_replace_party_member(slot, HenchDb.get_species(GameConfig.PARTY_HENCHES[slot]))
+	_replace_party_member(slot, null)
 	bag.changed.emit()
 	_save_schedule.mark_dirty(true)
 
 
-func _replace_party_member(slot: int, species: HenchSpecies, item: CoreItem = null) -> void:
+## 그 자리의 헨치를 바꾼다(item = null이면 비운다). 새 헨치는 옛 헨치 자리(없으면 주인공 곁)에 선다.
+func _replace_party_member(slot: int, item: CoreItem) -> void:
 	var old := party[slot]
-	var at := old.position
-	old.remove_from_group(Unit.group_name(Unit.Team.PARTY))
-	old.queue_free()
-	party[slot] = _spawn_party_member(slot, species, at, item)
+	var at: Vector2 = _player.position + GameConfig.FOLLOW_SLOTS[slot]
+	if is_instance_valid(old):
+		at = old.position
+		old.remove_from_group(Unit.group_name(Unit.Team.PARTY))
+		old.queue_free()
+	party[slot] = _spawn_party_member(slot, item, at) if item != null else null
 
 
 # ─── 저장 ────────────────────────────────────────
@@ -188,7 +196,7 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress, job, world)
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_SIZE, workshop.mastery, workshop.codex, progress, job, world)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
 	_player.control.mode = GameSave.control_mode(data)
@@ -274,12 +282,9 @@ func _on_core_collected(item: CoreItem) -> void:
 	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 26.0), UiText.PICKUP % label, Palette.CORE_SHINE if item.shining else Palette.TEXT)
 
 
-## 주인공 레벨이 오름: 주인공이 세지고 체력이 다 차며, 코어 없는 헨치도 따라 세진다. 머리 위에 "레벨 업!".
+## 주인공 레벨이 오름: 주인공이 세지고 체력이 다 찬다. 머리 위에 "레벨 업!".
 func _on_level_up(level: int) -> void:
 	_player.set_level(level, true)
-	for i in party.size():
-		if _party_core(i) == null:
-			_set_member_stats(party[i], _member_stats(party[i].species, null), level)
 	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 40.0), UiText.LEVEL_UP % level, Palette.LEVEL_UP_TEXT)
 	var learnable := job.newly_learnable(_job_level_seen, level)  # 이번에 배울 수 있게 된 직업 스킬(직업 창에서 배운다)
 	_job_level_seen = level
@@ -295,14 +300,14 @@ func _on_level_up(level: int) -> void:
 func _on_core_leveled(item: CoreItem) -> void:
 	if item.party_slot >= 0 and item.party_slot < party.size():
 		var hench := party[item.party_slot]
-		_set_member_stats(hench, _member_stats(hench.species, item), item.level)
+		_set_member_stats(hench, _member_stats(item), item.level)
 		if is_instance_valid(hench):
 			_field.show_number(hench.position + Vector2(0, -hench.overlay_height() - 30.0), UiText.LEVEL_UP % item.level, Palette.LEVEL_UP_TEXT)
 
 
-## 파티 헨치의 능력치: 코어가 있으면 코어 능력치, 없으면 역할 표 × 주인공 레벨. 직업 패시브(진찰)로 최대 체력 +.
-func _member_stats(species: HenchSpecies, item: CoreItem) -> UnitStats:
-	var stats := UnitStats.from_core(item) if item != null else UnitStats.for_hench(species.role, false, progress.level)
+## 파티 헨치의 능력치: 코어 능력치. 직업 패시브(진찰)로 최대 체력 +.
+func _member_stats(item: CoreItem) -> UnitStats:
+	var stats := UnitStats.from_core(item)
 	stats.max_hp *= 1.0 + float(job.mods(progress.level).get("party_hp", 0.0))
 	return stats
 
@@ -323,8 +328,10 @@ func _apply_job() -> void:
 	list.append(JobSkill.create(JobDb.get_skill(job.ultimate), job.skill_level(job.ultimate), mods) if job.ultimate != "" else null)
 	_player.caster.set_skills(list)
 	for i in party.size():
-		_set_member_stats(party[i], _member_stats(party[i].species, _party_core(i)), party[i].level)
-		_apply_job_to_hench(party[i], mods)
+		var item := _party_core(i)
+		if is_instance_valid(party[i]) and item != null:
+			_set_member_stats(party[i], _member_stats(item), item.level)
+			_apply_job_to_hench(party[i], mods)
 
 
 func _on_job_changed() -> void:
@@ -335,7 +342,8 @@ func _on_job_changed() -> void:
 ## 스킬 칸을 누름: 0~2 = 파티 헨치 스킬, 3~5 = 직업 액티브, 6 = 궁극기.
 func _on_skill_requested(slot: int) -> void:
 	if slot < party.size():
-		party[slot].request_skill()
+		if is_instance_valid(party[slot]):
+			party[slot].request_skill()
 	else:
 		_player.request_job_skill(slot - party.size())
 
@@ -370,7 +378,7 @@ func _regroup_at_spawn() -> void:
 		_player.place_at(spawn)
 	else:
 		_player.revive_at(spawn)
-	for hench in party:
+	for hench in members():
 		if hench.is_alive():
 			hench.place_at(spawn + hench.slot)
 		else:
@@ -437,7 +445,7 @@ func start_boss() -> void:
 	boss.reset_physics_interpolation()
 	boss.engage(_player)
 	_player.set_target(boss)
-	for hench in party:
+	for hench in members():
 		hench.command_regroup()
 	_hud.set_boss_mode(true)
 
@@ -452,7 +460,7 @@ func end_boss(message: String) -> void:
 	if is_instance_valid(old) and old.is_alive():
 		old.remove_from_group(Unit.group_name(Unit.Team.WILD))
 		old.queue_free()
-	for hench in party:
+	for hench in members():
 		hench.command_regroup()
 	_hud.set_boss_mode(false)
 	_spawner.resume()
@@ -480,14 +488,14 @@ func _boss_spawn_point() -> Vector2:
 
 ## 지휘 버튼을 필드로 끌어다 놓음: 몹 위면 그 몹을 치고, 아니면 그 자리로 가서 버틴다(나란히 조금씩 벌려 선다).
 func _on_command_dragged(group: CommandButton.Group, screen_point: Vector2) -> void:
-	var members := _command_members(group)
+	var squad := _command_members(group)
 	var on_wild := _picker.wild_at(screen_point)
 	var point := get_viewport().get_canvas_transform().affine_inverse() * screen_point
-	for i in members.size():
+	for i in squad.size():
 		if on_wild != null:
-			members[i].command_attack(on_wild)
+			squad[i].command_attack(on_wild)
 		else:
-			members[i].command_move(point + Vector2(GameConfig.COMMAND_SPREAD * (i - (members.size() - 1) * 0.5), 0.0))
+			squad[i].command_move(point + Vector2(GameConfig.COMMAND_SPREAD * (i - (squad.size() - 1) * 0.5), 0.0))
 	_field.show_burst(point, GameConfig.COMMAND_MARK_RADIUS, Palette.COMMAND_LINE)
 
 
@@ -499,11 +507,11 @@ func _on_command_tapped(group: CommandButton.Group) -> void:
 
 ## 그 무리의 살아 있는 헨치. 근접조 = 사거리가 GameConfig.MELEE_RANGE_MAX 이하(탱커 · 근접딜러), 원거리조 = 나머지.
 func _command_members(group: CommandButton.Group) -> Array[Hench]:
-	var members: Array[Hench] = []
-	for hench in party:
-		if not is_instance_valid(hench) or not hench.is_alive():
+	var group_members: Array[Hench] = []
+	for hench in members():
+		if not hench.is_alive():
 			continue
 		var melee := hench.stats.attack_range <= GameConfig.MELEE_RANGE_MAX
 		if group == CommandButton.Group.ALL or (group == CommandButton.Group.MELEE) == melee:
-			members.append(hench)
-	return members
+			group_members.append(hench)
+	return group_members

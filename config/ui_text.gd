@@ -409,7 +409,6 @@ const MIX_FAIL_INFO := "재료 둘이 사라졌습니다"
 const MIX_FAIL_LOST := "잃은 재료: %s · %s"
 ## 실패 카드에서 잃은 재료 칸에 붙는 배지
 const MIX_LOST_BADGE := "사라짐"
-const BTN_TO_PARTY := "파티에 넣기"
 const BTN_SHOW_INFO := "정보 보기"
 const BTN_MIX_AGAIN := "계속 " + TERM_MIX
 const PERCENT := "%d%%"
@@ -439,4 +438,7 @@ const MAP_GO := "이동"
 const MAP_HERE_TAG := "지금 여기"
 const MAP_NEED_LEVEL := "Lv %d부터"
 const MAP_CLOSED := "닫힘"
+
+## 파티 자리가 비었을 때(가방 창 파티 편성 고르기 · 디버그 화면)
+const PARTY_SLOT_EMPTY := "빈 자리"
 

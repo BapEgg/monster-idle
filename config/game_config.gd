@@ -216,11 +216,11 @@ const JOB_SKILLS := {
 }
 
 # ─── 내 파티 ─────────────────────────────────────
-## 함께 다니는 헨치 3마리(data/henches.json의 id).
-const PARTY_HENCHES := ["sotmabaem", "haemapo", "jinjuryong"]
+## 파티 자리 수(주인공 + 헨치 최대 3마리, 기획서 3장). 자리에는 가방의 코어만 들어가고, 비워 둘 수도 있다(0~3마리, 사용자 결정 2026-10-03: 기본 헨치 없음).
+const PARTY_SIZE := 3
 ## 헨치 이동 속력. 주인공보다 조금 빨라야 뒤처지지 않는다.
 const HENCH_SPEED := 250.0
-## 따라다닐 때 주인공 기준 자리(화면 px). PARTY_HENCHES 순서대로.
+## 따라다닐 때 주인공 기준 자리(화면 px). 파티 자리 순서대로.
 const FOLLOW_SLOTS := [Vector2(-70, 26), Vector2(70, 26), Vector2(0, 56)]
 ## 자리에서 이만큼(땅 위 px) 벗어나면 다시 따라간다.
 const FOLLOW_SLACK := 30.0

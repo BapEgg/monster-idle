@@ -699,23 +699,10 @@ unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="CardParty" type="HBoxContainer" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 1
-
 [node name="CardButtons" type="HBoxContainer" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
-
-[node name="ToParty" type="Button" parent="ResultLayer/ResultCard/CardMargin/CardRows/CardButtons"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(160, 56)
-layout_mode = 2
-focus_mode = 0
 
 [node name="ShowInfo" type="Button" parent="ResultLayer/ResultCard/CardMargin/CardRows/CardButtons"]
 unique_name_in_owner = true
