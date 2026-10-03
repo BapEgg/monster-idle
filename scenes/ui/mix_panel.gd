@@ -4,11 +4,12 @@ extends Control
 ## 왼쪽 = 재료 그리드(종족 필터 · 정렬). 고를 수 없는 코어(주 코어 자신 · 같은 성별 · 잠금 · 파티 · 변이)는 흐리게 + 까닭 배지,
 ##   고른 칸은 흰 테두리 + 체크. 누르면 오른쪽에 그 코어 상세를 보여 주고, 고를 수 있으면 빈 칸부터 채운다(주 → 보조).
 ## 가운데 = 연성 장치(플라스크 도형, MixFlasks): 주 · 보조 칸(누르면 비움), 그 사이 ⇄ + "바꾸면 → ○○",
-##   결과 칸(공개 = 그림 + 이름, 힌트 = 실루엣, 비밀 = ?), 성공 확률 숫자(누르면 내역 말풍선), 비용, 큰 "연성하기",
+##   결과 칸(공개 = 그림 + 이름, 힌트 = 실루엣, 비밀 = ?), 성공 확률 숫자(누르면 숫자 위에 내역 말풍선), 비용(늘 보임), 큰 "믹스하기",
 ##   실패 경고(처음 GameConfig.MIX_WARNING_BIG_TIMES번은 크게, 그 뒤로는 버튼 아래 작게), "숙련 n단계 ⓘ"(숙련 창) · "레시피"(레시피 창).
-## 오른쪽 = 정보창(가방 창의 CoreInfo를 버튼 없이 재사용). 결과 칸을 누르면 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률).
-## 연성하기: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 성공하면 두 재료가 결과 플라스크로 모이는 연출 → 번쩍임 →
-## 성공 카드(이름 · 종족·역할·등급 · LV·나이·성별 · 계승 스탯 · 패시브 고르기(자기 / 유산) · 얻은 숙련 경험치,
+## 오른쪽 = 정보창(가방 창의 CoreInfo를 버튼 없이 재사용, 맨 위 작은 제목 "재료 정보" / "결과 미리보기").
+##   결과 칸을 누르면 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률).
+## 믹스하기: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 성공하면 두 재료가 결과 플라스크로 모이는 연출 → 번쩍임 →
+## 성공 카드(이름 · 종족·역할·등급 · LV·나이·성별 · 계승 스탯 · 패시브 고르기(자기 / 유산, 자기가 먼저 골라져 있고 나중에 못 바꿈) · 얻은 숙련 경험치,
 ## 파티에 넣기(강조) / 정보 보기 / 계속 믹스). 실패하면 붉은 번쩍임 + 같은 모양의 실패 카드(잃은 재료 · 얻은 숙련 경험치).
 ## 실제 처리는 Workshop(믹스 · 숙련도 · 도감 · 패시브 고르기). 자리·크기는 mix_panel.tscn을 에디터에서 연다. 수치는 GameConfig.MIX_*.
 
@@ -102,6 +103,7 @@ var _tip_left := 0.0
 @onready var _mastery_now: Label = %MasteryNow
 @onready var _mastery_table: GridContainer = %MasteryTable
 @onready var _mastery_note: Label = %MasteryNote
+@onready var _mastery_reward: Label = %MasteryReward
 @onready var _recipe_window: PanelContainer = %RecipeWindow
 @onready var _recipe_title: Label = %RecipeTitle
 @onready var _recipe_close: Button = %RecipeClose
@@ -118,6 +120,7 @@ var _tip_left := 0.0
 @onready var _card_info: Label = %CardInfo
 @onready var _card_passive_title: Label = %CardPassiveTitle
 @onready var _card_passives: HBoxContainer = %CardPassives
+@onready var _card_passive_note: Label = %CardPassiveNote
 @onready var _keep_own: Button = %KeepOwn
 @onready var _keep_legacy: Button = %KeepLegacy
 @onready var _card_mastery: Label = %CardMastery
@@ -181,6 +184,8 @@ func _ready() -> void:
 	_mastery_title.text = UiText.MIX_MASTERY_TITLE
 	UiKit.style_number(_mastery_now, TEXT_FONT_SIZE)
 	UiKit.style_caption(_mastery_note, SMALL_FONT_SIZE)
+	UiKit.style_label(_mastery_reward, SMALL_FONT_SIZE, Palette.MIX_MASTERY_BAR)
+	_mastery_reward.text = UiText.MIX_MASTERY_REWARD % GameConfig.MIX_MASTERY_MAX_LEVEL
 	UiKit.style_label(_recipe_title, TITLE_FONT_SIZE - 2, Palette.TEXT)
 	_recipe_title.text = UiText.MIX_RECIPE_TITLE
 	UiKit.style_caption(_recipe_note, SMALL_FONT_SIZE)
@@ -197,6 +202,8 @@ func _ready() -> void:
 	UiKit.style_label(_card_info, TEXT_FONT_SIZE, Palette.TEXT)
 	UiKit.style_caption(_card_passive_title, SMALL_FONT_SIZE)
 	_card_passive_title.text = UiText.MIX_PASSIVE_PICK
+	UiKit.style_caption(_card_passive_note, SMALL_FONT_SIZE - 1)
+	_card_passive_note.text = UiText.MIX_PASSIVE_FINAL
 	UiKit.style_label(_card_mastery, SMALL_FONT_SIZE, Palette.MIX_MASTERY_BAR)
 	_close.pressed.connect(_on_close)
 	_swap.pressed.connect(_on_swap)
@@ -297,7 +304,7 @@ func open(main: CoreItem) -> void:
 	_close_popups()
 	_chance_tip.visible = false
 	visible = true
-	_info.show_core(main)
+	_show_material_info(main)
 	refresh()
 
 
@@ -305,7 +312,7 @@ func open(main: CoreItem) -> void:
 func choose(item: CoreItem) -> void:
 	if _busy:
 		return
-	_info.show_core(item)
+	_show_material_info(item)
 	if item == main_core or item == sub_core:
 		return
 	var problem := Mix.material_problem(item, _partner())
@@ -317,6 +324,12 @@ func choose(item: CoreItem) -> void:
 	else:
 		sub_core = item
 	refresh()
+
+
+## 오른쪽 정보창에 그 코어(작은 제목 "재료 정보").
+func _show_material_info(item: CoreItem) -> void:
+	_info.heading = UiText.MIX_INFO_MATERIAL
+	_info.show_core(item)
 
 
 ## 재료 목록에서 그 코어의 칸(실행 검사용). 없으면 null.
@@ -428,14 +441,14 @@ func chance_text() -> String:
 	return _chance.text
 
 
-## 성공 확률을 누름: 내역 말풍선을 그 숫자 바로 아래에 잠깐 띄운다(다시 누르면 닫힘).
+## 성공 확률을 누름: 내역 말풍선을 그 숫자 바로 위에 잠깐 띄운다(다시 누르면 닫힘). 아래의 비용 문구는 가리지 않는다.
 func _toggle_chance_tip() -> void:
 	if _chance_tip.visible:
 		_chance_tip.visible = false
 		return
 	_chance_tip.reset_size()
 	var rect := _chance.get_global_rect()
-	_chance_tip.global_position = Vector2(rect.get_center().x - _chance_tip.size.x * 0.5, rect.end.y + 4.0)
+	_chance_tip.global_position = Vector2(rect.get_center().x - _chance_tip.size.x * 0.5, rect.position.y - _chance_tip.size.y - 4.0)
 	_chance_tip.visible = true
 	_tip_left = GameConfig.MIX_TIP_SECONDS
 
@@ -478,6 +491,7 @@ func show_result_preview() -> void:
 	for i in values.size():
 		rows.append([UiText.MIX_PREVIEW_CAPTIONS[i], values[i]])
 	var name_text := _outcome_name(result, reveal, has_pair)
+	_info.heading = UiText.MIX_INFO_PREVIEW
 	if not has_pair:
 		_info.show_preview(name_text, UiText.MIX_EMPTY_KIND, null, false, rows, null)
 	elif result == "" or reveal == Mix.Reveal.SECRET:
@@ -711,7 +725,7 @@ func use_recipe(main_id: String, sub_id: String) -> bool:
 	main_core = pair[0]
 	sub_core = pair[1]
 	_close_popups()
-	_info.show_core(main_core)
+	_show_material_info(main_core)
 	refresh()
 	return true
 
@@ -803,7 +817,7 @@ func _finish_mix() -> void:
 		slot.modulate.a = 1.0
 	_busy = false
 	if last_born != null:
-		_info.show_core(last_born)
+		_show_material_info(last_born)
 	refresh()
 	_flash_screen(Palette.MIX_FLASH_SUCCESS if last_born != null else Palette.MIX_FLASH_FAIL)
 	_show_result_card()
@@ -827,6 +841,7 @@ func _show_result_card() -> void:
 	_card_lost.visible = not success
 	_card_passive_title.visible = success
 	_card_passives.visible = success
+	_card_passive_note.visible = success
 	_to_party.visible = success
 	_show_info.visible = success
 	var mastery := _workshop.mastery

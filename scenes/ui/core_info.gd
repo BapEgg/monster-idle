@@ -36,12 +36,20 @@ var show_actions := true:
 			_buttons.visible = value
 ## 믹스 결과 미리보기를 보여 주는 중인가.
 var previewing := false
+## 맨 위 작은 제목(믹스창: "재료 정보" / "결과 미리보기"). 비우면 숨긴다(가방 창).
+var heading := "":
+	set(value):
+		heading = value
+		if is_node_ready():
+			_heading.text = value
+			_heading.visible = value != ""
 ## 파티 자리마다 지금 헨치 이름을 돌려주는 함수(main.party_names)
 var party_names := Callable()
 
 var _stat_names := {}  # 능력치 id → 이름 Label
 var _stat_values := {}  # 능력치 id → 숫자 Label
 
+@onready var _heading: Label = %Heading
 @onready var _empty: Label = %Empty
 @onready var _body: VBoxContainer = %Body
 @onready var _portrait_frame: PanelContainer = %PortraitFrame
@@ -73,6 +81,9 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 
 
 func _ready() -> void:
+	UiKit.style_caption(_heading, SMALL_FONT_SIZE)
+	_heading.text = heading
+	_heading.visible = heading != ""
 	UiKit.style_caption(_empty, TEXT_FONT_SIZE)
 	_empty.text = UiText.INFO_EMPTY
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)

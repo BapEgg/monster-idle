@@ -408,6 +408,11 @@ unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
+[node name="MasteryReward" type="Label" parent="PopupLayer/MasteryWindow/MasteryMargin/MasteryRows"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
 [node name="RecipeWindow" type="PanelContainer" parent="PopupLayer"]
 unique_name_in_owner = true
 visible = false
@@ -573,6 +578,11 @@ size_flags_horizontal = 3
 focus_mode = 0
 toggle_mode = true
 autowrap_mode = 3
+
+[node name="CardPassiveNote" type="Label" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
 
 [node name="CardMastery" type="Label" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
 unique_name_in_owner = true

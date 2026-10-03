@@ -190,8 +190,8 @@ const MIX_CHANCE := "성공 확률 %s"
 ## 비용 / 보유 골드
 const MIX_COST := "비용 %d 골드 · 보유 %d"
 const MIX_WARNING := "실패하면 재료 둘이 모두 사라집니다"
-## 연성 장치의 큰 버튼(사용자 결정 2026-10-03)
-const MIX_GO := "연성하기"
+## 연성 장치의 큰 버튼(용어 통일, 사용자 결정 2026-10-03: "연성하기" → "믹스하기")
+const MIX_GO := TERM_MIX + "하기"
 ## 성공 확률을 누르면 뜨는 내역 말풍선
 const MIX_CHANCE_TIP := "성공 확률 내역\n기본 %d%% + 숙련 %d%% + 마크 %d%%"
 ## 연성하기 아래 작은 버튼: 숙련 단계(누르면 숙련 창) · 레시피 창
@@ -204,6 +204,11 @@ const MIX_MASTERY_HEADERS := ["단계", "성공 확률 보너스", "다음 단�
 const MIX_MASTERY_STEP := "%d단계"
 const MIX_MASTERY_BONUS := "+%d%%"
 const MIX_MASTERY_NOTE := TERM_MIX + " 한 번에 경험치: 성공 %d · 실패 %d"
+## 숙련 창 맨 아래: 마지막 단계 보상(칭호는 가제, 아직 기능 없음)
+const MIX_MASTERY_REWARD := "%d단계 달성 시 칭호 획득(가제)"
+## 믹스창 오른쪽 정보창의 작은 제목: 재료를 눌렀을 때 / 결과 칸을 눌렀을 때
+const MIX_INFO_MATERIAL := "재료 정보"
+const MIX_INFO_PREVIEW := "결과 미리보기"
 ## 레시피 창: 한 줄 = 주 + 보조 → 결과 · 등급, 재료가 있는 공식은 눌러서 칸을 채운다
 const MIX_RECIPE_TITLE := "레시피"
 const MIX_RECIPE_ROW := "%s + %s → %s · %s"
@@ -215,6 +220,7 @@ const MIX_SECRET_KIND := "비밀 공식"
 const MIX_EMPTY_KIND := "재료 둘을 고르면 결과가 보입니다"
 ## 성공 카드의 패시브 고르기
 const MIX_PASSIVE_PICK := "패시브 고르기"
+const MIX_PASSIVE_FINAL := "선택은 나중에 바꿀 수 없어요"
 const MIX_MATERIALS := "재료 고르기"
 const MIX_FILTER_ALL := "전체 종족"
 ## 재료 정렬(MixPanel.Sort 순서)
