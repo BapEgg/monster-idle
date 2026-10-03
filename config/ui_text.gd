@@ -267,6 +267,8 @@ const DEBUG_BALANCE := "확률(하루 처치 %s마리 기준): " + TERM_CORE + "
 const DEBUG_DROP_BOOST := "드랍 확인 ×%d: %s"
 ## 스킬 상세 창의 개발 문구("수치는 임시" · "기획 효과") 보이기(사용자 결정 2026-10-03: 개발 모드에서만)
 const DEBUG_DEV_NOTES := "스킬 창 개발 문구: %s"
+## 섬 개방(다음 단계) 전에 다른 섬을 확인하려고 모두 연다(저장하지 않음)
+const DEBUG_OPEN_ISLANDS := "모든 섬 열기(개발용): %s"
 const DEBUG_ON := "켜짐"
 const DEBUG_OFF := "꺼짐"
 
@@ -417,3 +419,24 @@ const MIX_PROBLEMS := ["", "재료 칸이 비어 있습니다", "같은 것끼�
 	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", VARIANT + "는 재료로 쓸 수 없습니다", "알려진 공식이 없어요", "골드가 모자랍니다"]
 ## 재료 목록에서 고를 수 없는 칸에 붙는 짧은 까닭(Mix.Problem 순서). 주 코어 자신은 "주 " + TERM_CORE
 const MIX_MATERIAL_REASONS := ["", "", "주 " + TERM_CORE, "같은 성별", "잠금", "파티", VARIANT, "", ""]
+
+# ─── 섬 · 지역 (기획서 7장, 로드맵 8) ─────────────────
+## 미니맵 위 띠 · 지역에 들어설 때 뜨는 큰 글자: 섬 · 지역 (Lv a~b)
+const WORLD_TITLE := "%s · %s (Lv %d~%d)"
+## 패배해서 이전 지역으로 물러났을 때 큰 글자 아래 작은 줄
+const WORLD_RETREAT := "쓰러져서 이전 지역으로 물러났습니다"
+## 오른쪽 위 지도 버튼 · 섬 지도 창
+const MAP_BUTTON := "지도"
+const MAP_TITLE := "섬 지도"
+const MAP_CLOSE := "닫기"
+const MAP_HERE := "지금: %s · %s"
+const MAP_HERE_BADGE := "지금"
+const MAP_KING := "섬의 왕: %s"
+const MAP_LOCKED_ISLAND := "아직 닫힌 섬입니다. 도감을 채우고 길잡이 " + TERM_HENCH + "를 " + TERM_MIX + "하면 열립니다(다음 단계)."
+const MAP_REGION := "%s · Lv %d~%d"
+const MAP_RARE := "%s(드묾)"
+const MAP_GO := "이동"
+const MAP_HERE_TAG := "지금 여기"
+const MAP_NEED_LEVEL := "Lv %d부터"
+const MAP_CLOSED := "닫힘"
+

@@ -100,7 +100,7 @@ func test_aggressive_species() -> void:
 
 
 func test_config_ids_exist() -> void:
-	for id: String in GameConfig.PARTY_HENCHES + GameConfig.WILD_SPECIES:
+	for id: String in GameConfig.PARTY_HENCHES + [GameConfig.BOSS_SPECIES]:
 		expect_true(HenchDb.get_species(id) != null, "설정의 %s가 데이터에 있음" % id)
 	expect_true(GameConfig.FOLLOW_SLOTS.size() >= GameConfig.PARTY_HENCHES.size(), "파티 수만큼 따라다닐 자리가 있음")
 

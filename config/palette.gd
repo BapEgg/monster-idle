@@ -270,3 +270,24 @@ const MODE_MANUAL := Color("ffd25e")
 const MODE_DOWN := Color("ff7a6b")
 const TEXT := Color(1, 1, 1)
 const TEXT_OUTLINE := Color(0, 0, 0, 0.6)
+
+# ─── 섬 · 지역 (로드맵 8) ──────────────────────────
+## 미니맵: 바탕 · 필드 바닥(섬 종족 색을 섞음) · 가장자리 · 서식지 원 · 야생(비선공 · 선공) · 변이 기운 · 파티 · 주인공 · 섬의 왕 · 사냥 경로
+const MINIMAP_BG := Color(0.05, 0.07, 0.1, 0.72)
+const MINIMAP_FIELD := Color("4f7a3a")
+const MINIMAP_EDGE := Color(1, 1, 1, 0.35)
+const MINIMAP_HOME := Color(1, 1, 1, 0.08)
+const MINIMAP_WILD := Color(1, 1, 1, 0.9)
+const MINIMAP_AGGRO := Color("ff5a4f")
+const MINIMAP_VARIANT := Color("c77dff")
+const MINIMAP_PARTY := Color("3ee6d0")
+const MINIMAP_PLAYER := Color("ffd84a")
+const MINIMAP_BOSS := Color("ff3b30")
+const MINIMAP_PATH := Color("ffd84a")
+## 섬 지도 창: 바다 · 섬 그림자 · 닫힌 섬 · 지금 섬 고리 · 지금 있는 지역 줄 바탕
+const MAP_SEA := Color("2b5d7d")
+const MAP_SHORE := Color(0, 0, 0, 0.25)
+const MAP_LOCKED := Color(0.45, 0.48, 0.52)
+const MAP_HERE := Color("ffd84a")
+const MAP_ROW_HERE := Color(1, 0.85, 0.3, 0.08)
+

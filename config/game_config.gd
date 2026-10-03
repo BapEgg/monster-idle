@@ -12,8 +12,8 @@ const TILE_SIZE := Vector2(128, 64)
 const FIELD_CELLS := Vector2i(28, 28)
 ## 장식물 배치용 난수 씨앗. 같은 값이면 매번 같은 자리에 놓인다.
 const FIELD_SEED := 20261002
-const FIELD_TREE_COUNT := 36
-const FIELD_ROCK_COUNT := 20
+## 지역마다 장식물 수 [나무, 바위](임시: 깊은 지역일수록 나무가 줄고 바위가 는다). 배치 씨앗은 섬 · 지역마다 다르다(IslandDb.field_seed).
+const FIELD_PROPS := {"intro": [36, 20], "special": [26, 30], "heart": [16, 38]}
 ## 시작 지점 주변 몇 칸은 장식물 없이 비워 둔다.
 const FIELD_SPAWN_CLEAR_CELLS := 3.0
 
@@ -235,8 +235,12 @@ const HENCH_REVIVE_SECONDS := 6.0
 const PLAYER_REVIVE_SECONDS := 3.0
 
 # ─── 야생 헨치 ───────────────────────────────────
-## 이 필드(용섬 입문)에 나오는 종. 기획서 5~6장 서식지에 "용섬 입문"이 있는 종(깡통거북 = 기계섬 입문 · 용섬 입문).
-const WILD_SPECIES := ["sotmabaem", "gochuryong", "haemapo", "jinjuryong", "kkangtonggeobuk"]
+## 나오는 종은 섬 · 지역마다 도감 서식지로 정한다(IslandDb.spawn_table, 예: 용섬 입문 = 솥마뱀 · 고추룡 · 해마포 · 진주룡 · 깡통거북).
+## 심장부에서 심장부 종(상급)이 나오는 비중(특수 지역 종 하나 = 1, 기획서 "상급 = 심장부 희귀", 임시)
+const HEART_RARE_WEIGHT := 0.25
+## 지역에 들어설 때 화면 위 가운데에 뜨는 큰 지역 이름: 나타나고 사라지는 시간 · 머무는 시간(초)
+const REGION_BANNER_FADE := 0.4
+const REGION_BANNER_SECONDS := 2.2
 ## 필드에 동시에 있는 수. 하루 처치 수를 기획서 예시(하루 1,000마리) 쪽으로 맞춘 값(사용자 결정 2026-10-03, 임시):
 ## 수를 줄이고 다시 나오는 시간을 늘리고(아래) 야생 체력을 올렸다(WILD_HP_SCALE). 바꾸면 tools/measure_hunt.gd로 다시 잰다.
 const WILD_COUNT := 6
@@ -317,6 +321,7 @@ const TARGET_VARIANTS_PER_MONTH := Vector2(3, 4)
 ## 시간당 47마리 → 하루 1,128마리(기획서 예시 1,000마리 쪽). 이전 값: 야생 14마리 · 4초 · 체력 0.4배 → 하루 23,568마리.
 ## 2026-10-03 주인공 직업 1차(전사 Lv 1 · 직업 스킬 자동) 뒤 다시 잼: 풀오토 60분 처치 48마리 → 하루 1,152마리.
 ## 2026-10-03 능력치 계수(주인공 능력치 9종 · 스킬 계수) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
+## 2026-10-03 섬 · 지역(용섬 입문 필드를 섬 · 지역 씨앗으로 다시 지음) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
 const MEASURED_DAILY_KILLS := 1152.0
 ## 확률 보너스 수확 체감 상수 K(기획서 8장 확정: 변이체 K = 50%). 유효 보너스 = B × K ÷ (B + K).
 const VARIANT_BONUS_K := 0.5

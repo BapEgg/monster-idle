@@ -22,9 +22,15 @@ signal boss_requested
 ## 지휘 버튼을 필드로 끌어다 놓았을 때(화면 좌표) / 끌지 않고 뗐을 때("모여")
 signal command_dragged(group: CommandButton.Group, screen_point: Vector2)
 signal command_tapped(group: CommandButton.Group)
+## 섬 지도 창에서 "이동"을 누름(섬 id, 지역 id)
+signal travel_requested(island_id: String, region_id: String)
 
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
+const BANNER_FONT_SIZE := 34
+const BANNER_SUB_FONT_SIZE := 20
+## 미니맵 바닥에 섞는 섬 종족 색의 양(임시 도형 값)
+const MINIMAP_TINT := 0.45
 const OUTLINE_SIZE := 6
 const JOYSTICK_RING_WIDTH := 3
 ## 스킬 칸 수(hud.tscn의 Controls/SkillSlot1~6)
@@ -50,6 +56,12 @@ const CONTROLS_PADDING := 8.0
 @onready var mix_panel: MixPanel = $MixPanel
 @onready var skill_window: SkillWindow = $SkillWindow
 @onready var confirm_box: ConfirmBox = $ConfirmBox
+@onready var minimap: Minimap = $Minimap
+@onready var island_map: IslandMap = $IslandMap
+@onready var map_button: TextButton = $TopControls/MapButton
+@onready var _banner: Control = $RegionBanner
+@onready var _banner_title: Label = $RegionBanner/BannerTitle
+@onready var _banner_sub: Label = $RegionBanner/BannerSub
 @onready var _controls: Control = $Controls
 @onready var _top_controls: Control = $TopControls
 @onready var _mode: Label = $Mode
@@ -61,6 +73,8 @@ var _hunt_log: HuntLog
 var _skill_slots: Array[SkillSlot] = []
 var _job: JobState
 var _progress: PlayerProgress
+var _world: WorldState
+var _banner_tween: Tween
 
 
 func _ready() -> void:
@@ -95,6 +109,12 @@ func _ready() -> void:
 			debug_panel.open())
 	for modal: Control in _modals():
 		modal.visibility_changed.connect(_on_modal_toggled)
+	map_button.text = UiText.MAP_BUTTON
+	map_button.pressed.connect(toggle_map)
+	minimap.pressed.connect(toggle_map)
+	island_map.travel_requested.connect(func(island_id: String, region_id: String) -> void: travel_requested.emit(island_id, region_id))
+	_style_label(_banner_title, BANNER_FONT_SIZE)
+	_style_label(_banner_sub, BANNER_SUB_FONT_SIZE)
 	bag_panel.mix_requested.connect(mix_panel.open)
 	bag_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 	bag_panel.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
@@ -169,6 +189,8 @@ func is_over_controls(point: Vector2) -> bool:
 	for modal in _modals():
 		if modal.visible and modal.get_global_rect().has_point(point):
 			return true
+	if minimap.is_visible_in_tree() and minimap.get_global_rect().grow(CONTROLS_PADDING).has_point(point):
+		return true
 	for node in find_children("*", "TouchScreenButton", true, false):
 		var button := node as TouchScreenButton
 		if button.is_visible_in_tree() and covers(button, point):
@@ -246,9 +268,65 @@ func _on_bag_button() -> void:
 		bag_panel.open()
 
 
-## 화면을 덮는 창들(가방 · 믹스 · 디버그 · 확인).
+## 화면을 덮는 창들(가방 · 믹스 · 직업 · 섬 지도 · 디버그 · 스킬 상세 · 확인).
 func _modals() -> Array[Control]:
-	return [bag_panel, mix_panel, job_panel, debug_panel, skill_window, confirm_box]
+	return [bag_panel, mix_panel, job_panel, island_map, debug_panel, skill_window, confirm_box]
+
+
+## 섬 · 지역을 미니맵 · 섬 지도 창에 이어 준다(player = 미니맵 점 · 사냥 경로).
+func bind_world(world: WorldState, progress: PlayerProgress, player: Player) -> void:
+	_world = world
+	island_map.bind(world, progress)
+	minimap.player = player
+	world.moved.connect(_show_world)
+	_show_world()
+	debug_panel.islands_toggled.connect(func() -> void:
+		if island_map.visible:
+			island_map.refresh())
+
+
+## 미니맵 위 띠(섬 · 지역 · 레벨대)와 바닥 색.
+func _show_world() -> void:
+	var island := IslandDb.get_island(_world.island)
+	var region := IslandDb.get_region(_world.region)
+	var levels := IslandDb.level_range(_world.island, _world.region)
+	minimap.title = UiText.WORLD_TITLE % [island.name, region.name, levels.x, levels.y]
+	var tribe := TribeDb.get_tribe(island.tribe)
+	minimap.field_tint = Palette.MINIMAP_FIELD.lerp(tribe.color, MINIMAP_TINT) if tribe != null else Palette.MINIMAP_FIELD
+
+
+## 지도 버튼 · 미니맵: 섬 지도 창을 열고 닫는다.
+func toggle_map() -> void:
+	if island_map.visible:
+		island_map.hide()
+	elif not _any_modal_open():
+		island_map.open()
+
+
+func _any_modal_open() -> bool:
+	for modal in _modals():
+		if modal.visible:
+			return true
+	return false
+
+
+## 지역에 들어설 때 화면 위 가운데에 큰 지역 이름이 잠깐 떴다 사라진다(sub = 작은 줄, 예: 후퇴 안내).
+func show_region_banner(title: String, sub := "") -> void:
+	_banner_title.text = title
+	_banner_sub.text = sub
+	_banner_sub.visible = sub != ""
+	if _banner_tween != null:
+		_banner_tween.kill()
+	_banner.modulate.a = 0.0
+	_banner_tween = create_tween()
+	_banner_tween.tween_property(_banner, "modulate:a", 1.0, GameConfig.REGION_BANNER_FADE)
+	_banner_tween.tween_interval(GameConfig.REGION_BANNER_SECONDS)
+	_banner_tween.tween_property(_banner, "modulate:a", 0.0, GameConfig.REGION_BANNER_FADE)
+
+
+## 지역 이름 띠의 글자(실행 검사용): [큰 줄, 작은 줄].
+func banner_texts() -> PackedStringArray:
+	return PackedStringArray([_banner_title.text, _banner_sub.text])
 
 
 ## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸), 오른쪽 위 버튼(가방 · 디버그)을 숨겨,
@@ -260,6 +338,7 @@ func _on_modal_toggled() -> void:
 	joystick.visible = not any_open
 	_controls.visible = not any_open
 	_top_controls.visible = not any_open  # 가방 창이 화면을 덮으면 그 밑의 가방·디버그 버튼이 눌리지 않게
+	minimap.visible = not any_open
 	target_frame.modulate.a = 0.0 if any_open else 1.0  # 창 위로 겹쳐 보이지 않게
 
 

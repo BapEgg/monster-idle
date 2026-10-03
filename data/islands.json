@@ -1,0 +1,19 @@
+{
+  "about": "섬 8개 × 지역 3개(기획서 7장 확정: 입문 · 특수 · 심장부). 섬 이름은 도감 서식지(data/henches.json의 habitats, 예: \"용섬 입문\")와 같아야 그 지역에 나오는 종을 찾는다. 지역 레벨은 기획서 초안(입문 1~15 · 특수 15~40 · 심장부 35~60)이고, 섬마다 다르게 하려면 섬의 levels에 {\"intro\": [a, b]}처럼 덮어쓴다(기획서: 흩어진 레벨 지도 — 섬별 값은 아직 없음). map = 섬 지도 창에서 섬이 놓이는 자리(0~1, 임시). start_island = 처음 섬(다른 섬은 길잡이 믹스로 연다 — 다음 단계, 지금은 디버그 화면에서 모두 열 수 있다).",
+  "start_island": "dragon",
+  "regions": [
+    {"id": "intro", "name": "입문", "level": [1, 15]},
+    {"id": "special", "name": "특수", "level": [15, 40]},
+    {"id": "heart", "name": "심장부", "level": [35, 60]}
+  ],
+  "islands": [
+    {"id": "dragon", "name": "용섬", "tribe": "dragon", "map": [0.16, 0.6]},
+    {"id": "plant", "name": "식물섬", "tribe": "plant", "map": [0.32, 0.26]},
+    {"id": "beast", "name": "야수섬", "tribe": "beast", "map": [0.44, 0.6]},
+    {"id": "machine", "name": "기계섬", "tribe": "machine", "map": [0.6, 0.3]},
+    {"id": "spirit", "name": "정령섬", "tribe": "spirit", "map": [0.62, 0.74]},
+    {"id": "insect", "name": "곤충섬", "tribe": "insect", "map": [0.32, 0.86]},
+    {"id": "demon", "name": "마섬", "tribe": "demon", "map": [0.84, 0.62]},
+    {"id": "flying", "name": "비행섬", "tribe": "flying", "map": [0.82, 0.2]}
+  ]
+}

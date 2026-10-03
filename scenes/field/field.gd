@@ -9,6 +9,7 @@ extends Node2D
 @onready var objects: Node2D = $Objects
 @onready var effects: Node2D = $Effects
 @onready var ground_effects: Node2D = $GroundEffects
+@onready var ground: FieldGround = $Ground
 
 ## 길찾기 격자. 장식물이 있는 칸은 막힌 칸이다.
 var _grid := AStarGrid2D.new()
@@ -144,8 +145,8 @@ func escape_point(at: Vector2, min_progress: float) -> Vector2:
 		return best
 	for step in range(1, GameConfig.DODGE_SEARCH_STEPS + 1):
 		for i in GameConfig.DODGE_SEARCH_DIRECTIONS:
-			var ground := Vector2.from_angle(TAU * i / GameConfig.DODGE_SEARCH_DIRECTIONS) * GameConfig.DODGE_SEARCH_STEP * step
-			var point := at + Iso.from_ground(ground)
+			var offset := Vector2.from_angle(TAU * i / GameConfig.DODGE_SEARCH_DIRECTIONS) * GameConfig.DODGE_SEARCH_STEP * step
+			var point := at + Iso.from_ground(offset)
 			if _is_safe(point, zones):
 				return point  # 가까운 걸음부터 보므로 처음 찾은 곳이 (거의) 가장 가깝다
 	return fallback
@@ -208,11 +209,27 @@ func _build_grid() -> void:
 
 
 ## 나무·바위를 흩어 놓는다. 씨앗이 같으면 매번 같은 배치가 나온다.
-func _scatter_props() -> void:
+func _scatter_props(seed_value := GameConfig.FIELD_SEED, trees: int = GameConfig.FIELD_PROPS["intro"][0], rocks: int = GameConfig.FIELD_PROPS["intro"][1]) -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = GameConfig.FIELD_SEED
-	_place_props(FieldProp.Kind.TREE, GameConfig.FIELD_TREE_COUNT, rng)
-	_place_props(FieldProp.Kind.ROCK, GameConfig.FIELD_ROCK_COUNT, rng)
+	rng.seed = seed_value
+	_place_props(FieldProp.Kind.TREE, trees, rng)
+	_place_props(FieldProp.Kind.ROCK, rocks, rng)
+
+
+## 섬 · 지역에 맞게 다시 짓는다(기획서 7장 섬 구조): 바닥 색(섬 종족 색, 깊은 지역일수록 어둡게) · 장식물(섬 · 지역마다 다른 씨앗,
+## 지역마다 나무 · 바위 수 GameConfig.FIELD_PROPS) · 길찾기. 필드 위의 유닛 · 떨어진 코어는 부르는 쪽(Main)이 정리한다.
+func rebuild(island_id: String, region_id: String) -> void:
+	for child in objects.get_children():
+		if child is FieldProp:
+			objects.remove_child(child)
+			child.queue_free()
+	_grid.fill_solid_region(_grid.region, false)
+	var island := IslandDb.get_island(island_id)
+	var region := IslandDb.get_region(region_id)
+	var tribe := TribeDb.get_tribe(island.tribe) if island != null else null
+	ground.paint(tribe.color if tribe != null else Color.WHITE, region.index if region != null else 0)
+	var counts: Array = GameConfig.FIELD_PROPS.get(region_id, GameConfig.FIELD_PROPS["intro"])
+	_scatter_props(IslandDb.field_seed(island_id, region_id), int(counts[0]), int(counts[1]))
 
 
 func _place_props(kind: FieldProp.Kind, count: int, rng: RandomNumberGenerator) -> void:

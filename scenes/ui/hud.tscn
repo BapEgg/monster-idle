@@ -16,6 +16,8 @@
 [ext_resource type="Script" path="res://scenes/ui/currency_bar.gd" id="14_currency"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_window.tscn" id="15_skill_window"]
 [ext_resource type="PackedScene" path="res://scenes/ui/job_panel.tscn" id="16_job_panel"]
+[ext_resource type="Script" path="res://scenes/ui/minimap.gd" id="17_minimap"]
+[ext_resource type="PackedScene" path="res://scenes/ui/island_map.tscn" id="18_island_map"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -56,6 +58,34 @@ offset_right = 268.0
 offset_bottom = 58.0
 mouse_filter = 2
 script = ExtResource("13_level")
+
+[node name="Minimap" type="Control" parent="."]
+offset_left = 28.0
+offset_top = 66.0
+offset_right = 252.0
+offset_bottom = 196.0
+script = ExtResource("17_minimap")
+
+[node name="RegionBanner" type="VBoxContainer" parent="."]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 96.0
+offset_right = 320.0
+offset_bottom = 168.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="BannerTitle" type="Label" parent="RegionBanner"]
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="BannerSub" type="Label" parent="RegionBanner"]
+layout_mode = 2
+horizontal_alignment = 1
 
 [node name="Currency" type="Control" parent="."]
 anchors_preset = 1
@@ -208,6 +238,11 @@ position = Vector2(-98, 282)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 
+[node name="MapButton" type="TouchScreenButton" parent="TopControls"]
+position = Vector2(-98, 330)
+shape = SubResource("RectangleShape2D_bag")
+script = ExtResource("10_text_button")
+
 [node name="BagPanel" parent="." instance=ExtResource("7_bag_panel")]
 visible = false
 
@@ -218,6 +253,9 @@ visible = false
 visible = false
 
 [node name="JobPanel" parent="." instance=ExtResource("16_job_panel")]
+visible = false
+
+[node name="IslandMap" parent="." instance=ExtResource("18_island_map")]
 visible = false
 
 [node name="SkillWindow" parent="." instance=ExtResource("15_skill_window")]

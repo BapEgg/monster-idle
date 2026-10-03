@@ -759,7 +759,7 @@ func _run(main: Node) -> void:
 	var hunt_log: HuntLog = main.get("hunt_log")
 	var bag_before_hunt := bag.count()
 	var cores_before_hunt := hunt_log.cores
-	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
+	(main.get_node("WildSpawner") as WildSpawner).relocate("dragon", "intro")
 	Balance.dev_boost = 600.0  # 실행 검사 전용: 실제 확률로는 40초 안에 코어가 거의 안 떨어지므로 크게
 	var level_before_hunt := progress.level
 	var exp_before_hunt := progress.exp_points
@@ -925,6 +925,64 @@ func _run(main: Node) -> void:
 	await _physics_frames(3)
 	_expect(get_nodes_in_group(&"wild").size() == GameConfig.WILD_COUNT, "포기한 뒤 야생이 다시 나옴")
 
+	# 9-3) 섬 · 지역(기획서 7장, 로드맵 8): 미니맵 → 섬 지도 창 → 용섬 특수로 이동(그 지역 종 · 레벨) → 쓰러지면 입문으로 후퇴 →
+	#      (개발용 모든 섬 열기) 식물섬 → 섬의 왕 = 신단수 → 저장 확인용으로 용섬 특수에 둔다.
+	var world: WorldState = main.get("world")
+	_expect(hud.minimap.visible and hud.minimap.title == UiText.WORLD_TITLE % ["용섬", "입문", 1, 15] and world.island == "dragon" and world.region == "intro", "미니맵 위 띠: %s" % hud.minimap.title)
+	var map := hud.island_map
+	await _tap(hud.map_button.global_position)
+	await _physics_frames(2)
+	_expect(map.visible and map.selected_island() == "dragon" and map.region_button("intro").text == UiText.MAP_HERE_TAG and map.region_button("intro").disabled and map.region_button("special").text == UiText.MAP_GO and not map.region_button("special").disabled and map.region_button("heart").text == UiText.MAP_NEED_LEVEL % 35 and map.region_button("heart").disabled, "지도 버튼 → 섬 지도: 입문 = 지금 여기, 특수 = 이동, 심장부 = Lv 35부터(Lv %d)" % progress.level)
+	await _tap(map.island_point("plant"))
+	await _physics_frames(2)
+	_expect(map.selected_island() == "plant" and map.region_button("intro").text == UiText.MAP_CLOSED and map.region_button("intro").disabled, "닫힌 섬(식물섬)을 누름 → 지역 버튼이 모두 꺼짐(섬 개방은 다음 단계)")
+	await _save_shot("map")
+	await _seconds(0.2)
+	await _tap(map.island_point("dragon"))
+	await _physics_frames(2)
+	await _tap(map.region_button("special").get_global_rect().get_center())
+	await _physics_frames(5)
+	var special_ids := PackedStringArray()
+	for row: Array in IslandDb.spawn_table("dragon", "special"):
+		special_ids.append(row[0])
+	var all_special := true
+	for node in get_nodes_in_group(&"wild"):
+		var special_wild := node as Hench
+		all_special = all_special and special_wild.species.id in special_ids and special_wild.level >= 15
+	_expect(not map.visible and world.region == "special" and get_nodes_in_group(&"wild").size() == GameConfig.WILD_COUNT and all_special, "이동 → 용섬 특수: 야생 %d마리가 모두 특수 종(%s) · Lv 15 이상" % [get_nodes_in_group(&"wild").size(), " · ".join(special_ids)])
+	_expect(hud.banner_texts()[0] == UiText.WORLD_TITLE % ["용섬", "특수", 15, 40] and hud.minimap.title == hud.banner_texts()[0] and field.ground.region_index == 1, "화면 위 가운데에 지역 이름, 미니맵 띠도 바뀜, 바닥이 조금 어두워짐")
+	await _seconds(0.5)
+	await _save_shot("region_special")
+	await _seconds(0.2)
+	player.take_damage(player.hp + player.shield + 99999.0, null)
+	await _seconds(GameConfig.PLAYER_REVIVE_SECONDS + 0.5)
+	var intro_ids := PackedStringArray()
+	for row: Array in IslandDb.spawn_table("dragon", "intro"):
+		intro_ids.append(row[0])
+	var all_intro := true
+	for node in get_nodes_in_group(&"wild"):
+		all_intro = all_intro and (node as Hench).species.id in intro_ids
+	_expect(player.is_alive() and world.region == "intro" and hud.banner_texts()[1] == UiText.WORLD_RETREAT and all_intro, "용섬 특수에서 쓰러짐 → 입문으로 후퇴(%s)" % hud.banner_texts()[1])
+	_expect(not main.call("travel", "plant", "intro"), "닫힌 섬으로는 못 감")
+	await _tap(hud.debug_button.global_position)
+	await _tap((hud.debug_panel.find_child("OpenIslands", true, false) as Button).get_global_rect().get_center())
+	await _tap((hud.debug_panel.find_child("Close", true, false) as Button).get_global_rect().get_center())
+	_expect(WorldState.dev_open_all and main.call("travel", "plant", "intro"), "디버그 \"모든 섬 열기\" → 식물섬 입문으로 이동")
+	await _physics_frames(5)
+	var plant_ok := true
+	for node in get_nodes_in_group(&"wild"):
+		plant_ok = plant_ok and IslandDb.habitat_key("plant", "intro") in (node as Hench).species.habitats
+	_expect(plant_ok and (main.call("_king") as HenchSpecies).name == "신단수", "식물섬 입문: 서식지가 식물섬 입문인 종만, 섬의 왕 = 신단수")
+	await _seconds(0.5)
+	await _save_shot("region_plant")
+	await _seconds(0.2)
+	WorldState.dev_open_all = false
+	main.call("travel", "dragon", "special")
+	await _physics_frames(3)
+	await _tap(hud.minimap.get_global_rect().get_center())
+	_expect(map.visible and world.region == "special", "미니맵을 눌러도 섬 지도가 열림")
+	await _tap(_center_of(map, "Close"))
+
 	# 10) 저장 → 다시 켜기: 가방(코어 하나하나) · 골드 · 코어 조각 · 파티 · 사냥 방식이 그대로
 	var keep := _find_core(bag, "jinjuryong", CoreItem.Gender.FEMALE)
 	main.call("assign_party", keep, 2)
@@ -961,6 +1019,8 @@ func _run(main: Node) -> void:
 	_expect(progress_again.level == progress.level and player_again.level == progress.level and hud_again.level_bar.level_text() == UiText.LEVEL_LABEL % progress.level, "주인공 레벨(Lv %d)을 기억함" % progress.level)
 	var job_again: JobState = again.get("job")
 	_expect(job_again.to_dict() == job.to_dict() and player_again.job_id == job.job_id and hud_again.skill_slot(3).skill != null, "직업 · 직업 스킬(레벨 · 장착)을 기억함 (%s)" % JobDb.get_job(job.job_id).name)
+	var world_again: WorldState = again.get("world")
+	_expect(world_again.island == "dragon" and world_again.region == "special" and hud_again.minimap.title == UiText.WORLD_TITLE % ["용섬", "특수", 15, 40], "섬 · 지역(용섬 특수)을 기억함")
 	LocalSaveStore.new(SMOKE_SAVE_PATH).erase()
 
 	for failure in _failures:

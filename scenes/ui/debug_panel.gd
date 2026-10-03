@@ -3,7 +3,11 @@ extends PanelContainer
 ## 디버그 화면(개발 확인용, GameConfig.DEV_DEBUG_PANEL): 사냥 기록(이번 접속)과 시간당 처치(하루 처치 수 측정),
 ## 밸런스 1차(기획서 8장): 지금 확률과 목표 대비 하루 예상 획득량, 드랍 확인 버튼(개발 배율 GameConfig.DEV_DROP_BOOST),
 ## 파티 헨치 3마리의 전투 값(코어 능력치 → 임시 환산). 원래 가방 창 위에 있던 것을 옮겼다(사용자 결정 2026-10-03).
+## 개발 확인용 켜고 끄기: 스킬 창 개발 문구, 모든 섬 열기(섬 개방은 다음 단계라 확인용으로).
 ## 화면 오른쪽 위 디버그 버튼으로 열고 닫는다. 위치·크기는 debug_panel.tscn을 에디터에서 연다.
+
+## "모든 섬 열기"를 켜거나 껐을 때(섬 지도 창을 다시 그린다)
+signal islands_toggled
 
 const TITLE_FONT_SIZE := 22
 const TEXT_FONT_SIZE := 17
@@ -21,6 +25,7 @@ var _refresh_left := 0.0
 @onready var _balance: Label = %Balance
 @onready var _drop_boost: Button = %DropBoost
 @onready var _dev_notes: Button = %DevNotes
+@onready var _open_islands: Button = %OpenIslands
 @onready var _party_title: Label = %PartyTitle
 @onready var _party_rows: Label = %PartyRows
 
@@ -41,6 +46,12 @@ func _ready() -> void:
 	_dev_notes.set_pressed_no_signal(SkillSheet.dev_notes)
 	_dev_notes.toggled.connect(func(on: bool) -> void:
 		SkillSheet.dev_notes = on
+		refresh())
+	UiKit.style_button(_open_islands, TEXT_FONT_SIZE)
+	_open_islands.set_pressed_no_signal(WorldState.dev_open_all)
+	_open_islands.toggled.connect(func(on: bool) -> void:
+		WorldState.dev_open_all = on
+		islands_toggled.emit()
 		refresh())
 	UiKit.style_caption(_party_title, TEXT_FONT_SIZE)
 	_party_title.text = UiText.DEBUG_PARTY_TITLE
@@ -108,6 +119,7 @@ func _show_balance() -> void:
 		got["variants_per_month"], roundi(variants.x), roundi(variants.y)]
 	_drop_boost.text = UiText.DEBUG_DROP_BOOST % [roundi(GameConfig.DEV_DROP_BOOST), UiText.DEBUG_ON if Balance.dev_boost > 1.0 else UiText.DEBUG_OFF]
 	_dev_notes.text = UiText.DEBUG_DEV_NOTES % (UiText.DEBUG_ON if SkillSheet.dev_notes else UiText.DEBUG_OFF)
+	_open_islands.text = UiText.DEBUG_OPEN_ISLANDS % (UiText.DEBUG_ON if WorldState.dev_open_all else UiText.DEBUG_OFF)
 
 
 ## 파티 전투 값 글자(실행 검사용).

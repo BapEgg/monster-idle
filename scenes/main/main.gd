@@ -11,6 +11,8 @@ extends Node2D
 ## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
 ## 주인공 직업(기획서 3장, 직업 1차): 레벨이 오르면 배울 수 있게 된 직업 스킬을 알리고(직업 창에서 배운다), 직업 · 장착이 바뀌면 주인공 능력치 ·
 ## 스킬 칸 4~6 · 궁극기 칸 · 파티 헨치(패시브: 전우애 · 진찰)를 다시 맞춘다. 저장된다.
+## 섬 · 지역(기획서 7장, 로드맵 8): 지도 창에서 고른 섬 · 지역으로 옮기면 필드를 다시 짓고(바닥 색 · 장식물) 그 지역 종을 푼다.
+## 주인공이 쓰러지면 그 섬의 바로 앞 지역으로 후퇴한다(입문이면 그 자리). 섬의 왕 버튼은 지금 섬의 왕과 싸운다.
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
@@ -23,6 +25,8 @@ var hunt_log := HuntLog.new()
 var progress: PlayerProgress = workshop.progress
 ## 주인공 직업 · 직업 스킬(레벨 · 장착)
 var job := JobState.new()
+## 지금 섬 · 지역과 열린 섬
+var world := WorldState.new()
 var _job_level_seen := 1  # 레벨업 때 새로 배울 수 있게 된 스킬을 알리려고 지난 레벨을 기억한다
 ## 보스전 중인 섬의 왕(보스전 밖이면 null).
 var boss: Boss
@@ -80,7 +84,12 @@ func _ready() -> void:
 	wallet.changed.connect(_save_schedule.mark_dirty)
 	workshop.acted.connect(_save_schedule.mark_dirty.bind(true))
 	_spawner.killed.connect(_on_kill)
-	_spawner.setup(_field, _player)
+	_field.rebuild(world.island, world.region)
+	_spawner.setup(_field, _player, world.island, world.region)
+	world.moved.connect(_on_world_moved)
+	_hud.bind_world(world, progress, _player)
+	_hud.travel_requested.connect(travel)
+	_hud.show_region_banner(_region_title())
 	_hud.boss_requested.connect(_on_boss_button)
 	_hud.command_dragged.connect(_on_command_dragged)
 	_hud.command_tapped.connect(_on_command_tapped)
@@ -179,7 +188,7 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress, job)
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress, job, world)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
 	_player.control.mode = GameSave.control_mode(data)
@@ -187,7 +196,7 @@ func _load_game() -> void:
 
 ## 지금 상태를 바로 저장한다. 보통은 묶어서(_process) 부르고, 끌 때·앱이 뒤로 갈 때는 바로 부른다.
 func save_game() -> bool:
-	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress, job)
+	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress, job, world)
 	if not save_store.save_data(data):
 		push_warning(save_store.last_error)
 		_save_schedule.mark_dirty()  # 다음 차례에 다시 해 본다
@@ -342,16 +351,63 @@ func _set_member_stats(hench: Hench, stats: UnitStats, level: int) -> void:
 		hench.hp = stats.max_hp * ratio
 
 
-## 주인공이 쓰러지면 잠시 뒤 파티 전체가 시작 지점에서 다시 일어난다(기획서: 패배해도 페널티 없이 후퇴).
-## 보스전 중이면 보스전은 패배로 끝난다.
+## 주인공이 쓰러지면 잠시 뒤 파티 전체가 다시 일어난다(기획서 7장: 패배해도 페널티 없이 이전 지역으로 후퇴).
+## 입문 밖이면 그 섬의 바로 앞 지역으로 옮긴 뒤 그 시작 지점에서, 입문이면 그 자리 시작 지점에서. 보스전 중이면 보스전은 패배로 끝난다(지역은 그대로).
 func _on_player_died(_unit: Unit) -> void:
-	if boss != null:
+	var in_boss := boss != null
+	if in_boss:
 		end_boss(UiText.BOSS_LOSE)
 	await get_tree().create_timer(GameConfig.PLAYER_REVIVE_SECONDS, false, true).timeout
+	if not in_boss and world.retreat():
+		_hud.show_region_banner(_region_title(), UiText.WORLD_RETREAT)
+	_regroup_at_spawn()
+
+
+## 주인공과 파티를 지금 필드의 시작 지점에 세운다(쓰러졌으면 일으킨다).
+func _regroup_at_spawn() -> void:
 	var spawn := _field.spawn_position()
-	_player.revive_at(spawn)
+	if _player.is_alive():
+		_player.place_at(spawn)
+	else:
+		_player.revive_at(spawn)
 	for hench in party:
-		hench.revive_at(spawn + hench.slot)
+		if hench.is_alive():
+			hench.place_at(spawn + hench.slot)
+		else:
+			hench.revive_at(spawn + hench.slot)
+
+
+# ─── 섬 · 지역 (기획서 7장, 로드맵 8) ───────────────────
+
+## 지도 창에서 고른 섬 · 지역으로 간다. 갈 수 없거나(닫힘 · 레벨 모자람 · 지금 있는 곳) 보스전 중이면 false.
+func travel(island_id: String, region_id: String) -> bool:
+	if boss != null or not world.can_enter(island_id, region_id, progress.level):
+		return false
+	world.move_to(island_id, region_id)
+	_hud.show_region_banner(_region_title())
+	return true
+
+
+## 섬 · 지역을 옮김(이동 · 후퇴 · 불러오기): 바닥에 남은 코어는 바로 가방에 넣고, 필드를 다시 지은 뒤 그 지역 종을 푼다.
+func _on_world_moved() -> void:
+	for node in _field.objects.get_children():
+		if node is CoreDrop:
+			var drop := node as CoreDrop
+			_field.objects.remove_child(drop)
+			drop.queue_free()
+			_on_core_collected(drop.item)
+	_field.clear_dangers()
+	_field.rebuild(world.island, world.region)
+	_player.set_target(null)
+	_regroup_at_spawn()
+	_spawner.relocate(world.island, world.region)
+	_save_schedule.mark_dirty(true)
+
+
+## "용섬 · 특수 (Lv 15~40)"
+func _region_title() -> String:
+	var levels := IslandDb.level_range(world.island, world.region)
+	return UiText.WORLD_TITLE % [IslandDb.get_island(world.island).name, IslandDb.get_region(world.region).name, levels.x, levels.y]
 
 
 # ─── 보스전 (프로토타입 6, 연습용) ──────────────────────
@@ -359,7 +415,7 @@ func _on_player_died(_unit: Unit) -> void:
 ## 섬의 왕 버튼: 보스전 밖이면 도전할지, 안이면 그만둘지 묻는다.
 func _on_boss_button() -> void:
 	if boss == null:
-		_hud.confirm_box.ask(UiText.BOSS_ASK % HenchDb.get_species(GameConfig.BOSS_SPECIES).name, start_boss)
+		_hud.confirm_box.ask(UiText.BOSS_ASK % _king().name, start_boss)
 	else:
 		_hud.confirm_box.ask(UiText.BOSS_GIVE_UP_ASK, func() -> void: end_boss(UiText.BOSS_GAVE_UP))
 
@@ -372,7 +428,7 @@ func start_boss() -> void:
 	for node in get_tree().get_nodes_in_group(Unit.group_name(Unit.Team.WILD)):
 		node.remove_from_group(Unit.group_name(Unit.Team.WILD))
 		node.queue_free()
-	boss = Boss.create_boss(HenchDb.get_species(GameConfig.BOSS_SPECIES))
+	boss = Boss.create_boss(_king())
 	boss.field = _field
 	boss.home = _boss_spawn_point()
 	boss.position = boss.home
@@ -401,6 +457,12 @@ func end_boss(message: String) -> void:
 	_hud.set_boss_mode(false)
 	_spawner.resume()
 	_hud.confirm_box.tell(message)
+
+
+## 지금 섬의 왕(없으면 연습 보스 GameConfig.BOSS_SPECIES).
+func _king() -> HenchSpecies:
+	var king := IslandDb.king(world.island)
+	return king if king != null else HenchDb.get_species(GameConfig.BOSS_SPECIES)
 
 
 func _on_boss_died(unit: Unit) -> void:
