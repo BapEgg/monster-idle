@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scenes/ui/mix_panel.gd" id="1_mix"]
 [ext_resource type="PackedScene" path="res://scenes/ui/core_info.tscn" id="2_info"]
 [ext_resource type="Script" path="res://scenes/ui/mix_flasks.gd" id="3_flasks"]
+[ext_resource type="Script" path="res://scenes/ui/flask_fx.gd" id="4_fx"]
 
 [node name="MixPanel" type="Control"]
 layout_mode = 3
@@ -25,12 +26,13 @@ grow_vertical = 2
 [node name="Frame" type="PanelContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = 8.0
+offset_left = -290.0
 offset_top = 8.0
-offset_right = -8.0
+offset_right = 290.0
 offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -44,7 +46,7 @@ theme_override_constants/margin_bottom = 12
 
 [node name="Rows" type="VBoxContainer" parent="Frame/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="TopBar" type="HBoxContainer" parent="Frame/Margin/Rows"]
 layout_mode = 2
@@ -57,21 +59,16 @@ size_flags_horizontal = 3
 
 [node name="Close" type="Button" parent="Frame/Margin/Rows/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(96, 48)
+custom_minimum_size = Vector2(96, 46)
 layout_mode = 2
 focus_mode = 0
 
-[node name="LabRow" type="HBoxContainer" parent="Frame/Margin/Rows"]
+[node name="Lab" type="Control" parent="Frame/Margin/Rows"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-alignment = 1
 
-[node name="Lab" type="Control" parent="Frame/Margin/Rows/LabRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(520, 0)
-layout_mode = 2
-
-[node name="Flasks" type="Control" parent="Frame/Margin/Rows/LabRow/Lab"]
+[node name="Flasks" type="Control" parent="Frame/Margin/Rows/Lab"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -85,7 +82,7 @@ main_slot_path = NodePath("../Bench/Pair/MainBox/MainSlot")
 sub_slot_path = NodePath("../Bench/Pair/SubBox/SubSlot")
 result_slot_path = NodePath("../Bench/ResultSlot")
 
-[node name="Bench" type="VBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab"]
+[node name="Bench" type="VBoxContainer" parent="Frame/Margin/Rows/Lab"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -94,100 +91,19 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 4
 
-[node name="Pair" type="HBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="TopGap" type="Control" parent="Frame/Margin/Rows/Lab/Bench"]
+custom_minimum_size = Vector2(0, 42)
 layout_mode = 2
-theme_override_constants/separation = 26
-alignment = 1
 
-[node name="MainBox" type="VBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="MainLabel" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/MainBox"]
+[node name="ResultSlot" type="Button" parent="Frame/Margin/Rows/Lab/Bench"]
 unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-
-[node name="MainSlot" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/MainBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(112, 112)
-layout_mode = 2
-focus_mode = 0
-flat = true
-
-[node name="MainEmpty" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/MainBox/MainSlot"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="SwapBox" type="VBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair"]
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 4
-
-[node name="Swap" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/SwapBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 46)
-layout_mode = 2
-size_flags_horizontal = 4
-focus_mode = 0
-
-[node name="SwapResult" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/SwapBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-horizontal_alignment = 1
-autowrap_mode = 3
-
-[node name="SubBox" type="VBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="SubLabel" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/SubBox"]
-unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-
-[node name="SubSlot" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/SubBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(112, 112)
-layout_mode = 2
-focus_mode = 0
-flat = true
-
-[node name="SubEmpty" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Pair/SubBox/SubSlot"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Gap" type="Control" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
-custom_minimum_size = Vector2(0, 52)
-layout_mode = 2
-
-[node name="ResultSlot" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(124, 124)
+custom_minimum_size = Vector2(128, 128)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 flat = true
 
-[node name="ResultPortrait" type="TextureRect" parent="Frame/Margin/Rows/LabRow/Lab/Bench/ResultSlot"]
+[node name="ResultPortrait" type="TextureRect" parent="Frame/Margin/Rows/Lab/Bench/ResultSlot"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -199,7 +115,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ResultSecret" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/ResultSlot"]
+[node name="ResultSecret" type="Label" parent="Frame/Margin/Rows/Lab/Bench/ResultSlot"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -210,72 +126,160 @@ grow_vertical = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="UnderFlask" type="Control" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
-custom_minimum_size = Vector2(0, 18)
-layout_mode = 2
-
-[node name="ResultName" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="FlaskFx" type="Control" parent="Frame/Margin/Rows/Lab/Bench/ResultSlot"]
 unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-text_overrun_behavior = 3
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_fx")
 
-[node name="Chance" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="UnderFlask" type="Control" parent="Frame/Margin/Rows/Lab/Bench"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+
+[node name="ResultName" type="Button" parent="Frame/Margin/Rows/Lab/Bench"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 flat = true
 
-[node name="Cost" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="WarningBig" type="Label" parent="Frame/Margin/Rows/Lab/Bench"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
-horizontal_alignment = 1
-
-[node name="Problem" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
-unique_name_in_owner = true
-layout_mode = 2
+size_flags_horizontal = 4
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Spacer" type="Control" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="WarningSmall" type="Label" parent="Frame/Margin/Rows/Lab/Bench"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Problem" type="Label" parent="Frame/Margin/Rows/Lab/Bench"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(270, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Gap" type="Control" parent="Frame/Margin/Rows/Lab/Bench"]
+custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="WarningBig" type="PanelContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="Pair" type="HBoxContainer" parent="Frame/Margin/Rows/Lab/Bench"]
+layout_mode = 2
+theme_override_constants/separation = 26
+alignment = 1
+
+[node name="MainBox" type="VBoxContainer" parent="Frame/Margin/Rows/Lab/Bench/Pair"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MainSlot" type="Button" parent="Frame/Margin/Rows/Lab/Bench/Pair/MainBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 2
+focus_mode = 0
+flat = true
+
+[node name="MainEmpty" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/MainBox/MainSlot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MainLabel" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/MainBox"]
 unique_name_in_owner = true
 layout_mode = 2
+horizontal_alignment = 1
 
-[node name="WarningBigText" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench/WarningBig"]
+[node name="SwapBox" type="VBoxContainer" parent="Frame/Margin/Rows/Lab/Bench/Pair"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 4
+
+[node name="Swap" type="Button" parent="Frame/Margin/Rows/Lab/Bench/Pair/SwapBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 46)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+
+[node name="SwapResult" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/SwapBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Go" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="SubBox" type="VBoxContainer" parent="Frame/Margin/Rows/Lab/Bench/Pair"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SubSlot" type="Button" parent="Frame/Margin/Rows/Lab/Bench/Pair/SubBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(112, 112)
 layout_mode = 2
 focus_mode = 0
+flat = true
 
-[node name="WarningSmall" type="Label" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="SubEmpty" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/SubBox/SubSlot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubLabel" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/SubBox"]
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="Footer" type="HBoxContainer" parent="Frame/Margin/Rows/LabRow/Lab/Bench"]
+[node name="Chance" type="Button" parent="Frame/Margin/Rows/Lab/Bench"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+flat = true
+
+[node name="Cost" type="Label" parent="Frame/Margin/Rows/Lab/Bench"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Footer" type="HBoxContainer" parent="Frame/Margin/Rows/Lab/Bench"]
 layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="MasteryButton" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Footer"]
+[node name="MasteryButton" type="Button" parent="Frame/Margin/Rows/Lab/Bench/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 focus_mode = 0
 flat = true
 
-[node name="RecipeButton" type="Button" parent="Frame/Margin/Rows/LabRow/Lab/Bench/Footer"]
+[node name="RecipeButton" type="Button" parent="Frame/Margin/Rows/Lab/Bench/Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(90, 40)
 layout_mode = 2

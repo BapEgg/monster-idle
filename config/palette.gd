@@ -97,7 +97,6 @@ const MIX_FLASH_SUCCESS := Color(1, 0.97, 0.8)
 const MIX_FLASH_FAIL := Color(0.85, 0.15, 0.15)
 const MIX_NEW := Color("ffd84a")
 const MIX_MASTERY_BAR := Color("b98cff")
-const MIX_GO_BG := Color(1, 0.85, 0.3, 0.16)
 ## 결과 카드에서 하나만 강조하는 버튼(파티에 넣기): 파티 배지와 같은 청록
 const MIX_ACCENT_BG := Color("2a9d8f")
 const MIX_ACCENT_BORDER := Color("7fe0d2")
@@ -106,9 +105,14 @@ const FLASK_GLASS := Color(0.78, 0.92, 1.0, 0.75)
 const FLASK_SHINE := Color(1, 1, 1, 0.35)
 const FLASK_TUBE := Color(0.78, 0.92, 1.0, 0.4)
 const FLASK_BUBBLE := Color(1, 1, 1, 0.8)
-## 실패 경고(처음 몇 번만 크게): 바탕 · 테두리
-const MIX_WARNING_BG := Color(0.55, 0.12, 0.12, 0.35)
-const MIX_WARNING_BORDER := Color("ff8a7a")
+## 빈 칸 비커 둘레 깜빡임(누르라고) · 믹스할 수 있는 플라스크 둘레 빛 · 실패한 플라스크의 탁한 액체 · 금 · 눈물
+const FLASK_PULSE := Color(1, 1, 1, 0.55)
+const FLASK_READY := Color(1, 0.85, 0.3, 0.8)
+const FLASK_MURKY := Color(0.35, 0.33, 0.38)
+const FLASK_CRACK := Color(0.92, 0.97, 1.0, 0.95)
+const TEAR := Color("7fc8ff")
+## 실패해 우는 주 코어(플라스크 안 그림을 푸르스름하게)
+const CRYING_TINT := Color(0.75, 0.82, 1.0)
 ## 확률 내역 말풍선 바탕 · 숙련 표에서 지금 단계 줄 · 레시피 창에서 재료가 있는 공식
 const MIX_TIP_BG := Color(0.18, 0.2, 0.26, 0.98)
 ## 서랍이 열렸을 때 그 뒤(연성 장치)를 살짝 가리는 덮개. 누르면 서랍이 닫힌다.

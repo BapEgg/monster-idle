@@ -308,6 +308,16 @@ const MIX_FX_FLASH_SECONDS := 0.5
 const MIX_FX_POP_SECONDS := 0.35
 const MIX_FX_SHAKE_SECONDS := 0.4
 const MIX_FX_SHAKE_PIXELS := 14.0
+## 믹스 연출(플라스크): 액체가 쭉 차오르는 시간(초) · 결과를 보여 주고(성공 = 짠, 실패 = 깨짐 + 우는 주 코어) 카드가 뜨기까지(초)
+const MIX_FX_FILL_SECONDS := 0.9
+const MIX_FX_REVEAL_SECONDS := 0.7
+## 플라스크 흔들림: 마우스를 대면 · 누르고 있으면 기울기(도), 빠르기
+const MIX_WOBBLE_HOVER_DEGREES := 5.0
+const MIX_WOBBLE_PRESS_DEGREES := 10.0
+const MIX_WOBBLE_SPEED := 9.0
+## 빈 칸(다음에 채울 칸) "눌러서 고르기" 글자가 커졌다 작아지는 정도 · 빠르기
+const MIX_SLOT_PULSE_SCALE := 0.08
+const MIX_SLOT_PULSE_SPEED := 4.0
 ## 실패 경고를 크게 보여 주는 믹스 횟수(사용자 결정 2026-10-03: 처음 3번만 크게, 그 뒤로는 버튼 아래 작은 글씨)
 const MIX_WARNING_BIG_TIMES := 3
 ## 성공 확률을 눌렀을 때 내역 말풍선이 떠 있는 시간(초)

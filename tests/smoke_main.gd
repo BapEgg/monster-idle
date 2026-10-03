@@ -340,7 +340,7 @@ func _run(main: Node) -> void:
 	var mix_info := mixer.info()
 	_expect(mixer.visible and mixer.main_core == gochu and mixer.get_global_rect().size == root.get_visible_rect().size, "믹스 → 믹스창(화면 전체), 주 칸 = 고른 코어")
 	_expect(mix_info.item == gochu and not (mix_info.find_child("Buttons", true, false) as Control).visible and mix_info.heading == UiText.MIX_INFO_MATERIAL, "오른쪽 정보창 = 가방 정보창 재사용(작은 제목 \"재료 정보\", 주 코어 상세, 버튼은 숨김)")
-	_expect((mixer.find_child("Go", true, false) as Button).text == UiText.TERM_MIX + "하기", "큰 버튼 = \"%s\"" % (mixer.find_child("Go", true, false) as Button).text)
+	_expect(mixer.find_child("Go", true, false) == null and not mixer.can_mix() and mixer.get_node("Frame").get_global_rect().size.x < root.get_visible_rect().size.x * 0.6, "믹스하기 네모 버튼 대신 플라스크, 창은 가운데 알맞은 크기")
 	_expect(not (mixer.find_child("Title", true, false) as Label).text.contains("→"), "위쪽 공식 문구 없음")
 	_expect(not mixer.is_material_drawer_open() and not mixer.is_info_drawer_open(), "주 코어가 있으면 서랍은 닫힌 채 연성 장치만")
 	# 보조 칸을 누름 → 왼쪽에서 재료 서랍(보조 코어에 넣을 재료). 주 코어 · 같은 성별 · 잠금 · 변이는 흐리게 + 까닭
@@ -366,6 +366,14 @@ func _run(main: Node) -> void:
 	await _seconds(GameConfig.MIX_DRAWER_SECONDS + 0.1)
 	_expect(mixer.sub_core == kkang and not mixer.is_material_drawer_open() and not mixer.is_info_drawer_open() and mixer.result_name_text() == "돌구아나", "재료를 고름 → 보조 칸에 들어가고 서랍이 닫힘, 결과 칸 = 돌구아나(공개)")
 	_expect(mixer.chance_text() == UiText.MIX_CHANCE % (UiText.PERCENT % 85), "성공 확률 숫자 하나: 85%(하급→중급 기본, 숙련 1단계)")
+	_expect(mixer.can_mix() and (mixer.find_child("Problem", true, false) as Label).text == UiText.MIX_FLASK_HINT, "재료가 다 차면 \"%s\"" % UiText.MIX_FLASK_HINT)
+	var flask_at := _center_of(mixer, "ResultSlot")
+	_hover(flask_at)
+	await _seconds(0.5)
+	var wobble := absf(mixer.flask_angle())
+	_hover(Vector2(4, 4))
+	await _seconds(0.1)
+	_expect(wobble > 0.001, "플라스크에 마우스를 대면 흔들림 (%.1f도)" % rad_to_deg(wobble))
 	var swapped_name := "기관코끼리" if Mix.reveal_of("gigwankokkiri") == Mix.Reveal.OPEN else UiText.MIX_SECRET
 	_expect(mixer.swap_result_text() == UiText.MIX_SWAP_RESULT % swapped_name, "⇄ 옆: %s" % mixer.swap_result_text().replace("\n", " "))
 	_expect(mixer.material_side() >= 92.0, "재료 칸 %d px" % mixer.material_side())
@@ -377,7 +385,7 @@ func _run(main: Node) -> void:
 	_expect(mixer.is_showing_chance_tip() and mixer.chance_tip_text() == UiText.MIX_CHANCE_TIP % [85, 0, 0] and tip_rect.end.y <= (mixer.find_child("Chance", true, false) as Control).get_global_rect().position.y and not tip_rect.intersects(cost_rect), "성공 확률을 누름 → 숫자 위에 내역 말풍선(기본 + 숙련 + 마크), 비용 문구는 가리지 않음")
 	await _save_shot("mix")
 	await _seconds(0.2)
-	await _tap(_center_of(mixer, "ResultSlot"))
+	await _tap(_center_of(mixer, "ResultName"))
 	await _seconds(GameConfig.MIX_DRAWER_SECONDS + 0.1)
 	var preview := mix_info.preview_values()
 	_expect(mixer.is_info_drawer_open() and mix_info.previewing and mix_info.heading == UiText.MIX_INFO_PREVIEW and preview.size() == UiText.MIX_PREVIEW_CAPTIONS.size() and preview[0] == UiText.MIX_PREVIEW_LEVEL % 18, "결과 칸을 누름 → 오른쪽 정보 카드 \"결과 미리보기\"(%s)" % " · ".join(preview))
@@ -423,11 +431,15 @@ func _run(main: Node) -> void:
 	count_before = bag.count()
 	var gold_before := wallet.gold
 	workshop.rng.seed = 7  # 성공 쪽을 늘 확인하도록 씨앗을 고정(실패 카드는 아래에서 따로 띄워 본다)
-	await _tap(_center_of(mixer, "Go"))
-	_expect(not hud.confirm_box.visible, "보통 재료는 확인 창 없이 바로 믹스")
+	await _tap(_center_of(mixer, "ResultSlot"))
+	_expect(not hud.confirm_box.visible, "플라스크를 누름 → 보통 재료는 확인 창 없이 바로 믹스")
 	var flying := (mixer.find_child("FxLayer", true, false) as Control).get_child_count()
-	_expect(flying == (2 if mixer.last_born != null else 0), "성공이면 두 재료가 결과 플라스크로 모이는 연출(%d개)" % flying)
-	await _seconds(GameConfig.MIX_FX_GATHER_SECONDS + GameConfig.MIX_FX_POP_SECONDS + 0.2)
+	_expect(flying == 2, "두 재료가 플라스크로 빨려 드는 연출(%d개)" % flying)
+	await _seconds(GameConfig.MIX_FX_FILL_SECONDS * 0.4)
+	await _save_shot("mix_fill")
+	await _seconds(GameConfig.MIX_FX_FILL_SECONDS * 0.6 + 0.25)
+	await _save_shot("mix_reveal")
+	await _seconds(GameConfig.MIX_FX_REVEAL_SECONDS + GameConfig.MIX_FX_POP_SECONDS + 0.3)
 	var born := mixer.last_born
 	_expect(mixer.is_showing_result() and not bag.has(gochu) and not bag.has(kkang) and bag.count() == count_before - (1 if born != null else 2), "믹스 → 재료 둘이 사라지고 결과 카드(%s)" % ("성공" if born != null else "실패"))
 	_expect(wallet.gold == gold_before - Mix.gold_cost("gigwankokkiri") and workshop.mastery.exp_points > 0, "골드가 비용만큼 나가고 숙련 경험치가 오름")
@@ -479,7 +491,7 @@ func _run(main: Node) -> void:
 	await _tap(mixer.material_card(_find_core(bag, "gombogom", CoreItem.Gender.MALE)).get_global_rect().get_center())
 	await _seconds(GameConfig.MIX_DRAWER_SECONDS + 0.1)
 	count_before = bag.count()
-	await _tap(_center_of(mixer, "Go"))
+	await _tap(_center_of(mixer, "ResultSlot"))
 	_expect(hud.confirm_box.visible, "빛나는 코어가 들어 있으면 확인 창")
 	await _tap(_center_of(hud.confirm_box, "No"))
 	_expect(not hud.confirm_box.visible and mixer.visible and bag.count() == count_before and bag.has(shiny), "아니요 → 아무것도 바뀌지 않음")
@@ -492,6 +504,17 @@ func _run(main: Node) -> void:
 	await _tap(Vector2(root.get_visible_rect().size.x * 0.75, root.get_visible_rect().size.y * 0.5))
 	await _seconds(GameConfig.MIX_DRAWER_SECONDS + 0.1)
 	_expect(not mixer.is_material_drawer_open(), "서랍 밖을 누름 → 서랍이 닫힘")
+	var pulse_scales := []
+	for i in 6:
+		pulse_scales.append((mixer.find_child("MainEmpty", true, false) as Control).scale.x)
+		await _seconds(0.1)
+	_expect(pulse_scales.max() - pulse_scales.min() > 0.02, "빈 주 칸 \"눌러서 고르기\"가 커졌다 작아지며 누르라고 알림")
+	mixer.show_outcome(false)
+	await _seconds(0.5)
+	_expect(mixer.is_flask_broken(), "실패 연출: 플라스크가 깨지고 주 코어가 욺")
+	await _save_shot("mix_broken")
+	await _seconds(0.2)
+	mixer.call("_reset_flask")
 	await _tap(_center_of(mixer, "Close"))
 	_expect(not mixer.visible, "닫기")
 	# 직접 한 일(믹스)은 잠깐 뒤 저장된다(묶어서 저장 · 앞당김)
@@ -895,6 +918,14 @@ func _mouse_button(pressed: bool, at: Vector2) -> void:
 	event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
 	event.position = at
 	event.global_position = at
+	Input.parse_input_event(event)
+
+
+## 버튼을 누르지 않고 마우스만 옮긴다(PC에서 플라스크에 마우스를 대는 것).
+func _hover(to: Vector2) -> void:
+	var event := InputEventMouseMotion.new()
+	event.position = to
+	event.global_position = to
 	Input.parse_input_event(event)
 
 

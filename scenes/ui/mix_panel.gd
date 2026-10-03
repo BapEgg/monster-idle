@@ -1,17 +1,16 @@
 class_name MixPanel
 extends Control
-## 믹스창(화면 전체 + 뒤를 어둡게, 서랍형 — 사용자 결정 2026-10-03).
-## 기본 화면 = 가운데 연성 장치만 크게(플라스크 도형, MixFlasks): 주 · 보조 칸, 그 사이 ⇄ + "바꾸면 → ○○",
-##   결과 칸(공개 = 그림 + 이름, 힌트 = 실루엣, 비밀 = ?), 성공 확률 숫자(누르면 숫자 위에 내역 말풍선), 비용(늘 보임), 큰 "믹스하기",
-##   실패 경고(처음 GameConfig.MIX_WARNING_BIG_TIMES번은 크게, 그 뒤로는 버튼 아래 작게), "숙련 n단계 ⓘ"(숙련 창) · "레시피"(레시피 창).
-## 왼쪽 재료 서랍: 주 또는 보조 칸을 누르면 밀려 나온다(그 칸에 넣을 재료, 종족 필터 · 정렬). 고를 수 없는 코어는 흐리게 + 까닭 배지,
-##   지금 그 칸의 코어는 흰 테두리 + 체크. 재료를 고르면 그 칸에 넣고 서랍이 닫힌다. 서랍 밖을 누르면 닫힌다.
-##   믹스창을 열 때 주 코어가 비어 있으면 서랍을 바로 연다.
-## 오른쪽 정보 카드(가방 창의 CoreInfo를 버튼 없이 재사용): 결과 칸을 누르면 "결과 미리보기"(예상 레벨 · 접미사 확률 · 계승 스탯 ·
-##   나이 · 성별 확률 · 고유 스킬), 서랍 안의 코어를 길게 누르면 "재료 정보". 서랍은 짧게 미끄러지며 열리고 닫힌다(GameConfig.MIX_DRAWER_SECONDS).
-## 믹스하기: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 성공하면 두 재료가 결과 플라스크로 모이는 연출 → 번쩍임 →
-## 성공 카드(이름 · 종족·역할·등급 · LV·나이·성별 · 계승 스탯 · 패시브 고르기(자기 / 유산, 자기가 먼저 골라져 있고 나중에 못 바꿈) · 얻은 숙련 경험치,
-## 파티에 넣기(강조) / 정보 보기 / 계속 믹스). 실패하면 붉은 번쩍임 + 같은 모양의 실패 카드(잃은 재료 · 얻은 숙련 경험치).
+## 믹스창(뒤를 어둡게, 가운데 알맞은 크기의 창 + 서랍 — 사용자 결정 2026-10-03).
+## 연성 장치(플라스크 도형, MixFlasks): 위 = 결과 플라스크(공개 = 그림, 힌트 = 실루엣, 비밀 = ?) — 마우스를 대면 흔들리고,
+##   누르면 믹스한다(재료가 덜 찼으면 비어 있는 칸의 재료 서랍이 열린다). 그 아래 결과 이름 ⓘ(누르면 오른쪽 정보 카드 "결과 미리보기"),
+##   실패 경고 글자(처음 GameConfig.MIX_WARNING_BIG_TIMES번은 크게, 그 뒤 작게). 아래 = 주 · 보조 비커(빈 칸은 "눌러서 고르기"가
+##   커졌다 작아지며 비커가 깜빡여 누르라고 알림) + 사이 ⇄ · "바꾸면 → ○○", 성공 확률 숫자(누르면 숫자 위에 내역), 비용, 숙련 ⓘ · 레시피.
+## 왼쪽 재료 서랍: 주 또는 보조 칸을 누르면 밀려 나온다(종족 필터 · 정렬, 흐린 재료 + 까닭 배지, 지금 칸의 코어는 흰 테두리 + 체크).
+##   고르면 그 칸에 들어가고 서랍이 닫힌다. 서랍 밖을 누르면 닫힌다. 믹스창을 열 때 주 코어가 비어 있으면 서랍을 바로 연다.
+## 오른쪽 정보 카드(가방 창의 CoreInfo를 버튼 없이 재사용): 결과 이름 ⓘ = "결과 미리보기", 서랍 안 코어를 길게 누르면 "재료 정보".
+## 믹스: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 두 재료가 플라스크로 빨려 들며 액체가 쭉 차오르고 →
+##   성공 = 번쩍이며 태어난 헨치가 플라스크 안에 짠 → 성공 카드(패시브 고르기 · 파티에 넣기 강조 · 정보 보기 · 계속 믹스),
+##   실패 = 플라스크가 깨지고(금 · 유리 조각, 액체가 탁해짐) 안의 주 코어가 운다 → 실패 카드(잃은 재료 · 얻은 숙련 경험치).
 ## 실제 처리는 Workshop(믹스 · 숙련도 · 도감 · 패시브 고르기). 자리·크기는 mix_panel.tscn을 에디터에서 연다. 수치는 GameConfig.MIX_*.
 
 ## 결과 카드의 "정보 보기": 가방 창에서 그 코어를 보여 준다.
@@ -32,7 +31,6 @@ const RESULT_NAME_FONT_SIZE := 22
 const CARD_TITLE_FONT_SIZE := 26
 const CHANCE_FONT_SIZE := 24
 const BUTTON_FONT_SIZE := 19
-const GO_FONT_SIZE := 26
 const SWAP_FONT_SIZE := 26
 const SECRET_FONT_SIZE := 56
 const SLOT_CARD_SIZE := Vector2(112, 112)
@@ -65,6 +63,11 @@ var _mixed_sub: CoreItem
 var _legacy_owner := ""  # 마지막 믹스의 주 코어 패시브 주인(성공 카드에서 유산으로 고를 때)
 var _tip_left := 0.0
 var _drawer_target := Slot.MAIN  # 재료 서랍이 채울 칸
+var _can_mix := false  # 지금 플라스크를 누르면 믹스되나
+var _hovering := false  # 플라스크 위에 마우스가 있나(흔들림)
+var _pressing := false  # 플라스크를 누르고 있나(더 크게 흔들림)
+var _wobble := 0.0  # 지금 흔들림 크기(라디안, 부드럽게 따라간다)
+var _result_plain := ""  # 결과 이름(ⓘ 빼고)
 
 @onready var _dim: ColorRect = %Dim
 @onready var _frame: PanelContainer = %Frame
@@ -86,13 +89,12 @@ var _drawer_target := Slot.MAIN  # 재료 서랍이 채울 칸
 @onready var _result_slot: Button = %ResultSlot
 @onready var _result_portrait: TextureRect = %ResultPortrait
 @onready var _result_secret: Label = %ResultSecret
-@onready var _result_name: Label = %ResultName
+@onready var _result_name: Button = %ResultName
+@onready var _flask_fx: FlaskFx = %FlaskFx
 @onready var _chance: Button = %Chance
 @onready var _cost: Label = %Cost
 @onready var _problem: Label = %Problem
-@onready var _warning_big: PanelContainer = %WarningBig
-@onready var _warning_big_text: Label = %WarningBigText
-@onready var _go: Button = %Go
+@onready var _warning_big: Label = %WarningBig
 @onready var _warning_small: Label = %WarningSmall
 @onready var _mastery_button: Button = %MasteryButton
 @onready var _recipe_button: Button = %RecipeButton
@@ -164,8 +166,9 @@ func _ready() -> void:
 	_main_label.text = UiText.MIX_MAIN
 	_sub_label.text = UiText.MIX_SUB
 	UiKit.style_label(_swap_result, SMALL_FONT_SIZE - 1, Palette.TEXT_LABEL)
-	UiKit.style_label(_result_name, RESULT_NAME_FONT_SIZE, Palette.TEXT)
+	UiKit.style_button(_result_name, RESULT_NAME_FONT_SIZE)
 	_result_name.add_theme_font_override("font", UiKit.bold_font())
+	_result_name.add_theme_color_override("font_color", Palette.TEXT)
 	UiKit.style_label(_result_secret, SECRET_FONT_SIZE, Palette.TEXT_DIM)
 	_result_secret.text = UiText.MIX_SECRET
 	_result_secret.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -174,10 +177,9 @@ func _ready() -> void:
 	_chance.add_theme_color_override("font_color", Palette.TEXT)
 	UiKit.style_label(_cost, SMALL_FONT_SIZE, Palette.CORE_SHINE)
 	UiKit.style_label(_problem, SMALL_FONT_SIZE, Palette.TEXT_WARNING)
-	UiKit.style_label(_warning_big_text, TEXT_FONT_SIZE, Palette.TEXT_WARNING)
-	_warning_big_text.add_theme_font_override("font", UiKit.bold_font())
-	_warning_big_text.text = UiText.MIX_WARNING
-	_warning_big.add_theme_stylebox_override("panel", _choice_box(Palette.MIX_WARNING_BG, Palette.MIX_WARNING_BORDER))
+	UiKit.style_label(_warning_big, TEXT_FONT_SIZE, Palette.TEXT_WARNING)
+	_warning_big.add_theme_font_override("font", UiKit.bold_font())
+	_warning_big.text = UiText.MIX_WARNING
 	UiKit.style_label(_warning_small, SMALL_FONT_SIZE - 2, Palette.TEXT_WARNING)
 	_warning_small.text = UiText.MIX_WARNING
 	for button: BaseButton in [_close, _recipe_button, _mastery_close, _recipe_close, _to_party, _show_info, _again, _tribe_filter, _sort, _keep_own, _keep_legacy, _drawer_clear, _drawer_close, _info_close]:
@@ -185,8 +187,6 @@ func _ready() -> void:
 	UiKit.style_button(_swap, SWAP_FONT_SIZE)
 	UiKit.style_button(_mastery_button, SMALL_FONT_SIZE)
 	_mastery_button.add_theme_color_override("font_color", Palette.MIX_MASTERY_BAR)
-	UiKit.style_button(_go, GO_FONT_SIZE)
-	_accent(_go, Palette.MIX_GO_BG, Palette.CORE_SHINE, Palette.CORE_SHINE)
 	_accent(_to_party, Palette.MIX_ACCENT_BG, Palette.MIX_ACCENT_BORDER, Palette.TEXT)  # 결과 카드에서는 "파티에 넣기"만 강조색
 	_close.text = UiText.BAG_CLOSE
 	_drawer_close.text = UiText.BAG_CLOSE
@@ -195,7 +195,6 @@ func _ready() -> void:
 	_mastery_close.text = UiText.BAG_CLOSE
 	_recipe_close.text = UiText.BAG_CLOSE
 	_swap.text = UiText.MIX_SWAP
-	_go.text = UiText.MIX_GO
 	_recipe_button.text = UiText.MIX_RECIPE_BUTTON
 	_to_party.text = UiText.BTN_TO_PARTY
 	_show_info.text = UiText.BTN_SHOW_INFO
@@ -237,8 +236,12 @@ func _ready() -> void:
 		if event is InputEventMouseButton and event.pressed:
 			close_drawers())
 	_swap.pressed.connect(_on_swap)
-	_go.pressed.connect(_on_go)
-	_result_slot.pressed.connect(show_result_preview)
+	_result_slot.mouse_entered.connect(func() -> void: _hovering = true)
+	_result_slot.mouse_exited.connect(func() -> void: _hovering = false)
+	_result_slot.button_down.connect(func() -> void: _pressing = true)
+	_result_slot.button_up.connect(func() -> void: _pressing = false)
+	_result_name.pressed.connect(show_result_preview)
+	_result_slot.pressed.connect(_on_flask_pressed)
 	_chance.pressed.connect(_toggle_chance_tip)
 	_mastery_button.pressed.connect(open_mastery)
 	_recipe_button.pressed.connect(open_recipes)
@@ -334,6 +337,7 @@ func open(main: CoreItem) -> void:
 	_close_popups()
 	_chance_tip.visible = false
 	close_drawers(true)
+	_reset_flask()
 	visible = true
 	if main != null:
 		_show_material_info(main)
@@ -429,8 +433,16 @@ func refresh() -> void:
 	_show_result_slot(result, reveal, has_pair)
 	_show_chance(result, reveal, has_pair)
 	var problem := _workshop.mix_problem(main_core, sub_core)
-	_problem.text = UiText.MIX_PROBLEMS[problem] if problem != Mix.Problem.MISSING else ""
-	_go.disabled = problem != Mix.Problem.NONE or _busy
+	_can_mix = problem == Mix.Problem.NONE and not _busy
+	_flasks.mix_ready = _can_mix
+	_flasks.pulse_main = main_core == null
+	_flasks.pulse_sub = main_core != null and sub_core == null
+	if _can_mix:
+		_problem.text = UiText.MIX_FLASK_HINT
+		_problem.add_theme_color_override("font_color", Palette.FLASK_READY)
+	else:
+		_problem.text = UiText.MIX_PROBLEMS[problem] if problem != Mix.Problem.MISSING else ""
+		_problem.add_theme_color_override("font_color", Palette.TEXT_WARNING)
 	var big := _workshop.mastery.mixes < GameConfig.MIX_WARNING_BIG_TIMES
 	_warning_big.visible = big
 	_warning_small.visible = not big
@@ -465,7 +477,9 @@ func _show_result_slot(result: String, reveal: Mix.Reveal, has_pair: bool) -> vo
 	var secret := not has_pair or result == "" or reveal == Mix.Reveal.SECRET
 	_result_secret.visible = secret
 	_result_portrait.visible = not secret
-	_result_name.text = _outcome_name(result, reveal, has_pair)
+	_result_plain = _outcome_name(result, reveal, has_pair)
+	_result_name.text = _result_plain + UiText.MIX_INFO_MARK if has_pair else _result_plain
+	_result_name.disabled = not has_pair
 	if secret:
 		return
 	var species := HenchDb.get_species(result)
@@ -485,7 +499,7 @@ func _outcome_name(result: String, reveal: Mix.Reveal, has_pair: bool) -> String
 
 ## 결과 이름 글자(실행 검사용).
 func result_name_text() -> String:
-	return _result_name.text
+	return _result_plain
 
 
 ## 성공 확률 숫자 하나(누르면 내역)와 비용. 비밀 공식은 확률을 ?로 둔다.
@@ -531,6 +545,38 @@ func _process(delta: float) -> void:
 		_tip_left -= delta
 		if _tip_left <= 0.0:
 			_chance_tip.visible = false
+	_animate_flask(delta)
+
+
+## 플라스크 흔들림(마우스를 대면 살짝, 누르고 있으면 크게)과 빈 칸 글자 맥박(다음에 채울 칸).
+func _animate_flask(delta: float) -> void:
+	var t := Time.get_ticks_msec() / 1000.0
+	var target := 0.0
+	if not _busy:
+		if _pressing:
+			target = deg_to_rad(GameConfig.MIX_WOBBLE_PRESS_DEGREES)
+		elif _hovering:
+			target = deg_to_rad(GameConfig.MIX_WOBBLE_HOVER_DEGREES)
+	_wobble = lerpf(_wobble, target, minf(delta * 8.0, 1.0))
+	var angle := _wobble * sin(t * GameConfig.MIX_WOBBLE_SPEED)
+	_result_slot.pivot_offset = _result_slot.size * 0.5
+	_result_slot.rotation = angle
+	_flasks.angle = angle
+	var beat := 1.0 + GameConfig.MIX_SLOT_PULSE_SCALE * sin(t * GameConfig.MIX_SLOT_PULSE_SPEED)
+	for empty: Label in [_main_empty, _sub_empty]:
+		var pulsing := (empty == _main_empty and _flasks.pulse_main) or (empty == _sub_empty and _flasks.pulse_sub)
+		empty.pivot_offset = empty.size * 0.5
+		empty.scale = Vector2.ONE * (beat if pulsing else 1.0)
+
+
+## 플라스크가 흔들리는 기울기(라디안, 실행 검사용).
+func flask_angle() -> float:
+	return _result_slot.rotation
+
+
+## 지금 플라스크를 누르면 믹스되나(실행 검사용).
+func can_mix() -> bool:
+	return _can_mix
 
 
 ## 결과 칸을 누름: 오른쪽 정보 카드를 열어 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률 · 고유 스킬).
@@ -840,7 +886,20 @@ func is_showing_recipes() -> bool:
 
 # ─── 연성하기 · 연출 · 결과 카드 ─────────────────────────
 
-## 연성하기: 빛나는 코어나 높은 레벨 재료가 있으면 한 번 더 묻고, 아니면 바로.
+## 플라스크를 누름: 믹스할 수 있으면 믹스, 재료가 덜 찼으면 비어 있는 칸의 재료 서랍을 연다.
+func _on_flask_pressed() -> void:
+	if _busy:
+		return
+	if main_core == null:
+		open_material_drawer(Slot.MAIN)
+		return
+	if sub_core == null:
+		open_material_drawer(Slot.SUB)
+		return
+	_on_go()
+
+
+## 믹스: 빛나는 코어나 높은 레벨 재료가 있으면 한 번 더 묻고, 아니면 바로.
 func _on_go() -> void:
 	if _busy or _workshop.mix_problem(main_core, sub_core) != Mix.Problem.NONE:
 		return
@@ -856,39 +915,78 @@ func _on_go() -> void:
 		_confirm.ask(UiText.MIX_CONFIRM_ASK % "\n".join(reasons), _start_mix)
 
 
-## 믹스를 먼저 굴리고(패시브는 성공 카드에서 고른다), 결과에 맞는 연출을 한다:
-## 성공 = 두 재료가 결과 플라스크로 모인다, 실패 = 두 재료가 흐려진다. 그다음 번쩍임과 결과 카드.
+## 믹스를 먼저 굴리고(패시브는 성공 카드에서 고른다) 연출한다: 두 재료가 플라스크로 빨려 들며 액체가 쭉 차오른다
+## → 성공이면 번쩍이며 태어난 헨치가 짠, 실패면 플라스크가 깨지고 주 코어가 운다 → 잠깐 보여 준 뒤 결과 카드.
 func _start_mix() -> void:
 	if _busy:
 		return
 	close_drawers(true)
 	_busy = true
-	_go.disabled = true
+	_can_mix = false
+	_flasks.mix_ready = false
 	_chance_tip.visible = false
 	_mixed_main = main_core
 	_mixed_sub = sub_core
 	_legacy_owner = main_core.passive_owner_id()
 	last_born = _workshop.mix(main_core, sub_core, false)
 	var tween := create_tween().set_parallel()
-	if last_born != null:
-		var target := _result_slot.get_global_rect().get_center()
-		for slot: Button in [_main_slot, _sub_slot]:
-			var original := _slot_card(slot)
-			if original == null:
-				continue
-			var flying := CoreCard.create(original.item, SLOT_CARD_SIZE)
-			_fx_layer.add_child(flying)
-			flying.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			flying.global_position = original.global_position
-			flying.pivot_offset = SLOT_CARD_SIZE * 0.5
-			original.modulate.a = 0.0
-			tween.tween_property(flying, "global_position", target - SLOT_CARD_SIZE * 0.5, GameConfig.MIX_FX_GATHER_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-			tween.tween_property(flying, "scale", Vector2.ONE * 0.3, GameConfig.MIX_FX_GATHER_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-			tween.tween_property(flying, "modulate:a", 0.2, GameConfig.MIX_FX_GATHER_SECONDS)
-	else:
-		for slot: Button in [_main_slot, _sub_slot]:
-			tween.tween_property(slot, "modulate:a", 0.15, GameConfig.MIX_FX_GATHER_SECONDS)
+	var fill := GameConfig.MIX_FX_FILL_SECONDS
+	_flasks.fill_override = MixFlasks.FLASK_LIQUID_RATIO
+	tween.tween_property(_flasks, "fill_override", 1.0, fill).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	var target := _result_slot.get_global_rect().get_center()
+	for slot: Button in [_main_slot, _sub_slot]:
+		var original := _slot_card(slot)
+		if original == null:
+			continue
+		var flying := CoreCard.create(original.item, SLOT_CARD_SIZE)
+		_fx_layer.add_child(flying)
+		flying.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flying.global_position = original.global_position
+		flying.pivot_offset = SLOT_CARD_SIZE * 0.5
+		original.modulate.a = 0.0
+		tween.tween_property(flying, "global_position", target - SLOT_CARD_SIZE * 0.5, fill * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(flying, "scale", Vector2.ONE * 0.3, fill * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(flying, "modulate:a", 0.0, fill * 0.6)
+	tween.chain().tween_callback(func() -> void: show_outcome(last_born != null))
+	tween.chain().tween_interval(GameConfig.MIX_FX_REVEAL_SECONDS)
 	tween.chain().tween_callback(_finish_mix)
+
+
+## 결과를 플라스크에 보여 준다. 성공 = 번쩍이며 태어난 헨치 그림이 짠(커지며 나타남),
+## 실패 = 붉게 번쩍, 플라스크에 금 · 유리 조각, 액체가 탁해지고, 안의 주 코어가 운다. 실행 검사에서도 부른다.
+func show_outcome(success: bool) -> void:
+	_flasks.fill_override = -1.0
+	_result_secret.visible = false
+	_result_portrait.visible = true
+	_result_portrait.pivot_offset = _result_portrait.size * 0.5
+	if success and last_born != null:
+		_flasks.fill_override = 1.0
+		_result_portrait.texture = TribeDb.portrait(last_born.species().tribe)
+		_result_portrait.modulate = Color.WHITE
+		_result_portrait.scale = Vector2.ONE * 0.3
+		create_tween().tween_property(_result_portrait, "scale", Vector2.ONE, GameConfig.MIX_FX_POP_SECONDS).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_flash_screen(Palette.MIX_FLASH_SUCCESS)
+	else:
+		_flasks.cracked = true
+		_flask_fx.broken = true
+		if _mixed_main != null:
+			_result_portrait.texture = TribeDb.portrait(_mixed_main.species().tribe)
+		_result_portrait.modulate = Palette.CRYING_TINT
+		_result_portrait.scale = Vector2.ONE
+		_flash_screen(Palette.MIX_FLASH_FAIL)
+
+
+## 플라스크를 처음 모양으로(깨짐 · 눈물 · 차오름을 지운다).
+func _reset_flask() -> void:
+	_flasks.cracked = false
+	_flasks.fill_override = -1.0
+	_flask_fx.broken = false
+	_result_portrait.scale = Vector2.ONE
+
+
+## 플라스크가 깨졌나(실행 검사용).
+func is_flask_broken() -> bool:
+	return _flasks.cracked and _flask_fx.broken
 
 
 func _finish_mix() -> void:
@@ -899,10 +997,10 @@ func _finish_mix() -> void:
 	for slot: Button in [_main_slot, _sub_slot]:
 		slot.modulate.a = 1.0
 	_busy = false
+	_reset_flask()
 	if last_born != null:
 		_show_material_info(last_born)
 	refresh()
-	_flash_screen(Palette.MIX_FLASH_SUCCESS if last_born != null else Palette.MIX_FLASH_FAIL)
 	_show_result_card()
 
 

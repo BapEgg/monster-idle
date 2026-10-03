@@ -203,8 +203,9 @@ const MIX_CHANCE := "성공 확률 %s"
 ## 비용 / 보유 골드
 const MIX_COST := "비용 %d 골드 · 보유 %d"
 const MIX_WARNING := "실패하면 재료 둘이 모두 사라집니다"
-## 연성 장치의 큰 버튼(용어 통일, 사용자 결정 2026-10-03: "연성하기" → "믹스하기")
-const MIX_GO := TERM_MIX + "하기"
+## 플라스크 아래 안내(믹스할 수 있을 때, 플라스크를 누르면 믹스 — 사용자 결정 2026-10-03) · 결과 이름 뒤 정보 표시(누르면 미리보기)
+const MIX_FLASK_HINT := "플라스크를 눌러 " + TERM_MIX + "하기"
+const MIX_INFO_MARK := " ⓘ"
 ## 성공 확률을 누르면 뜨는 내역 말풍선
 const MIX_CHANCE_TIP := "성공 확률 내역\n기본 %d%% + 숙련 %d%% + 마크 %d%%"
 ## 연성하기 아래 작은 버튼: 숙련 단계(누르면 숙련 창) · 레시피 창
@@ -238,7 +239,7 @@ const MIX_PASSIVE_FINAL := "선택은 나중에 바꿀 수 없어요"
 const MIX_DRAWER_TITLE := "%s에 넣을 재료"
 const MIX_DRAWER_CLEAR := "비우기"
 const MIX_IN_OTHER_SLOT := "이미 %s 칸에 있어요(⇄로 바꿀 수 있어요)"
-const MIX_SLOT_PICK := "눌러서\n고르기"
+const MIX_SLOT_PICK := "＋\n눌러서 고르기"
 const MIX_FILTER_ALL := "전체 종족"
 ## 재료 정렬(MixPanel.Sort 순서)
 const MIX_SORTS := ["레벨 높은 순", "등급 높은 순", "빛나는 먼저"]
