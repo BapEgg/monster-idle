@@ -4,7 +4,8 @@ extends SceneTree
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
-## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png"로 저장한다.
+## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png",
+## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -242,6 +243,10 @@ func _run(main: Node) -> void:
 	await _physics_frames(2)
 	var party: Array = main.get("party")
 	_expect(gochu.party_slot == 0 and (party[0] as Hench).species.id == "gochuryong", "파티 편성 → 1번 자리 헨치가 고추룡으로 바뀜")
+	var core_stats := UnitStats.from_core(gochu)
+	var fighter := party[0] as Hench
+	_expect(is_equal_approx(fighter.stats.max_hp, core_stats.max_hp) and is_equal_approx(fighter.stats.attack, core_stats.attack) and fighter.level == gochu.level, "파티 헨치가 코어 능력치로 싸운다(체력 %d · 공격 %d · LV %d)" % [roundi(fighter.stats.max_hp), roundi(fighter.stats.attack), fighter.level])
+	_expect((info.find_child("Combat", true, false) as Label).text != "", "정보창에 파티 전투 값(임시)")
 	await _tap(_center_of(info, "Party"))
 	await _physics_frames(2)
 	party = main.get("party")
@@ -260,7 +265,16 @@ func _run(main: Node) -> void:
 	_expect(hud.mix_panel.visible and hud.mix_panel.main_core == gochu, "믹스 → 믹스창, 주 칸 = 고른 코어")
 	var kkang := _find_core(bag, "kkangtonggeobuk", CoreItem.Gender.MALE)
 	await _tap(hud.mix_panel.candidate_for(kkang).get_global_rect().get_center())
-	_expect(hud.mix_panel.sub_core == kkang and Mix.reveal_of(Mix.result_id(gochu, kkang)) == Mix.Reveal.OPEN, "보조 칸 = 깡통거북, 결과 미리보기 = 돌구아나(공개)")
+	var result_name := hud.mix_panel.find_child("ResultName", true, false) as Label
+	var direction := hud.mix_panel.find_child("Direction", true, false) as Label
+	_expect(hud.mix_panel.sub_core == kkang and result_name.text == "돌구아나", "보조 칸 = 깡통거북, 결과 미리보기 = 돌구아나(공개)")
+	_expect(direction.text.begins_with(UiText.MIX_DIRECTION % ["고추룡", UiText.GENDER_NAMES[0], "깡통거북", UiText.GENDER_NAMES[1]]) and direction.text.contains("\n"), "방향 = 주 고추룡(암컷) × 보조 깡통거북(수컷) + 암컷 주 코어의 능력치 경향")
+	await _tap(_center_of(hud.mix_panel, "Swap"))
+	_expect(hud.mix_panel.main_core == kkang and result_name.text == "기관코끼리 " + UiText.MIX_DRAFT, "주 ↔ 보조 → 다른 공식: 기관코끼리(초안 공식)")
+	await _save_shot("mix_swap")
+	await _seconds(0.2)
+	await _tap(_center_of(hud.mix_panel, "Swap"))
+	_expect(hud.mix_panel.main_core == gochu and result_name.text == "돌구아나", "다시 바꾸면 돌구아나")
 	await _save_shot("mix")
 	await _seconds(0.2)
 	count_before = bag.count()
@@ -272,6 +286,9 @@ func _run(main: Node) -> void:
 	_expect(not bag.has(gochu) and not bag.has(kkang) and (born_ok or bag.count() == count_before - 2), "믹스 → 재료 둘이 사라지고 %s" % ("돌구아나가 태어남" if born_ok else "실패(재료만 사라짐)"))
 	_expect(wallet.gold == gold_before - Mix.gold_cost("dolguana"), "골드가 비용만큼 나감")
 	_expect(hud.confirm_box.visible and not hud.mix_panel.visible, "믹스창이 닫히고 결과 알림")
+	if born_ok:
+		var birth := info.find_child("Birth", true, false) as Label
+		_expect(info.item != null and info.item.species_id == "dolguana" and info.item.main_parent_gender == CoreItem.Gender.FEMALE and birth.visible, "태어난 돌구아나: 주 코어(암컷) 능력치 경향이 정보창에 보임")
 	await _tap(_center_of(hud.confirm_box, "Yes"))
 	_expect(not hud.confirm_box.visible and hud.bag_panel.visible, "알림 확인 → 가방 창으로 돌아옴")
 	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.

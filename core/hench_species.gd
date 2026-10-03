@@ -21,8 +21,11 @@ var passive := ""
 var level_min := 1
 var level_max := 1
 var habitats := PackedStringArray()
-## 믹스 공식: [암컷 종 id, 수컷 종 id] 쌍 목록. 하급(드랍)은 비어 있고, 왕은 비밀이라 비어 있다.
+## 믹스 공식(기획서 표): [주 코어 종 id, 보조 코어 종 id] 쌍 목록. 하급(드랍)은 비어 있고, 왕은 비밀이라 비어 있다.
+## 같은 두 종이라도 어느 쪽이 주 코어냐에 따라 다른 공식이다(사용자 결정 2026-10-03).
 var recipes: Array[PackedStringArray] = []
+## 기획서에 없는 반대 방향 공식의 초안(임시, 데이터의 draft_recipes).
+var draft_recipes: Array[PackedStringArray] = []
 ## 그림이 들어오기 전까지 쓰는 임시 도형 색.
 var color := Color.WHITE
 
@@ -44,6 +47,8 @@ static func from_dict(row: Dictionary) -> HenchSpecies:
 	s.habitats = PackedStringArray(row.get("habitats", []))
 	for pair: Variant in row.get("recipes", []):
 		s.recipes.append(PackedStringArray(pair))
+	for pair: Variant in row.get("draft_recipes", []):
+		s.draft_recipes.append(PackedStringArray(pair))
 	s.color = Color.from_string(str(row.get("color", "")), Color.WHITE)
 	return s
 
@@ -63,7 +68,7 @@ func problems() -> PackedStringArray:
 		result.append("%s: 모르는 등급 '%s'" % [id, grade])
 	if level_min > level_max:
 		result.append("%s: 레벨 범위가 거꾸로 됨" % id)
-	for pair in recipes:
+	for pair in recipes + draft_recipes:
 		if pair.size() != 2:
-			result.append("%s: 믹스 공식은 [암컷, 수컷] 두 종이어야 함" % id)
+			result.append("%s: 믹스 공식은 [주 코어, 보조 코어] 두 종이어야 함" % id)
 	return result

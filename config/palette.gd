@@ -61,6 +61,8 @@ const PANEL_BORDER := Color(1, 1, 1, 0.25)
 const CARD_BG := Color(1, 1, 1, 0.08)
 const CARD_BORDER := Color(1, 1, 1, 0.15)
 const TEXT_DIM := Color(1, 1, 1, 0.65)
+## 코어 정보창: 주 코어 성별 때문에 오른 능력치와 그 설명 줄
+const STAT_BOOSTED := Color("8ee28e")
 ## 가방 버튼
 const BAG_BUTTON := Color(0, 0, 0, 0.45)
 ## 가방 칸: 고른 칸 바탕·테두리

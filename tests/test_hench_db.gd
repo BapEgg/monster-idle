@@ -54,6 +54,41 @@ func test_recipes() -> void:
 	expect_true(dolguana.recipes[1] == PackedStringArray(["gochuryong", "kkangtonggeobuk"]), "돌구아나 = 고추룡 + 깡통거북")
 
 
+## 사용자 결정(2026-10-03): 공식 [A, B] = 주 A · 보조 B, 반대 방향 [B, A]는 다른 공식.
+## 기획서에 없는 반대 방향은 초안(draft_recipes): 주 코어(B) 종족의 같은 등급 종, 같은 역할이 있으면 그 종.
+func test_draft_recipes() -> void:
+	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))
+	var official := {}
+	var drafts := {}
+	for s: HenchSpecies in all.values():
+		for pair in s.recipes:
+			expect_true(not official.has(pair[0] + "|" + pair[1]), "공식 %s + %s가 한 번만 나온다" % [pair[0], pair[1]])
+			official[pair[0] + "|" + pair[1]] = s
+		for pair in s.draft_recipes:
+			expect_true(all.has(pair[0]) and all.has(pair[1]), "%s: 초안 공식의 종 %s · %s가 도감에 있다" % [s.name, pair[0], pair[1]])
+			drafts[pair[0] + "|" + pair[1]] = s
+	for key: String in drafts:
+		expect_true(not official.has(key), "초안 %s가 기획서 공식과 겹치지 않는다" % key)
+	for key: String in official:
+		var pair := key.split("|")
+		var reverse := pair[1] + "|" + pair[0]
+		if official.has(reverse):
+			continue
+		expect_true(drafts.has(reverse), "기획서 공식 %s의 반대 방향 초안이 있다" % key)
+		if not drafts.has(reverse):
+			continue
+		var original: HenchSpecies = official[key]
+		var draft: HenchSpecies = drafts[reverse]
+		var main: HenchSpecies = all[pair[1]]
+		expect_true(draft.tribe == main.tribe and draft.grade == original.grade, "%s: 주 코어 종족 · 원래 결과와 같은 등급" % reverse)
+		var same_role := false
+		for s: HenchSpecies in all.values():
+			same_role = same_role or (s.tribe == main.tribe and s.grade == original.grade and s.role == original.role)
+		if same_role:
+			expect_true(draft.role == original.role, "%s: 같은 역할이 있으면 그 종" % reverse)
+	expect_true(HenchDb.recipe_result("kkangtonggeobuk", "gochuryong") == "gigwankokkiri" and HenchDb.is_draft_recipe("kkangtonggeobuk", "gochuryong"), "주 깡통거북 + 보조 고추룡 = 기관코끼리(초안)")
+
+
 ## 기획서 4장 초안: 하급은 종족당 근접딜러 1종 정도가 선공 → 용섬 입문은 고추룡만.
 func test_aggressive_species() -> void:
 	var all := HenchDb.parse(FileAccess.get_file_as_string(HenchDb.PATH))

@@ -1,9 +1,11 @@
 class_name Mix
 extends RefCounted
-## 믹스 계산(순수 함수). 기획서 4장: 암수 한 쌍이 필요하고, 어느 쪽이 암컷이냐에 따라 다른 종이 태어난다.
+## 믹스 계산(순수 함수). 암수 한 쌍이 필요하다(기획서 4장).
+## 사용자 결정(2026-10-03): 태어날 종은 어느 쪽이 주 코어냐로 정해진다(공식 [A, B] = 주 A · 보조 B, 반대는 다른 공식).
+## 성별은 종을 바꾸지 않고, 주 코어가 암컷이냐 수컷이냐에 따라 태어난 코어의 능력치 경향이 달라진다.
 ## 주 코어의 패시브를 "유산"으로 받아 자기 패시브 대신 쓸 수 있다(1칸).
 ## 사용자 결정(2026-10-02): 성공 확률이 있고, 실패하면 두 재료 코어가 모두 사라진다.
-## 공식 [A, B]는 A = 암컷, B = 수컷으로 읽는다(임시). 반대 방향과 공식에 없는 조합은 "?"(비밀)로 보이고, 믹스하면 실패한다.
+## 공식에 없는 조합은 "?"(비밀)로 보이고, 믹스하면 실패한다.
 
 ## 결과 미리보기(기획서 4장 초안): 공개 = 이름, 힌트 = 실루엣, 비밀 = ?
 enum Reveal { OPEN, HINT, SECRET }
@@ -11,20 +13,14 @@ enum Reveal { OPEN, HINT, SECRET }
 enum Problem { NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, NO_GOLD }
 
 
-## 두 코어에서 암컷을 고른다(둘 다 같은 성별이면 null).
-static func female_of(a: CoreItem, b: CoreItem) -> CoreItem:
-	if a.gender == b.gender:
-		return null
-	return a if a.gender == CoreItem.Gender.FEMALE else b
+## 주 코어 + 보조 코어로 태어날 종 id. 공식이 없으면 "". (암수가 맞는지는 problem()이 본다.)
+static func result_id(main: CoreItem, secondary: CoreItem) -> String:
+	return HenchDb.recipe_result(main.species_id, secondary.species_id)
 
 
-## 두 코어로 태어날 종 id. 공식이 없거나 같은 성별이면 "".
-static func result_id(a: CoreItem, b: CoreItem) -> String:
-	var female := female_of(a, b)
-	if female == null:
-		return ""
-	var male := b if female == a else a
-	return HenchDb.recipe_result(female.species_id, male.species_id)
+## 그 공식이 기획서에 없는 초안(임시)인가.
+static func is_draft(main: CoreItem, secondary: CoreItem) -> bool:
+	return HenchDb.is_draft_recipe(main.species_id, secondary.species_id)
 
 
 static func reveal_of(result: String) -> Reveal:
@@ -71,7 +67,7 @@ static func problem(main: CoreItem, secondary: CoreItem, gold: int) -> Problem:
 
 ## 믹스를 굴린다. 성공이면 새 코어, 실패면 null. 재료를 없애고 골드를 내는 것은 부르는 쪽(가방·지갑)이 한다.
 ## 새 코어: 태어난 종, 성별 무작위, 나이·레벨은 GameConfig.MIX_BORN_*, 접미사는 주 코어의 것,
-## keep_legacy면 패시브를 주 코어의 패시브로(유산).
+## 주 코어의 성별을 기억해 능력치 경향을 받고, keep_legacy면 패시브를 주 코어의 패시브로(유산).
 static func roll(rng: RandomNumberGenerator, main: CoreItem, secondary: CoreItem, keep_legacy: bool) -> CoreItem:
 	var result := result_id(main, secondary)
 	if result == "" or rng.randf() >= success_chance(result):
@@ -82,6 +78,7 @@ static func roll(rng: RandomNumberGenerator, main: CoreItem, secondary: CoreItem
 	born.age = GameConfig.MIX_BORN_AGE
 	born.level = GameConfig.MIX_BORN_LEVEL
 	born.suffix_id = main.suffix_id
+	born.main_parent_gender = main.gender
 	born.passive_species_id = main.passive_owner_id() if keep_legacy else ""
 	return born
 

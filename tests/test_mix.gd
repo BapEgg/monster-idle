@@ -1,5 +1,6 @@
 extends "res://tests/suite.gd"
-## core/mix.gd, core/core_stats.gd, core/wallet.gd 테스트: 믹스(암수 방향·공개 단계·확률·실패 소멸 규칙), 능력치, 지갑.
+## core/mix.gd, core/core_stats.gd, core/unit_stats.gd(코어 → 전투), core/wallet.gd 테스트:
+## 믹스(주 코어 방향·공개 단계·확률·실패 소멸 규칙), 능력치(주 코어 성별 경향 포함), 파티 전투 환산, 지갑.
 
 
 func _core(id: String, gender: CoreItem.Gender, suffix := "mighty") -> CoreItem:
@@ -10,16 +11,21 @@ func _core(id: String, gender: CoreItem.Gender, suffix := "mighty") -> CoreItem:
 	return item
 
 
-## 기획서 5장: 돌구아나 = 고추룡 + 깡통거북. 공식 [A, B]는 A = 암컷으로 읽는다(임시).
-func test_result_depends_on_which_is_female() -> void:
+## 사용자 결정(2026-10-03): 공식 [A, B] = 주 A · 보조 B. 주·보조를 바꾸면 다른 공식이고, 성별은 종을 바꾸지 않는다.
+func test_result_depends_on_main_core() -> void:
 	var gochu_f := _core("gochuryong", CoreItem.Gender.FEMALE)
 	var kkang_m := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
-	expect_true(Mix.result_id(gochu_f, kkang_m) == "dolguana", "고추룡(암) + 깡통거북(수) = 돌구아나")
-	expect_true(Mix.result_id(kkang_m, gochu_f) == "dolguana", "주·보조 칸을 바꿔도 같다(성별이 정한다)")
+	expect_true(Mix.result_id(gochu_f, kkang_m) == "dolguana", "주 고추룡 + 보조 깡통거북 = 돌구아나 (기획서 5장)")
+	expect_true(Mix.result_id(kkang_m, gochu_f) == "gigwankokkiri", "주·보조를 바꾸면 다른 공식 = 기관코끼리(초안)")
+	expect_true(not Mix.is_draft(gochu_f, kkang_m) and Mix.is_draft(kkang_m, gochu_f), "기획서 공식 / 초안 공식 구별")
 	var gochu_m := _core("gochuryong", CoreItem.Gender.MALE)
 	var kkang_f := _core("kkangtonggeobuk", CoreItem.Gender.FEMALE)
-	expect_true(Mix.result_id(gochu_m, kkang_f) == "", "암수가 반대면 다른 종(아직 미정 → 공식 없음)")
-	expect_true(Mix.result_id(gochu_f, _core("kkangtonggeobuk", CoreItem.Gender.FEMALE)) == "", "같은 성별이면 결과 없음")
+	expect_true(Mix.result_id(gochu_m, kkang_f) == "dolguana", "주 코어가 같으면 성별이 바뀌어도 같은 종")
+	expect_true(Mix.result_id(_core("sotmabaem", CoreItem.Gender.FEMALE), _core("haemapo", CoreItem.Gender.MALE)) == "", "공식이 없는 조합")
+	# 기획서에 처음부터 양방향이 있는 쌍: 진주룡 + 반딧등 / 반딧등 + 진주룡
+	var jinju := _core("jinjuryong", CoreItem.Gender.FEMALE)
+	var bandit := _core("banditdeung", CoreItem.Gender.MALE)
+	expect_true(Mix.result_id(jinju, bandit) == "mungeimugi" and Mix.result_id(bandit, jinju) == "mujigaeyeou", "주 진주룡 = 뭉게이무기, 주 반딧등 = 무지개여우 (기획서)")
 
 
 ## 기획서 4장 초안: 하급 + 하급 → 중급(공개), 중급 + 타 종족 → 상급(힌트), 왕은 비밀
@@ -75,10 +81,11 @@ func test_roll_success_rate_and_born_core() -> void:
 	expect_true(sample.age == GameConfig.MIX_BORN_AGE and sample.level == GameConfig.MIX_BORN_LEVEL, "새 몸: 나이·레벨 = 설정값")
 	expect_true(sample.passive_species_id == "sotmabaem", "유산을 고르면 주 코어의 지금 패시브를 받는다")
 	expect_true(Mix.roll(rng, main, sub, false) == null or Mix.roll(rng, main, sub, false).passive_species_id == "", "유산을 안 고르면 자기 패시브")
+	expect_true(sample.main_parent_gender == CoreItem.Gender.FEMALE, "태어난 코어는 주 코어의 성별(암컷)을 기억한다")
 	var never := 0
 	for i in 200:
-		never += 1 if Mix.roll(rng, _core("gochuryong", CoreItem.Gender.MALE), _core("kkangtonggeobuk", CoreItem.Gender.FEMALE), true) != null else 0
-	expect_true(never == 0, "공식 없는 조합(반대 방향)은 200번 모두 실패")
+		never += 1 if Mix.roll(rng, _core("sotmabaem", CoreItem.Gender.MALE), _core("haemapo", CoreItem.Gender.FEMALE), true) != null else 0
+	expect_true(never == 0, "공식 없는 조합은 200번 모두 실패")
 
 
 func test_dismantle_shards() -> void:
@@ -112,6 +119,45 @@ func test_stats() -> void:
 	expect_true(y["tough"] > o["tough"] and y["abundant"] < o["abundant"], "어린 = 몸↑ 스킬↓, 늙은 = 몸↓ 스킬↑ (기획서 4장)")
 	var mid := _core("gabotjangsu", CoreItem.Gender.MALE, "lucky")  # 근접딜러, 중급
 	expect_near(float(CoreStats.compute(mid)["mighty"]), stats["mighty"] * GameConfig.CORE_GRADE_BONUS["mid"], "중급 = 하급 × 등급 보정(약 +10%)", 1.0)
+
+
+## 사용자 결정(2026-10-03): 주 코어가 암컷이냐 수컷이냐에 따라 태어난 코어의 능력치 3개가 오른다(임시 설정값).
+func test_main_gender_trend() -> void:
+	var wild := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
+	var from_female := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
+	from_female.main_parent_gender = CoreItem.Gender.FEMALE
+	var from_male := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
+	from_male.main_parent_gender = CoreItem.Gender.MALE
+	var w := CoreStats.compute(wild)
+	var f := CoreStats.compute(from_female)
+	var m := CoreStats.compute(from_male)
+	expect_true(CoreStats.main_gender_stats(wild).is_empty(), "야생에서 얻은 코어는 성별 경향이 없다")
+	for stat: String in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.FEMALE]:
+		expect_near(float(f[stat]), w[stat] * (1.0 + GameConfig.MIX_MAIN_GENDER_BONUS), "암컷이 주 코어 → %s +설정값" % stat, 1.0)
+		if stat not in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.MALE]:
+			expect_true(m[stat] == w[stat], "수컷이 주 코어면 %s는 그대로" % stat)
+	for stat: String in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.MALE]:
+		expect_true(m[stat] > w[stat], "수컷이 주 코어 → %s↑" % stat)
+	var copy := CoreItem.from_dict(from_male.to_dict())
+	expect_true(copy.main_parent_gender == CoreItem.Gender.MALE and CoreItem.from_dict({"species": "dolguana"}).main_parent_gender == -1, "저장해도 주 코어 성별이 남는다(없으면 야생)")
+
+
+## 파티에 넣은 코어는 그 능력치로 싸운다(임시 환산). 역할 상식: 탱커가 가장 튼튼, 딜러 공격 > 탱커 > 힐러, 힐러만 회복.
+func test_core_combat_stats() -> void:
+	var tank := UnitStats.from_core(_core("sotmabaem", CoreItem.Gender.FEMALE, "lucky"))
+	var melee := UnitStats.from_core(_core("gochuryong", CoreItem.Gender.FEMALE, "lucky"))
+	var ranged := UnitStats.from_core(_core("haemapo", CoreItem.Gender.FEMALE, "lucky"))
+	var healer := UnitStats.from_core(_core("jinjuryong", CoreItem.Gender.FEMALE, "lucky"))
+	expect_true(tank.max_hp > melee.max_hp and tank.max_hp > ranged.max_hp and tank.max_hp > healer.max_hp, "탱커가 가장 튼튼")
+	expect_true(melee.attack > tank.attack and ranged.attack > tank.attack and tank.attack > healer.attack, "딜러 > 탱커 > 힐러 공격")
+	expect_true(healer.heal > 0.0 and tank.heal == 0.0 and melee.heal == 0.0, "힐러만 회복")
+	expect_true(ranged.attack_range > GameConfig.MELEE_RANGE_MAX and melee.attack_range <= GameConfig.MELEE_RANGE_MAX, "사거리는 역할 표를 따른다")
+	var core := CoreStats.compute(_core("gochuryong", CoreItem.Gender.FEMALE, "lucky"))
+	expect_near(melee.max_hp, float(core["hp"]), "체력 = 코어 HP")
+	expect_near(melee.attack, core["mighty"] * GameConfig.CORE_COMBAT_ATTACK_PER_MIGHTY, "공격 = 강력 × 설정값")
+	var fast := _core("gochuryong", CoreItem.Gender.FEMALE, "swift")
+	expect_true(UnitStats.from_core(fast).attack_interval < melee.attack_interval, "신속이 높으면 공격 간격이 짧다")
+	expect_true(melee.attack_interval < GameConfig.ROLE_STATS["melee"]["attack_interval"], "간격은 역할 간격보다 짧아진다(절반까지는 안 됨)")
 
 
 func test_wallet() -> void:

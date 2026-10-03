@@ -2,6 +2,8 @@ class_name MixPanel
 extends PanelContainer
 ## 믹스창(가방 창 위에 뜬다): 주·보조 2칸, 성별 방향, 결과 미리보기(공개 = 이름 · 힌트 = 실루엣 · 비밀 = ?),
 ## 유산 패시브 선택(1칸), 골드 비용과 성공 확률. 아래 목록에서 보조 코어를 고른다.
+## 사용자 결정(2026-10-03): 태어날 종은 어느 쪽이 주 코어냐로 정해지고("주 ↔ 보조"로 바꾸면 다른 공식),
+## 주 코어가 암컷이냐 수컷이냐는 태어날 코어의 능력치 경향만 바꾼다. 기획서에 없는 초안 공식이면 결과 이름 옆에 표시한다.
 ## 사용자 결정(2026-10-02): 성공 확률이 있고, 실패하면 재료 둘이 모두 사라진다. 실제 처리는 Workshop.mix.
 ## 결과 초상화는 종족 그림(TribeDb.portrait)이고, 힌트는 같은 그림을 검게 칠해 실루엣으로 보인다.
 
@@ -151,13 +153,10 @@ func refresh() -> void:
 
 	var result := Mix.result_id(main_core, sub_core) if sub_core != null else ""
 	var reveal := Mix.reveal_of(result)
-	var female := Mix.female_of(main_core, sub_core) if sub_core != null else null
-	if female != null:
-		var male := sub_core if female == main_core else main_core
-		_direction.text = UiText.MIX_DIRECTION % [female.species().name, male.species().name]
-	else:
-		_direction.text = ""
+	_direction.text = _direction_text()
 	_show_result(result, reveal, sub_core != null)
+	if sub_core != null and reveal != Mix.Reveal.SECRET and Mix.is_draft(main_core, sub_core):
+		_result_name.text += " " + UiText.MIX_DRAFT
 
 	var own_passive := HenchDb.get_species(result).passive if reveal == Mix.Reveal.OPEN else UiText.MIX_HINT_NAME
 	_keep_own.text = UiText.MIX_KEEP_OWN % own_passive
@@ -170,6 +169,23 @@ func refresh() -> void:
 	_problem.text = UiText.MIX_PROBLEMS[problem]
 	_go.disabled = problem != Mix.Problem.NONE
 	_rebuild_candidates()
+
+
+## "주 X(암컷) × 보조 Y(수컷)" + 암수 한 쌍이면 주 코어 성별에 따른 능력치 경향.
+func _direction_text() -> String:
+	if sub_core == null:
+		return ""
+	var text := UiText.MIX_DIRECTION % [
+		main_core.species().name, UiText.GENDER_NAMES[main_core.gender],
+		sub_core.species().name, UiText.GENDER_NAMES[sub_core.gender],
+	]
+	if main_core.gender != sub_core.gender:
+		text += "\n" + UiText.MIX_GENDER_TREND % [
+			UiText.GENDER_NAMES[main_core.gender],
+			SuffixDb.stat_list(GameConfig.MIX_MAIN_GENDER_STATS[main_core.gender]),
+			roundi(GameConfig.MIX_MAIN_GENDER_BONUS * 100.0),
+		]
+	return text
 
 
 func _show_slot(holder: CenterContainer, item: CoreItem) -> void:

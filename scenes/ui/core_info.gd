@@ -1,6 +1,7 @@
 class_name CoreInfo
 extends VBoxContainer
 ## 코어 정보창(가방 창 오른쪽): 임시 초상화, "접미사 + 이름", 종족·역할·등급·나이·성별, LV, HP·MP, 능력치 9종,
+## 파티에 넣으면 싸우는 값(임시 환산), 믹스로 태어났으면 주 코어 성별에 따른 능력치 경향,
 ## 고유 액티브·패시브(유산이면 원래 주인 표시). 버튼: 파티 편성 / 믹스 / 분해 / 잠금.
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
@@ -32,6 +33,8 @@ var party_names := Callable()
 @onready var _level: Label = %Level
 @onready var _hp_mp: Label = %HpMp
 @onready var _stats: GridContainer = %Stats
+@onready var _combat: Label = %Combat
+@onready var _birth: Label = %Birth
 @onready var _active: Label = %Active
 @onready var _passive: Label = %Passive
 @onready var _notice: Label = %Notice
@@ -52,6 +55,8 @@ func _ready() -> void:
 		UiKit.style_label(label, TEXT_FONT_SIZE, Palette.TEXT)
 	for label: Label in [_active, _passive]:
 		UiKit.style_label(label, SMALL_FONT_SIZE, Palette.TEXT)
+	UiKit.style_label(_combat, SMALL_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_label(_birth, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
 	UiKit.style_label(_notice, SMALL_FONT_SIZE, Palette.TEXT_WARNING)
 	UiKit.style_label(_party_pick_title, SMALL_FONT_SIZE, Palette.TEXT_DIM)
 	_party_pick_title.text = UiText.PARTY_PICK
@@ -105,10 +110,23 @@ func refresh() -> void:
 	var stats := CoreStats.compute(item)
 	_level.text = UiText.INFO_LEVEL % item.level
 	_hp_mp.text = UiText.INFO_HP_MP % [stats["hp"], stats["mp"]]
+	var boosted := CoreStats.main_gender_stats(item)
 	for label in _stats.get_children():
 		var stat := String(label.name)
+		var color := Palette.TEXT_DIM
+		if stat == item.suffix_id:
+			color = Palette.CORE_SHINE
+		elif stat in boosted:
+			color = Palette.STAT_BOOSTED
 		(label as Label).text = UiText.INFO_STAT % [SuffixDb.stat_name(stat), stats.get(stat, 0)]
-		(label as Label).add_theme_color_override("font_color", Palette.CORE_SHINE if stat == item.suffix_id else Palette.TEXT_DIM)
+		(label as Label).add_theme_color_override("font_color", color)
+	var combat := UnitStats.from_core(item)
+	_combat.text = UiText.INFO_COMBAT % [roundi(combat.attack), combat.attack_interval]
+	if combat.heal > 0.0:
+		_combat.text += UiText.INFO_COMBAT_HEAL % roundi(combat.heal)
+	_birth.visible = not boosted.is_empty()
+	if not boosted.is_empty():
+		_birth.text = UiText.INFO_BIRTH % [UiText.GENDER_NAMES[item.main_parent_gender], SuffixDb.stat_list(boosted), roundi(GameConfig.MIX_MAIN_GENDER_BONUS * 100.0)]
 	_active.text = UiText.INFO_ACTIVE % species.active
 	var holder := HenchDb.get_species(item.passive_owner_id())
 	_passive.text = (UiText.INFO_LEGACY % [holder.name, holder.passive]) if holder != species else (UiText.INFO_PASSIVE % species.passive)

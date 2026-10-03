@@ -54,8 +54,15 @@ func _spawn_party() -> void:
 		party.append(_spawn_party_member(i, HenchDb.get_species(GameConfig.PARTY_HENCHES[i]), _player.position + GameConfig.FOLLOW_SLOTS[i]))
 
 
-func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2) -> Hench:
+## item이 있으면 그 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다. 없으면 역할 표의 능력치.
+func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: CoreItem = null) -> Hench:
 	var hench := Hench.create(species, Unit.Team.PARTY)
+	if item != null:
+		hench.stats = UnitStats.from_core(item)
+		hench.level = item.level
+		hench.age = item.age
+		hench.gender = item.gender
+		hench.variant = item.variant
 	hench.field = _field
 	hench.leader = _player
 	hench.slot = GameConfig.FOLLOW_SLOTS[slot]
@@ -73,7 +80,7 @@ func party_names() -> PackedStringArray:
 
 
 ## 코어를 그 파티 자리에 넣는다. 그 자리에 있던 코어는 파티에서 빠지고, 필드의 헨치가 이 코어의 종으로 바뀐다.
-## 지금은 종(이름·색·역할)만 바뀌고 코어의 레벨·능력치는 아직 전투에 쓰지 않는다(밸런스 단계).
+## 헨치는 코어의 능력치로 싸운다(환산은 임시, 밸런스 단계에서 다시 정한다).
 func assign_party(item: CoreItem, slot: int) -> void:
 	if slot < 0 or slot >= party.size():
 		return
@@ -83,7 +90,7 @@ func assign_party(item: CoreItem, slot: int) -> void:
 		if other.party_slot == slot:
 			other.party_slot = -1
 	item.party_slot = slot
-	_replace_party_member(slot, item.species())
+	_replace_party_member(slot, item.species(), item)
 	bag.changed.emit()
 
 
@@ -97,12 +104,12 @@ func leave_party(item: CoreItem) -> void:
 	bag.changed.emit()
 
 
-func _replace_party_member(slot: int, species: HenchSpecies) -> void:
+func _replace_party_member(slot: int, species: HenchSpecies, item: CoreItem = null) -> void:
 	var old := party[slot]
 	var at := old.position
 	old.remove_from_group(Unit.group_name(Unit.Team.PARTY))
 	old.queue_free()
-	party[slot] = _spawn_party_member(slot, species, at)
+	party[slot] = _spawn_party_member(slot, species, at, item)
 
 
 ## 개발 확인용 시작 가방(data/dev_starter.json): 믹스·배지를 바로 시험할 수 있게 코어와 골드를 넣는다.

@@ -1,5 +1,5 @@
 {
-  "about": "헨치 도감 데이터. 기획서 5~6장 표 64종을 옮긴 것(이름·수치는 초안). aggressive = 선공(빨간 이름표, 기획서 4장 초안: 하급은 종족당 근접딜러 1종, 중급은 종족당 1종, 상급·왕은 선공). recipes = 믹스 공식 [암컷, 수컷] 쌍(기획서 표의 \"A + B\"를 A = 암컷으로 읽음, 임시). 왕의 공식은 비밀이라 비어 있다. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다.",
+  "about": "헨치 도감 데이터. 기획서 5~6장 표 64종을 옮긴 것(이름·수치는 초안). aggressive = 선공(빨간 이름표, 기획서 4장 초안: 하급은 종족당 근접딜러 1종, 중급은 종족당 1종, 상급·왕은 선공). recipes = 믹스 공식 [주 코어, 보조 코어] 쌍(기획서 표의 \"A + B\" = 주 A · 보조 B). 같은 두 종이라도 어느 쪽이 주 코어냐에 따라 다른 공식이다(사용자 결정 2026-10-03). draft_recipes = 기획서에 없는 반대 방향(주 B · 보조 A) 공식의 초안: 주 코어 종족의 같은 등급 종(같은 역할이 있으면 그 종). 임시라서 고쳐도 된다. 왕의 공식은 비밀이라 비어 있다. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다.",
   "henches": [
     {
       "id": "sotmabaem",
@@ -14,6 +14,7 @@
       "level": [1, 10],
       "habitats": ["용섬 입문", "기계섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#c9803e"
     },
     {
@@ -29,6 +30,7 @@
       "level": [3, 12],
       "habitats": ["용섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#e0483a"
     },
     {
@@ -44,6 +46,7 @@
       "level": [5, 14],
       "habitats": ["용섬 입문", "비행섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#3fa3b5"
     },
     {
@@ -59,6 +62,7 @@
       "level": [7, 16],
       "habitats": ["용섬 입문", "정령섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f0b7c8"
     },
     {
@@ -76,6 +80,13 @@
       "recipes": [
         ["sotmabaem", "gombogom"],
         ["gochuryong", "kkangtonggeobuk"]
+      ],
+      "draft_recipes": [
+        ["sotmabaem", "gyulbeom"],
+        ["gochuryong", "gyulbeom"],
+        ["haemapo", "saechongdaram"],
+        ["gochuryong", "kalmagwi"],
+        ["sotmabaem", "naembipenggwin"]
       ],
       "color": "#8d8a7e"
     },
@@ -95,6 +106,7 @@
         ["haemapo", "mangwonbueong"],
         ["jinjuryong", "banditdeung"]
       ],
+      "draft_recipes": [],
       "color": "#b9d3ea"
     },
     {
@@ -112,6 +124,10 @@
       "recipes": [
         ["mungeimugi", "pungchapo"]
       ],
+      "draft_recipes": [
+        ["dolguana", "beongaeiri"],
+        ["mungeimugi", "hwasalmae"]
+      ],
       "color": "#c79a3c"
     },
     {
@@ -127,6 +143,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#d23c2c"
     },
     {
@@ -142,6 +159,7 @@
       "level": [1, 10],
       "habitats": ["식물섬 입문", "곤충섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#9bc45a"
     },
     {
@@ -157,6 +175,7 @@
       "level": [3, 12],
       "habitats": ["식물섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#d9443f"
     },
     {
@@ -172,6 +191,7 @@
       "level": [5, 14],
       "habitats": ["식물섬 입문", "비행섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f2ecd2"
     },
     {
@@ -187,6 +207,7 @@
       "level": [7, 16],
       "habitats": ["식물섬 입문", "정령섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#8fb7f0"
     },
     {
@@ -204,6 +225,10 @@
       "recipes": [
         ["saessakkong", "gyulbeom"],
         ["aengdurian", "kkangtonggeobuk"]
+      ],
+      "draft_recipes": [
+        ["saessakkong", "doltamnyeong"],
+        ["iseulkkot", "bangulyeon"]
       ],
       "color": "#5f8f3a"
     },
@@ -223,6 +248,9 @@
         ["mindeullesom", "hwasalgaemi"],
         ["iseulkkot", "somteolchamsae"]
       ],
+      "draft_recipes": [
+        ["mindeullesom", "jujeonjabot"]
+      ],
       "color": "#e8c96a"
     },
     {
@@ -240,6 +268,7 @@
       "recipes": [
         ["gasideonggulbeom", "bawippulso"]
       ],
+      "draft_recipes": [],
       "color": "#7a5a36"
     },
     {
@@ -255,6 +284,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#3f8f4a"
     },
     {
@@ -270,6 +300,7 @@
       "level": [1, 10],
       "habitats": ["마섬 입문", "정령섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#a0613f"
     },
     {
@@ -285,6 +316,7 @@
       "level": [3, 12],
       "habitats": ["마섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#4a4458"
     },
     {
@@ -300,6 +332,7 @@
       "level": [5, 14],
       "habitats": ["마섬 입문", "비행섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#5b3f7a"
     },
     {
@@ -315,6 +348,7 @@
       "level": [7, 16],
       "habitats": ["마섬 입문", "곤충섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f3e6b8"
     },
     {
@@ -332,6 +366,10 @@
       "recipes": [
         ["hangarikkaebi", "dunggeulbangpae"],
         ["geurimnyang", "kkangtonggeobuk"]
+      ],
+      "draft_recipes": [
+        ["hangarikkaebi", "buchaebaram"],
+        ["bakjwiusan", "kkuldanjibeol"]
       ],
       "color": "#c9c6b6"
     },
@@ -351,6 +389,7 @@
         ["geurimnyang", "kalmagwi"],
         ["bakjwiusan", "ttakdeuril"]
       ],
+      "draft_recipes": [],
       "color": "#3a3346"
     },
     {
@@ -368,6 +407,10 @@
       "recipes": [
         ["geurimnat", "beongaeiri"]
       ],
+      "draft_recipes": [
+        ["gabothaegol", "gigwankokkiri"],
+        ["geurimnat", "mujigaeyeou"]
+      ],
       "color": "#26213a"
     },
     {
@@ -383,6 +426,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#6a2a4a"
     },
     {
@@ -398,6 +442,7 @@
       "level": [1, 10],
       "habitats": ["야수섬 입문", "식물섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#b8844e"
     },
     {
@@ -413,6 +458,7 @@
       "level": [3, 12],
       "habitats": ["야수섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f39a2c"
     },
     {
@@ -428,6 +474,7 @@
       "level": [5, 14],
       "habitats": ["야수섬 입문", "기계섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#a8703f"
     },
     {
@@ -443,6 +490,7 @@
       "level": [7, 16],
       "habitats": ["야수섬 입문", "비행섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f4f1ea"
     },
     {
@@ -460,6 +508,12 @@
       "recipes": [
         ["gombogom", "doltamnyeong"],
         ["gyulbeom", "sotmabaem"]
+      ],
+      "draft_recipes": [
+        ["gombogom", "sotmabaem"],
+        ["gyulbeom", "saessakkong"],
+        ["gombogom", "kkangtonggeobuk"],
+        ["saechongdaram", "mangwonbueong"]
       ],
       "color": "#7d7a74"
     },
@@ -479,6 +533,7 @@
         ["gyulbeom", "gochuryong"],
         ["saechongdaram", "haemapo"]
       ],
+      "draft_recipes": [],
       "color": "#5c6ea8"
     },
     {
@@ -496,6 +551,10 @@
       "recipes": [
         ["beongaeiri", "dolguana"]
       ],
+      "draft_recipes": [
+        ["bawippulso", "gasideonggulbeom"],
+        ["beongaeiri", "geurimnat"]
+      ],
       "color": "#c8752e"
     },
     {
@@ -511,6 +570,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#4fa79a"
     },
     {
@@ -526,6 +586,7 @@
       "level": [1, 10],
       "habitats": ["기계섬 입문", "용섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#9aa7b0"
     },
     {
@@ -541,6 +602,7 @@
       "level": [3, 12],
       "habitats": ["기계섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#d0573f"
     },
     {
@@ -556,6 +618,7 @@
       "level": [5, 14],
       "habitats": ["기계섬 입문", "곤충섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#b7bcc4"
     },
     {
@@ -571,6 +634,7 @@
       "level": [7, 16],
       "habitats": ["기계섬 입문", "야수섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#efc9a0"
     },
     {
@@ -588,6 +652,12 @@
       "recipes": [
         ["kkangtonggeobuk", "gombogom"],
         ["banchanggobot", "dunggeulbangpae"]
+      ],
+      "draft_recipes": [
+        ["kkangtonggeobuk", "gochuryong"],
+        ["kkangtonggeobuk", "aengdurian"],
+        ["kkangtonggeobuk", "geurimnyang"],
+        ["jipgegawi", "ttakdeuril"]
       ],
       "color": "#6d7783"
     },
@@ -607,6 +677,9 @@
         ["jujeonjabot", "mindeullesom"],
         ["jipgegawi", "mangwonbueong"]
       ],
+      "draft_recipes": [
+        ["jujeonjabot", "hwasalgaemi"]
+      ],
       "color": "#c2a46a"
     },
     {
@@ -624,6 +697,9 @@
       "recipes": [
         ["gigwankokkiri", "gabothaegol"]
       ],
+      "draft_recipes": [
+        ["pungchapo", "mungeimugi"]
+      ],
       "color": "#5a5f68"
     },
     {
@@ -639,6 +715,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#b0773a"
     },
     {
@@ -654,6 +731,7 @@
       "level": [1, 10],
       "habitats": ["정령섬 입문", "야수섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#a9a9a0"
     },
     {
@@ -669,6 +747,7 @@
       "level": [3, 12],
       "habitats": ["정령섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#9fe0d4"
     },
     {
@@ -684,6 +763,7 @@
       "level": [5, 14],
       "habitats": ["정령섬 입문", "마섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f6e27a"
     },
     {
@@ -699,6 +779,7 @@
       "level": [7, 16],
       "habitats": ["정령섬 입문", "식물섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#9ad1f2"
     },
     {
@@ -716,6 +797,10 @@
       "recipes": [
         ["doltamnyeong", "saessakkong"],
         ["buchaebaram", "hangarikkaebi"]
+      ],
+      "draft_recipes": [
+        ["doltamnyeong", "gombogom"],
+        ["buchaebaram", "somteolchamsae"]
       ],
       "color": "#9b6b45"
     },
@@ -735,6 +820,7 @@
         ["bangulyeon", "iseulkkot"],
         ["banditdeung", "jinjuryong"]
       ],
+      "draft_recipes": [],
       "color": "#f0a0c8"
     },
     {
@@ -752,6 +838,9 @@
       "recipes": [
         ["mujigaeyeou", "geurimnat"]
       ],
+      "draft_recipes": [
+        ["jangseungjigi", "gabotjangsu"]
+      ],
       "color": "#f2f0ff"
     },
     {
@@ -767,6 +856,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#6ea86a"
     },
     {
@@ -782,6 +872,7 @@
       "level": [1, 10],
       "habitats": ["곤충섬 입문", "마섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#7f8a96"
     },
     {
@@ -797,6 +888,7 @@
       "level": [3, 12],
       "habitats": ["곤충섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#6fbf4a"
     },
     {
@@ -812,6 +904,7 @@
       "level": [5, 14],
       "habitats": ["곤충섬 입문", "식물섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#8a3a2a"
     },
     {
@@ -827,6 +920,7 @@
       "level": [7, 16],
       "habitats": ["곤충섬 입문", "야수섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#f2c230"
     },
     {
@@ -844,6 +938,10 @@
       "recipes": [
         ["kalmagwi", "gochuryong"],
         ["dunggeulbangpae", "banchanggobot"]
+      ],
+      "draft_recipes": [
+        ["dunggeulbangpae", "hangarikkaebi"],
+        ["kalmagwi", "geurimnyang"]
       ],
       "color": "#5a3a22"
     },
@@ -863,6 +961,9 @@
         ["hwasalgaemi", "jujeonjabot"],
         ["kkuldanjibeol", "bakjwiusan"]
       ],
+      "draft_recipes": [
+        ["hwasalgaemi", "mindeullesom"]
+      ],
       "color": "#5fb3c9"
     },
     {
@@ -880,6 +981,7 @@
       "recipes": [
         ["gabotjangsu", "jangseungjigi"]
       ],
+      "draft_recipes": [],
       "color": "#6b3a2e"
     },
     {
@@ -895,6 +997,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#e0b030"
     },
     {
@@ -910,6 +1013,7 @@
       "level": [1, 10],
       "habitats": ["비행섬 입문", "곤충섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#3d4a5c"
     },
     {
@@ -925,6 +1029,7 @@
       "level": [3, 12],
       "habitats": ["비행섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#d8462e"
     },
     {
@@ -940,6 +1045,7 @@
       "level": [5, 14],
       "habitats": ["비행섬 입문", "정령섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#8a6a48"
     },
     {
@@ -955,6 +1061,7 @@
       "level": [7, 16],
       "habitats": ["비행섬 입문", "마섬 입문"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#d9b48a"
     },
     {
@@ -972,6 +1079,9 @@
       "recipes": [
         ["naembipenggwin", "sotmabaem"],
         ["ttakdeuril", "jipgegawi"]
+      ],
+      "draft_recipes": [
+        ["ttakdeuril", "bakjwiusan"]
       ],
       "color": "#8a8f96"
     },
@@ -991,6 +1101,11 @@
         ["mangwonbueong", "saechongdaram"],
         ["somteolchamsae", "buchaebaram"]
       ],
+      "draft_recipes": [
+        ["mangwonbueong", "haemapo"],
+        ["somteolchamsae", "iseulkkot"],
+        ["mangwonbueong", "jipgegawi"]
+      ],
       "color": "#7a5530"
     },
     {
@@ -1008,6 +1123,7 @@
       "recipes": [
         ["hwasalmae", "mungeimugi"]
       ],
+      "draft_recipes": [],
       "color": "#f06a3a"
     },
     {
@@ -1023,6 +1139,7 @@
       "level": [50, 50],
       "habitats": ["섬의 왕"],
       "recipes": [],
+      "draft_recipes": [],
       "color": "#222222"
     }
   ]

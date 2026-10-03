@@ -22,6 +22,14 @@ static func stat_name(id: String) -> String:
 	return _stats.get(id, id)
 
 
+## 여러 능력치 이름을 한 줄로(예: "공격, 체력, 드랍·코어 확률").
+static func stat_list(stat_ids: Array) -> String:
+	var names := PackedStringArray()
+	for id: String in stat_ids:
+		names.append(stat_name(id))
+	return UiText.LIST_SEPARATOR.join(names)
+
+
 ## 화면에 보일 이름(가칭). 모르는 id면 id 그대로.
 static func display_name(id: String) -> String:
 	_load()

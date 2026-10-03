@@ -6,7 +6,8 @@ extends RefCounted
 const PATH := "res://data/henches.json"
 
 static var _cache := {}
-static var _recipe_index := {}  # "암컷 id|수컷 id" → 결과 id
+static var _recipe_index := {}  # "주 코어 id|보조 코어 id" → 결과 id
+static var _draft_keys := {}  # 초안 공식의 열쇠
 
 
 ## id로 종을 찾는다. 없으면 null.
@@ -21,13 +22,27 @@ static func all() -> Dictionary:
 	return _cache
 
 
-## 믹스 공식으로 태어날 종 id(암컷 종, 수컷 종). 공식이 없으면 "".
-static func recipe_result(female_id: String, male_id: String) -> String:
-	if _recipe_index.is_empty():
-		for species: HenchSpecies in all().values():
-			for pair in species.recipes:
-				_recipe_index[pair[0] + "|" + pair[1]] = species.id
-	return _recipe_index.get(female_id + "|" + male_id, "")
+## 믹스 공식으로 태어날 종 id(주 코어 종, 보조 코어 종). 기획서 공식과 초안 공식을 함께 찾는다. 없으면 "".
+static func recipe_result(main_id: String, sub_id: String) -> String:
+	_build_recipe_index()
+	return _recipe_index.get(main_id + "|" + sub_id, "")
+
+
+## 그 공식이 기획서에 없는 초안(임시)인가.
+static func is_draft_recipe(main_id: String, sub_id: String) -> bool:
+	_build_recipe_index()
+	return _draft_keys.has(main_id + "|" + sub_id)
+
+
+static func _build_recipe_index() -> void:
+	if not _recipe_index.is_empty():
+		return
+	for species: HenchSpecies in all().values():
+		for pair in species.recipes:
+			_recipe_index[pair[0] + "|" + pair[1]] = species.id
+		for pair in species.draft_recipes:
+			_recipe_index[pair[0] + "|" + pair[1]] = species.id
+			_draft_keys[pair[0] + "|" + pair[1]] = true
 
 
 ## JSON 글자 → { id: HenchSpecies }. 잘못된 칸은 오류를 알리고 건너뛴다.

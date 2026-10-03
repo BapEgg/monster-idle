@@ -203,6 +203,18 @@ const SHINING_SUFFIX_BONUS := 0.35
 ## HP = 체력 × 값, MP = 마나 × 값
 const HP_PER_TOUGH := 10
 const MP_PER_ABUNDANT := 5
+## 믹스로 태어난 코어는 주 코어의 성별에 따라 능력치 경향이 다르다(사용자 결정 2026-10-03, 고른 능력치·배율은 임시).
+## 순서 = CoreItem.Gender(0 암컷이 주 코어, 1 수컷이 주 코어). 야생에서 얻은 코어는 받지 않는다.
+const MIX_MAIN_GENDER_STATS := [["mighty", "tough", "lucky"], ["swift", "sturdy", "abundant"]]
+const MIX_MAIN_GENDER_BONUS := 0.1
+
+# ─── 코어 능력치 → 필드 전투 (모두 임시, 밸런스 단계에서 다시 정한다) ─────
+## 파티에 넣은 코어의 헨치는 이 값으로 싸운다(사거리·회복 간격은 역할 표 ROLE_STATS를 따른다).
+## 체력 = 코어 HP, 공격 = 강력 × 값, 회복(힐러만) = 충만 × 값,
+## 공격 간격 = 역할 간격 × 값 / (값 + 신속) → 신속이 이 값과 같으면 간격이 절반.
+const CORE_COMBAT_ATTACK_PER_MIGHTY := 0.75
+const CORE_COMBAT_HEAL_PER_ABUNDANT := 0.8
+const CORE_COMBAT_SWIFT_HALF := 100.0
 
 # ─── 믹스 · 분해 (프로토타입 5) ─────────────────────
 ## 결과 미리보기(기획서 4장 초안): 중급 = 공개(이름), 상급 = 힌트(실루엣), 왕 = 비밀(?)

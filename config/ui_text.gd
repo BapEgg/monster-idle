@@ -48,6 +48,8 @@ const AGE_NAMES := ["어린", "성체", "늙은"]
 ## 성별(CoreItem.Gender 순서). 짧은 글자는 가방 칸 배지
 const GENDER_NAMES := ["암컷", "수컷"]
 const GENDER_SHORT := ["암", "수"]
+## 여러 이름을 한 줄로 늘어놓을 때 사이
+const LIST_SEPARATOR := ", "
 const VARIANT := "변이"
 const SHINING := "빛나는"
 ## 코어를 주웠을 때 주인공 머리 위. %s = 종 이름
@@ -87,6 +89,11 @@ const INFO_LEVEL := "LV %d"
 const INFO_HP_MP := "HP %d · MP %d"
 ## 능력치 한 칸: 이름 값
 const INFO_STAT := "%s %d"
+## 파티에 넣으면 싸우는 값(임시 환산). %d = 공격, %.2f = 공격 간격(초). 힐러는 회복이 붙는다.
+const INFO_COMBAT := "파티 전투(임시): 공격 %d · 공격 간격 %.2f초"
+const INFO_COMBAT_HEAL := " · 회복 %d"
+## 믹스로 태어난 코어: %s = 주 코어 성별, %s = 오른 능력치들, %d = 몇 %
+const INFO_BIRTH := TERM_MIX + " 출생(%s이 주 " + TERM_CORE + "): %s +%d%%"
 const INFO_ACTIVE := "고유 액티브: %s"
 const INFO_PASSIVE := "고유 패시브: %s"
 ## 유산으로 받은 패시브. %s = 원래 주인 종 이름, %s = 패시브
@@ -112,7 +119,12 @@ const MIX_MAIN := "주 " + TERM_CORE
 const MIX_SUB := "보조 " + TERM_CORE
 const MIX_SLOT_EMPTY := "아래에서 고르세요"
 ## 성별 방향: 암컷 이름 / 수컷 이름
-const MIX_DIRECTION := "암컷 %s  ×  수컷 %s"
+## 주 코어(성별) × 보조 코어(성별). 태어날 종은 어느 쪽이 주 코어냐로 정해진다.
+const MIX_DIRECTION := "주 %s(%s)  ×  보조 %s(%s)"
+## 주 코어 성별에 따른 능력치 경향. %s = 성별, %s = 오른 능력치들, %d = 몇 %
+const MIX_GENDER_TREND := "%s이 주 " + TERM_CORE + " → 태어날 " + TERM_CORE + ":\n%s +%d%%"
+## 기획서에 없는 반대 방향 공식(임시 초안)일 때 결과 이름 옆에 붙는다.
+const MIX_DRAFT := "(초안 공식)"
 const MIX_RESULT := "결과"
 const MIX_HINT_NAME := "???"
 const MIX_SECRET := "?"
