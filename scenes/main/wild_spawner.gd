@@ -29,6 +29,7 @@ func _spawn_one() -> void:
 	hench.age = Drops.roll_age(_rng)
 	hench.gender = Drops.roll_gender(_rng)
 	hench.level = Drops.wild_level(species, hench.age)
+	hench.stats = UnitStats.for_hench(species.role, true, hench.level)  # 레벨만큼 세다
 	hench.variant = Drops.roll_variant(_rng, GameConfig.MANUAL_VARIANT_BONUS if _player.control.is_manual() else 0.0)  # 수동 중이면 변이체 우대(기획서 7장)
 	hench.field = _field
 	hench.home = Iso.cell_center(cell)

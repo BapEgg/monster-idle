@@ -42,6 +42,7 @@ func _ready() -> void:
 	_info.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
 	_info.dismantle_requested.connect(_on_dismantle)
 	_info.lock_requested.connect(func(item: CoreItem) -> void: _workshop.toggle_lock(item))
+	_info.level_up_requested.connect(func(item: CoreItem) -> void: _workshop.level_up(item))
 
 
 func bind(bag: Bag) -> void:
@@ -54,7 +55,14 @@ func bind_collection(wallet: Wallet, workshop: Workshop, confirm: ConfirmBox, pa
 	_workshop = workshop
 	_confirm = confirm
 	_info.party_names = party_names
+	_info.workshop = workshop
 	_wallet.changed.connect(_update_money)
+	_wallet.changed.connect(func() -> void:
+		if visible:
+			_info.refresh())  # 골드가 바뀌면 레벨업 버튼(살 수 있나)도 다시
+	_workshop.progress.changed.connect(func() -> void:
+		if visible:
+			_info.refresh())  # 주인공 레벨이 오르면 레벨업 상한도 다시
 
 
 func open() -> void:

@@ -113,6 +113,10 @@ const MIX_WARNING_BORDER := Color("ff8a7a")
 const MIX_TIP_BG := Color(0.18, 0.2, 0.26, 0.98)
 const MIX_TABLE_NOW := Color(1, 1, 1, 0.12)
 const MIX_RECIPE_READY := Color("8ee28e")
+## 주인공 경험치 막대(왼쪽 위): 바탕 · 찬 부분, 레벨업 글자
+const LEVEL_BAR_BG := Color(0, 0, 0, 0.45)
+const LEVEL_BAR_FILL := Color("ffd84a")
+const LEVEL_UP_TEXT := Color("ffd84a")
 const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")

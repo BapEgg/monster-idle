@@ -5,6 +5,8 @@ extends Node2D
 ## 가방 창에서 코어를 파티에 넣거나 믹스·분해·잠금한다(프로토타입 5, 실제 처리는 Workshop).
 ## 켤 때 저장을 불러오고(가방 · 골드 · 파티 · 사냥 방식), 바뀐 것은 묶어서 저장한다(SaveSchedule, 기획서 9장).
 ## 끌 때와 앱이 뒤로 갈 때(휴대폰 홈 버튼 · PC 창에서 다른 곳을 누름)는 기다리지 않고 바로 저장한다.
+## 성장(1차): 처치하면 몹 레벨만큼 경험치 · 골드(Growth). 주인공 레벨이 오르면 주인공과 코어 없는 헨치가 세지고,
+## 코어는 가방 정보창에서 골드로 레벨업한다(상한 = 주인공 레벨). 파티 코어가 오르면 그 헨치 능력치도 바로 바뀐다.
 ## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
 
 ## 지금까지 처치한 야생 헨치 수.
@@ -14,6 +16,8 @@ var bag := Bag.new()
 var wallet := Wallet.new()
 var workshop := Workshop.new(bag, wallet)
 var hunt_log := HuntLog.new()
+## 주인공 레벨 · 경험치(Workshop이 코어 레벨업 상한으로도 쓴다)
+var progress: PlayerProgress = workshop.progress
 ## 보스전 중인 섬의 왕(보스전 밖이면 null).
 var boss: Boss
 ## 세이브 저장소. 비워 두면 기기 파일(GameConfig.SAVE_PATH). 실행 검사는 장면을 띄우기 전에 따로 쓰는 파일을 넣는다.
@@ -45,7 +49,11 @@ func _ready() -> void:
 		_player.control.mode = mode
 		_save_schedule.mark_dirty(true))
 	_load_game()
+	_player.set_level(progress.level)
 	_hud.bind_player(_player)
+	_hud.bind_progress(progress)
+	progress.leveled_up.connect(_on_level_up)
+	workshop.core_leveled.connect(_on_core_leveled)
 	_picker.setup(_player, _hud)
 	_hud.bind_hunt(bag, hunt_log)
 	_hud.bind_collection(wallet, workshop, party_names)
@@ -84,7 +92,8 @@ func _party_core(slot: int) -> CoreItem:
 	return null
 
 
-## item이 있으면 그 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다. 없으면 역할 표의 능력치.
+## item이 있으면 그 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다.
+## 없으면 역할 표의 능력치를 주인공 레벨만큼 키워서 싸운다(코어를 넣기 전 임시 헨치).
 func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: CoreItem = null) -> Hench:
 	var hench := Hench.create(species, Unit.Team.PARTY)
 	if item != null:
@@ -93,6 +102,9 @@ func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: Co
 		hench.age = item.age
 		hench.gender = item.gender
 		hench.variant = item.variant
+	else:
+		hench.level = progress.level
+		hench.stats = UnitStats.for_hench(species.role, false, progress.level)
 	hench.field = _field
 	hench.leader = _player
 	hench.slot = GameConfig.FOLLOW_SLOTS[slot]
@@ -158,7 +170,7 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex)
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
 	_player.control.mode = GameSave.control_mode(data)
@@ -166,7 +178,7 @@ func _load_game() -> void:
 
 ## 지금 상태를 바로 저장한다. 보통은 묶어서(_process) 부르고, 끌 때·앱이 뒤로 갈 때는 바로 부른다.
 func save_game() -> bool:
-	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex)
+	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress)
 	if not save_store.save_data(data):
 		push_warning(save_store.last_error)
 		_save_schedule.mark_dirty()  # 다음 차례에 다시 해 본다
@@ -209,7 +221,8 @@ func _on_kill(hench: Hench) -> void:
 	kills += 1
 	_hud.set_kills(kills)
 	hunt_log.add_kill(_player.control.is_manual())
-	wallet.add_gold(GameConfig.GOLD_PER_KILL)
+	wallet.add_gold(Growth.gold_per_kill(hench.level))
+	progress.gain(Growth.exp_per_kill(hench.level))
 	var item := Drops.roll_core(_loot_rng, hench.core_template())
 	if item != null:
 		drop_core(hench.position, item)
@@ -233,6 +246,33 @@ func _on_core_collected(item: CoreItem) -> void:
 	if item.shining:
 		label = UiText.SHINING + " " + label
 	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 26.0), UiText.PICKUP % label, Palette.CORE_SHINE if item.shining else Palette.TEXT)
+
+
+## 주인공 레벨이 오름: 주인공이 세지고 체력이 다 차며, 코어 없는 헨치도 따라 세진다. 머리 위에 "레벨 업!".
+func _on_level_up(level: int) -> void:
+	_player.set_level(level, true)
+	for i in party.size():
+		if _party_core(i) == null:
+			_set_member_stats(party[i], UnitStats.for_hench(party[i].species.role, false, level), level)
+	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 40.0), UiText.LEVEL_UP % level, Palette.LEVEL_UP_TEXT)
+	_save_schedule.mark_dirty(true)
+
+
+## 파티 코어를 골드로 레벨업함: 그 자리 헨치의 능력치를 바로 바꾼다.
+func _on_core_leveled(item: CoreItem) -> void:
+	if item.party_slot >= 0 and item.party_slot < party.size():
+		_set_member_stats(party[item.party_slot], UnitStats.from_core(item), item.level)
+
+
+## 헨치 능력치를 바꾼다(체력 비율은 지킨다).
+func _set_member_stats(hench: Hench, stats: UnitStats, level: int) -> void:
+	if not is_instance_valid(hench):
+		return
+	var ratio := hench.hp / hench.stats.max_hp if hench.stats.max_hp > 0.0 else 1.0
+	hench.stats = stats
+	hench.level = level
+	if hench.is_alive():
+		hench.hp = stats.max_hp * ratio
 
 
 ## 주인공이 쓰러지면 잠시 뒤 파티 전체가 시작 지점에서 다시 일어난다(기획서: 패배해도 페널티 없이 후퇴).

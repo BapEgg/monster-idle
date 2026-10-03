@@ -36,6 +36,7 @@ const CONTROLS_PADDING := 8.0
 @onready var attack_button: AttackButton = $Controls/AttackButton
 @onready var auto_button: AutoButton = $Controls/AutoButton
 @onready var target_frame: TargetFrame = $TargetFrame
+@onready var level_bar: LevelBar = $LevelBar
 @onready var bag_button: BagButton = $TopControls/BagButton
 @onready var bag_panel: BagPanel = $BagPanel
 @onready var debug_button: TextButton = $TopControls/DebugButton
@@ -90,6 +91,11 @@ func _ready() -> void:
 func bind_player(player: Player) -> void:
 	_player = player
 	auto_button.mode = player.control.mode
+
+
+## 주인공 레벨 · 경험치를 왼쪽 위 막대에 이어 준다.
+func bind_progress(progress: PlayerProgress) -> void:
+	level_bar.bind(progress)
 
 
 ## 파티(헨치 배열, main이 자리마다 바꿔 끼운다)를 스킬 칸에 이어 준다.

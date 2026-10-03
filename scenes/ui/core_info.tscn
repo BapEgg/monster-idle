@@ -81,6 +81,12 @@ script = ExtResource("2_badges")
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="LevelUp" type="Button" parent="Body/BadgeRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+focus_mode = 0
+
 [node name="HpBar" type="Control" parent="Body"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)

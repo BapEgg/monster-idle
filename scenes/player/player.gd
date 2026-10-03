@@ -9,6 +9,7 @@ extends Unit
 ## 발밑 고리와 화면 위 대상 창으로 보인다.
 ## 공격 버튼(attack 액션: 화면 공격 버튼·Space): 대상(없으면 가까운 적)에게 다가가 쓰러질 때까지 싸운다.
 ##   한 번 누르면 그 대상과 끝까지 싸우고, 누르고 있으면 다음 적으로 이어 간다. 조이스틱으로 움직이면 다가가기를 멈춘다.
+## 레벨(PlayerProgress)만큼 체력 · 공격이 오른다(Growth.stat_scale). 레벨이 오르면 체력이 다 찬다.
 ## 원점 = 발밑(y정렬 기준). 그림은 도형(그림자 + 몸 + 머리)으로 대체한다.
 
 # 임시 도형 치수(px). 그림이 들어오면 사라진다.
@@ -25,6 +26,8 @@ const DOWNED_ALPHA := 0.4
 const BOB_HEIGHT := 3.0
 const BOB_SPEED := 16.0
 
+## 주인공 레벨(능력치 배율). 바꿀 때는 set_level.
+var level := 1
 ## 사냥 방식과 자동/수동 판단.
 var control := AutoControl.new(GameConfig.MANUAL_RETURN_SECONDS, GameConfig.START_CONTROL_MODE)
 ## 조이스틱에 손을 대고 있나(HUD 조이스틱 신호로 main이 알려 준다). 기울이지 않고 대기만 해도 수동이 된다.
@@ -41,8 +44,17 @@ var _walk_time := 0.0
 @onready var _camera: Camera2D = $Camera2D
 
 
+## 레벨을 바꾸고 능력치를 다시 정한다. heal이면 체력을 다 채운다(레벨업), 아니면 체력 비율을 지킨다.
+func set_level(new_level: int, heal := false) -> void:
+	var ratio := hp / stats.max_hp if stats != null and stats.max_hp > 0.0 else 1.0
+	level = new_level
+	stats = UnitStats.for_player(level)
+	if is_alive():
+		hp = stats.max_hp if heal else stats.max_hp * ratio
+
+
 func _ready() -> void:
-	stats = UnitStats.for_player()
+	stats = UnitStats.for_player(level)
 	_camera.zoom = Vector2.ONE * GameConfig.CAMERA_ZOOM
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = GameConfig.CAMERA_SMOOTHING_SPEED

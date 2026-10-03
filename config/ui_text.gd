@@ -106,6 +106,14 @@ const HUNT_RATES := "시간당 처치: 자동 %s · 수동 %s (%s) · 하루 예
 const HUNT_UNKNOWN := "—"
 ## 수동이 자동보다 얼마나 더 잡는지. %+d = 퍼센트
 const HUNT_ADVANTAGE := "수동 %+d%%"
+# ─── 성장 (주인공 레벨 · 헨치 골드 레벨업) ─────────────
+const LEVEL_LABEL := "Lv %d"
+const LEVEL_MAX := "최고"
+## 레벨이 올랐을 때 주인공 머리 위
+const LEVEL_UP := "레벨 업! Lv %d"
+## 코어 정보창 레벨업 버튼: 비용 / 못 하는 까닭(Workshop.LevelUpProblem 순서: NONE, AT_CAP, NO_GOLD)
+const BTN_LEVEL_UP := "레벨업 %d 골드"
+const LEVEL_UP_PROBLEMS := ["", "주인공 레벨(Lv %d)까지", "골드 부족(%d 골드)"]
 ## 밸런스 1차(기획서 8장): 지금 확률과, 그 확률로 하루 처치 수만큼 잡으면 얻는 양(목표 대비)
 const DEBUG_BALANCE := "확률(하루 처치 %s마리 기준): " + TERM_CORE + " %.3f%% · 빛나는 %.1f%% · 변이 %.4f%%\n목표 대비: 하루 " + TERM_CORE + " %.1f개(목표 %d~%d) · 주 빛나는 %.1f개(목표 %d) · 월 변이 %.1f마리(목표 %d~%d)"
 ## 개발 확인용 드랍 배율 버튼(켜짐/꺼짐)

@@ -1,6 +1,7 @@
 class_name UnitStats
 extends RefCounted
 ## 유닛 능력치 한 벌. 값은 GameConfig의 표(PLAYER_STATS, ROLE_STATS)나 코어 능력치(from_core)에서 만든다.
+## 표에서 만들 때는 레벨만큼 체력 · 공격 · 회복이 오른다(Growth.stat_scale, 주인공 · 야생 · 코어 없는 헨치).
 
 var max_hp := 1.0
 var attack := 0.0
@@ -27,8 +28,9 @@ static func from_table(row: Dictionary, move_speed: float, hp_scale := 1.0, atta
 	return s
 
 
-static func for_player() -> UnitStats:
-	return from_table(GameConfig.PLAYER_STATS, GameConfig.PLAYER_SPEED)
+static func for_player(level := 1) -> UnitStats:
+	var scale := Growth.stat_scale(level)
+	return from_table(GameConfig.PLAYER_STATS, GameConfig.PLAYER_SPEED, scale, scale)
 
 
 ## 섬의 왕(보스전, 연습용 임시 능력치).
@@ -36,12 +38,13 @@ static func for_boss() -> UnitStats:
 	return from_table(GameConfig.BOSS_STATS, GameConfig.BOSS_SPEED)
 
 
-## 역할(tank·melee·ranged·healer)별 능력치. 야생이면 체력·공격을 깎는다.
-static func for_hench(role: String, wild: bool) -> UnitStats:
+## 역할(tank·melee·ranged·healer)별 능력치 × 레벨 배율. 야생이면 체력·공격에 야생 배율(GameConfig.WILD_*_SCALE)을 곱한다.
+static func for_hench(role: String, wild: bool, level := 1) -> UnitStats:
 	var row: Dictionary = GameConfig.ROLE_STATS.get(role, GameConfig.ROLE_STATS["tank"])  # 섬의 왕(boss)은 아직 필드 능력치가 없다
+	var scale := Growth.stat_scale(level)
 	if wild:
-		return from_table(row, GameConfig.HENCH_SPEED, GameConfig.WILD_HP_SCALE, GameConfig.WILD_ATTACK_SCALE)
-	return from_table(row, GameConfig.HENCH_SPEED)
+		return from_table(row, GameConfig.HENCH_SPEED, GameConfig.WILD_HP_SCALE * scale, GameConfig.WILD_ATTACK_SCALE * scale)
+	return from_table(row, GameConfig.HENCH_SPEED, scale, scale)
 
 
 ## 파티에 넣은 코어의 능력치(CoreStats)로 싸우는 헨치(임시 환산, GameConfig.CORE_COMBAT_*).

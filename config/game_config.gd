@@ -132,14 +132,15 @@ const PLAYER_REVIVE_SECONDS := 3.0
 # ─── 야생 헨치 ───────────────────────────────────
 ## 이 필드(용섬 입문)에 나오는 종. 기획서 5~6장 서식지에 "용섬 입문"이 있는 종(깡통거북 = 기계섬 입문 · 용섬 입문).
 const WILD_SPECIES := ["sotmabaem", "gochuryong", "haemapo", "jinjuryong", "kkangtonggeobuk"]
-## 필드에 동시에 있는 수.
-const WILD_COUNT := 14
+## 필드에 동시에 있는 수. 하루 처치 수를 기획서 예시(하루 1,000마리) 쪽으로 맞춘 값(사용자 결정 2026-10-03, 임시):
+## 수를 줄이고 다시 나오는 시간을 늘리고(아래) 야생 체력을 올렸다(WILD_HP_SCALE). 바꾸면 tools/measure_hunt.gd로 다시 잰다.
+const WILD_COUNT := 6
 ## 쓰러진 뒤 다른 곳에 새로 나타나기까지(초).
-const WILD_RESPAWN_SECONDS := 4.0
+const WILD_RESPAWN_SECONDS := 420.0
 ## 주인공에게서 최소 몇 칸 떨어진 곳에 나타나나.
 const WILD_SPAWN_MIN_CELLS := 6.0
-## 야생은 파티보다 약하게: 체력·공격 배율.
-const WILD_HP_SCALE := 0.4
+## 야생 체력·공격 배율(역할 표 × 레벨 배율에 곱한다). 체력은 한 마리와 오래 싸우게 높게(하루 1,000마리 쪽으로).
+const WILD_HP_SCALE := 5.0
 const WILD_ATTACK_SCALE := 0.6
 ## 추격·돌아다닐 때 속력 배율(HENCH_SPEED 기준).
 const WILD_CHASE_SPEED_SCALE := 0.7
@@ -198,8 +199,7 @@ const VARIANT_STATS := {
 const VARIANT_STAT_BONUS := 0.1
 ## 나이에 따른 레벨 보정(기획서 4장: 어린 -2 · 성체 0 · 늙은 +2). 야생 레벨 = 종 레벨대 가운데 + 보정.
 const AGE_LEVEL_OFFSETS := [-2, 0, 2]
-## 처치 골드(임시)
-const GOLD_PER_KILL := 10
+## 처치 골드 · 경험치는 아래 "성장"의 몹 레벨별 값(Growth.gold_per_kill · exp_per_kill).
 
 # ─── 밸런스 1차 (기획서 8장: 확률은 하루 목표 획득량에서 거꾸로 계산) ─────────
 ## 하루 목표 획득량(기획서 8장 확정, (최소, 최대) — 가운데를 쓴다): 일반 코어 하루 10~15개 · 빛나는 코어 주 3개 · 변이체 월 3~4마리.
@@ -208,8 +208,9 @@ const TARGET_SHINING_PER_WEEK := Vector2(3, 3)
 const TARGET_VARIANTS_PER_MONTH := Vector2(3, 4)
 ## 잰 하루 처치 수(풀오토 24시간). tools/measure_hunt.gd로 잰 값을 옮겨 적는다. 필드·전투·출현 수가 바뀌면 다시 잰다.
 ## 드랍률 = 하루 목표 ÷ 이 값(예: 1,000마리면 코어 1.25%).
-## 2026-10-03 프로토타입 필드(야생 14마리 · 4초 뒤 다시 나옴)에서 풀오토 30분: 시간당 982마리 → 하루 23,568마리.
-const MEASURED_DAILY_KILLS := 23568.0
+## 2026-10-03 프로토타입 필드(야생 6마리 · 7분 뒤 다시 나옴 · 체력 5배, 주인공 Lv 1에서 시작)에서 풀오토 60분:
+## 시간당 47마리 → 하루 1,128마리(기획서 예시 1,000마리 쪽). 이전 값: 야생 14마리 · 4초 · 체력 0.4배 → 하루 23,568마리.
+const MEASURED_DAILY_KILLS := 1128.0
 ## 확률 보너스 수확 체감 상수 K(기획서 8장 확정: 변이체 K = 50%). 유효 보너스 = B × K ÷ (B + K).
 const VARIANT_BONUS_K := 0.5
 ## 수동 중에 나온 야생이 변이체일 확률 보너스(기획서 7장 수동 메리트 "접속 중 변이체 확률 우대", 수치 초안 → 임시). 수확 체감을 거친다.
@@ -217,6 +218,22 @@ const MANUAL_VARIANT_BONUS := 0.2
 ## 개발 확인용 드랍 배율: 디버그 화면 "드랍 확인" 버튼을 켜면 코어·변이 확률에 곱한다(실제 확률로는 몇 시간에 한 번이라 확인용).
 ## 출시 전에 디버그 화면과 함께 끈다.
 const DEV_DROP_BOOST := 100.0
+
+# ─── 성장 (기획서 8장: MVP 최고 60, 약 1개월) ──────────────────
+const MAX_LEVEL := 60
+## 레벨 곡선 [레벨, 그 레벨에 닿는 날]. 기획서 8장 확정: 첫날 15 · 1주 30 · 2주 40 · 3주 50 · 4주 60(곡선은 초안).
+## 5 · 10레벨 점은 임시(처음 몇 레벨은 금방 오르게). 날 × 하루 처치 수(MEASURED_DAILY_KILLS) = 그 레벨까지 쌓인 처치 수.
+const LEVEL_CURVE := [[1, 0.0], [5, 0.06], [10, 0.35], [15, 1.0], [30, 7.0], [40, 14.0], [50, 21.0], [60, 28.0]]
+## 처치 보상 = 기본 + (몹 레벨 - 1) × 레벨당(임시): 경험치 · 골드
+const EXP_PER_KILL_BASE := 10
+const EXP_PER_KILL_PER_LEVEL := 2
+const GOLD_PER_KILL_BASE := 10
+const GOLD_PER_KILL_PER_LEVEL := 1
+## 레벨당 능력치 성장(체력 · 공격 · 회복, 임시): 주인공 · 야생 · 코어 없는 헨치. 코어는 CORE_STAT_GROWTH를 따른다.
+const LEVEL_STAT_GROWTH := 0.08
+## 헨치(코어) 골드 레벨업 비용 = 기본 × 지금 레벨^지수(임시). 상한 = 주인공 레벨(기획서 4장 확정).
+const HENCH_LEVEL_COST_BASE := 20.0
+const HENCH_LEVEL_COST_POWER := 1.6
 
 # ─── 코어 능력치 (프로토타입 5, 모두 임시 — 밸런스 단계에서 다시 정한다) ─────
 ## 역할별 1레벨 기본 능력치. 열쇠는 접미사 id와 같다(신속=공격 속도, 강력=공격, 정밀=명중, 날렵=회피,
