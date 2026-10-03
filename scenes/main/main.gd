@@ -13,6 +13,7 @@ extends Node2D
 ## 스킬 칸 4~6 · 궁극기 칸 · 파티 헨치(패시브: 전우애 · 진찰)를 다시 맞춘다. 저장된다.
 ## 섬 · 지역(기획서 7장, 로드맵 8): 지도 창에서 고른 섬 · 지역으로 옮기면 필드를 다시 짓고(바닥 색 · 장식물) 그 지역 종을 푼다.
 ## 주인공이 쓰러지면 그 섬의 바로 앞 지역으로 후퇴한다(입문이면 그 자리). 섬의 왕 버튼은 지금 섬의 왕과 싸운다.
+## 장비(기획서 3장): 직업 창 캐릭터 탭에서 끼고 빼면 주인공 능력치(9종 · 치명)와 파티 헨치(파티 헨치 체력 옵션)를 다시 맞춘다. 저장된다.
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
@@ -28,6 +29,8 @@ var progress: PlayerProgress = workshop.progress
 var job := JobState.new()
 ## 지금 섬 · 지역과 열린 섬
 var world := WorldState.new()
+## 주인공 장비(가진 것 · 낀 칸)
+var gear := GearBag.new()
 var _job_level_seen := 1  # 레벨업 때 새로 배울 수 있게 된 스킬을 알리려고 지난 레벨을 기억한다
 ## 보스전 중인 섬의 왕(보스전 밖이면 null).
 var boss: Boss
@@ -39,6 +42,8 @@ var _save_schedule := SaveSchedule.new(GameConfig.SAVE_INTERVAL_SECONDS, GameCon
 ## 드랍 판정용 난수(씨앗이 같으면 같은 순서로 떨어진다). 튀어 나가는 방향 같은 연출은 _fx_rng.
 var _loot_rng := RandomNumberGenerator.new()
 var _fx_rng := RandomNumberGenerator.new()
+## 개발용 장비(시작 가방 · 디버그 화면 "장비 받기")를 만드는 난수
+var _gear_rng := RandomNumberGenerator.new()
 
 @onready var _field: Field = $Field
 @onready var _player: Player = $Field/Objects/Player
@@ -59,6 +64,7 @@ func _ready() -> void:
 	_hud.control_mode_selected.connect(func(mode: AutoControl.Mode) -> void:
 		_player.control.mode = mode
 		_save_schedule.mark_dirty(true))
+	_gear_rng.seed = GameConfig.FIELD_SEED + 4
 	_load_game()
 	job.sync(progress.level)
 	_job_level_seen = progress.level
@@ -80,6 +86,9 @@ func _ready() -> void:
 	job.changed.connect(_on_job_changed)
 	_hud.bind_party(party)
 	_hud.bind_job(job, progress)
+	_hud.bind_gear(gear)
+	gear.changed.connect(_on_gear_changed)
+	_hud.gear_requested.connect(give_dev_gear)
 	_hud.skill_requested.connect(_on_skill_requested)
 	bag.changed.connect(_save_schedule.mark_dirty)
 	wallet.changed.connect(_save_schedule.mark_dirty)
@@ -196,15 +205,17 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_SIZE, workshop.mastery, workshop.codex, progress, job, world)
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_SIZE, workshop.mastery, workshop.codex, progress, job, world, gear)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
+	if GameConfig.DEV_STARTER_BAG and int(data.get("version", 0)) < 9:
+		_fill_starter_gear(_starter_data())  # 장비가 생기기 전 저장(판 8까지): 개발 확인용 시작 장비만 넣는다
 	_player.control.mode = GameSave.control_mode(data)
 
 
 ## 지금 상태를 바로 저장한다. 보통은 묶어서(_process) 부르고, 끌 때·앱이 뒤로 갈 때는 바로 부른다.
 func save_game() -> bool:
-	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress, job, world)
+	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress, job, world, gear)
 	if not save_store.save_data(data):
 		push_warning(save_store.last_error)
 		_save_schedule.mark_dirty()  # 다음 차례에 다시 해 본다
@@ -227,16 +238,31 @@ func _notification(what: int) -> void:
 
 ## 개발 확인용 시작 가방(data/dev_starter.json): 믹스·배지를 바로 시험할 수 있게 코어와 골드를 넣는다.
 func _fill_starter_bag() -> void:
-	var root: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/dev_starter.json"))
-	if not root is Dictionary:
-		push_error("시작 가방 데이터를 읽지 못함")
-		return
+	var root := _starter_data()
 	for row: Variant in root.get("cores", []):
 		if row is Dictionary:
 			var item := CoreItem.from_dict(row)
 			workshop.codex.register(item.species_id)
 			bag.add(item)
 	wallet.add_gold(int(root.get("gold", 0)))
+	_fill_starter_gear(root)
+
+
+func _starter_data() -> Dictionary:
+	var root: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/dev_starter.json"))
+	if not root is Dictionary:
+		push_error("시작 가방 데이터를 읽지 못함")
+		return {}
+	return root
+
+
+## 개발 확인용 시작 장비(dev_starter.json의 gear): 부위 · 등급 · 품질 · 레벨 · 낄까. 무기는 지금 직업 것, 값은 씨앗 고정 굴림.
+func _fill_starter_gear(root: Dictionary) -> void:
+	for row: Variant in root.get("gear", []):
+		if row is Dictionary:
+			var item := gear.add(GearRules.roll(_gear_rng, str(row.get("kind", "helmet")), job.job_id, int(row.get("level", 1)), int(row.get("grade", 0)), int(row.get("quality", 1))))
+			if bool(row.get("equip", false)):
+				gear.equip(item, job.job_id, maxi(item.level, progress.level))
 
 
 func _physics_process(delta: float) -> void:
@@ -305,10 +331,10 @@ func _on_core_leveled(item: CoreItem) -> void:
 			_field.show_number(hench.position + Vector2(0, -hench.overlay_height() - 30.0), UiText.LEVEL_UP % item.level, Palette.LEVEL_UP_TEXT)
 
 
-## 파티 헨치의 능력치: 코어 능력치. 직업 패시브(진찰)로 최대 체력 +.
+## 파티 헨치의 능력치: 코어 능력치. 직업 패시브(진찰) · 장비 옵션(파티 헨치 최대 체력)으로 최대 체력 +.
 func _member_stats(item: CoreItem) -> UnitStats:
 	var stats := UnitStats.from_core(item)
-	stats.max_hp *= 1.0 + float(job.mods(progress.level).get("party_hp", 0.0))
+	stats.max_hp *= 1.0 + float(job.mods(progress.level).get("party_hp", 0.0)) + float(gear.bonus().get("party_hp", 0.0))
 	return stats
 
 
@@ -321,6 +347,8 @@ static func _apply_job_to_hench(hench: Hench, mods: Dictionary) -> void:
 ## 직업 · 장착 · 스킬 레벨에 맞춰 주인공 능력치, 직업 스킬 칸, 파티 헨치(패시브)를 다시 맞춘다.
 func _apply_job() -> void:
 	var mods := job.mods(progress.level)
+	gear.fit_job(job.job_id)  # 다른 직업의 무기는 빠진다(바뀌었으면 _on_gear_changed가 다시 맞춘다)
+	_player.gear_bonus = gear.bonus()
 	_player.set_job(job.job_id, mods)
 	var list: Array[JobSkill] = []
 	for id in job.actives:
@@ -332,6 +360,21 @@ func _apply_job() -> void:
 		if is_instance_valid(party[i]) and item != null:
 			_set_member_stats(party[i], _member_stats(item), item.level)
 			_apply_job_to_hench(party[i], mods)
+
+
+## 장비를 끼거나 뺐다: 주인공 능력치(9종 · 치명)와 파티 헨치(파티 헨치 체력 옵션)를 다시 맞추고 곧 저장한다.
+func _on_gear_changed() -> void:
+	_player.set_gear(gear.bonus())
+	for i in party.size():
+		var item := _party_core(i)
+		if is_instance_valid(party[i]) and item != null:
+			_set_member_stats(party[i], _member_stats(item), item.level)
+	_save_schedule.mark_dirty(true)
+
+
+## 개발용: 지금 직업 · 레벨 근처의 무작위 장비 하나를 넣는다(디버그 화면 "장비 받기"). 장비를 얻는 곳(뽑기 · 던전 · 미션)은 그 단계에서.
+func give_dev_gear() -> GearItem:
+	return gear.add(GearRules.roll_random(_gear_rng, job.job_id, progress.level))
 
 
 func _on_job_changed() -> void:

@@ -8,6 +8,8 @@ extends PanelContainer
 
 ## "모든 섬 열기"를 켜거나 껐을 때(섬 지도 창을 다시 그린다)
 signal islands_toggled
+## "장비 받기"(개발용): 지금 직업 · 레벨 근처의 무작위 장비 하나
+signal gear_requested
 
 const TITLE_FONT_SIZE := 22
 const TEXT_FONT_SIZE := 17
@@ -26,6 +28,7 @@ var _refresh_left := 0.0
 @onready var _drop_boost: Button = %DropBoost
 @onready var _dev_notes: Button = %DevNotes
 @onready var _open_islands: Button = %OpenIslands
+@onready var _give_gear: Button = %GiveGear
 @onready var _party_title: Label = %PartyTitle
 @onready var _party_rows: Label = %PartyRows
 
@@ -53,6 +56,9 @@ func _ready() -> void:
 		WorldState.dev_open_all = on
 		islands_toggled.emit()
 		refresh())
+	UiKit.style_button(_give_gear, TEXT_FONT_SIZE)
+	_give_gear.text = UiText.DEBUG_GIVE_GEAR
+	_give_gear.pressed.connect(gear_requested.emit)
 	UiKit.style_caption(_party_title, TEXT_FONT_SIZE)
 	_party_title.text = UiText.DEBUG_PARTY_TITLE
 	UiKit.style_label(_party_rows, TEXT_FONT_SIZE, Palette.TEXT)

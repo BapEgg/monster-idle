@@ -24,6 +24,8 @@ signal command_dragged(group: CommandButton.Group, screen_point: Vector2)
 signal command_tapped(group: CommandButton.Group)
 ## 섬 지도 창에서 "이동"을 누름(섬 id, 지역 id)
 signal travel_requested(island_id: String, region_id: String)
+## 디버그 화면 "장비 받기"(개발용)
+signal gear_requested
 
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
@@ -165,6 +167,12 @@ func bind_job(job: JobState, progress: PlayerProgress) -> void:
 	_job = job
 	_progress = progress
 	job_panel.bind(job, progress, skill_window, confirm_box)
+
+
+## 주인공 장비(직업 창 캐릭터 탭)를 잇는다. 디버그 화면 "장비 받기"도 여기서 내보낸다.
+func bind_gear(gear: GearBag) -> void:
+	job_panel.bind_gear(gear)
+	debug_panel.gear_requested.connect(gear_requested.emit)
 
 
 ## 지갑·코어 다루기(믹스·분해·잠금)·파티 이름을 가방 창과 믹스창에 이어 준다.

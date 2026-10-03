@@ -178,9 +178,9 @@ const JOB_SWITCH_ASK := "%s(으)로 바꿀까요?\n배운 스킬과 장착이 �
 const JOB_SECTION_TITLES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
 const JOB_SECTION_INFO := "장착 %d/%d"
 ## 위 탭(사용자 결정 2026-10-03) · 능력치 탭 제목 · 장비 탭(아직 없음)
-const JOB_TABS := {"stats": "능력치", "skills": "스킬", "gear": "장비"}
+## 직업 창 탭(사용자 결정 2026-10-03: 능력치와 장비를 한 탭 — 왼쪽 능력치 + 오른쪽 장비)
+const JOB_TABS := {"character": "캐릭터", "skills": "스킬"}
 const JOB_STATS_TITLE := "능력치"
-const JOB_GEAR_EMPTY := "장비는 장비 단계에서 붙습니다.\n장비는 능력치 9종을 올려 스킬 계수로 이어집니다."
 ## 섹터 왼쪽 장착 칸 아래 글(%d = 칸 번호) · 아직 안 열린 칸
 const JOB_SLOT_CAPTION := "%d번 칸"
 const JOB_SLOT_ULTIMATE := "궁극기 칸"
@@ -241,6 +241,41 @@ const BAG_CLOSE := "닫기"
 const BAG_EMPTY := "아직 비어 있습니다. 몹을 쓰러뜨리면 " + TERM_CORE + "가 떨어집니다."
 ## 코어 칸 둘째 줄: 접미사 · 나이
 const CORE_DETAIL := "%s · %s"
+# ─── 장비 · 캐릭터 탭 (기획서 3장, 사용자 요청 2026-10-03) ─────────
+const GEAR_GRADES := ["일반", "마법", "희귀", "전설", "세트"]
+const GEAR_QUALITIES := ["하급", "중급", "상급", "최상급"]
+## 부위 이름(GearDb.kinds)
+const GEAR_SLOT_NAMES := {"weapon": "무기", "helmet": "투구", "armor": "갑옷", "gloves": "장갑", "boots": "신발", "accessory": "장신구"}
+## 능력치 9종 · 치명타 말고 장비 옵션에만 있는 것
+const GEAR_EXTRA_NAMES := {"party_hp": "파티 헨치 최대 체력"}
+const GEAR_TITLE := "장비"
+const GEAR_ITEMS_TITLE := "아이템"
+## %d = 아이템 칸의 장비 수(낀 것 빼고)
+const GEAR_COUNT := "보유 %d개"
+## 정렬(GearRules.Sort 차례) · 부위 거르기 첫 칸
+const GEAR_SORTS := ["등급순", "레벨순", "부위순", "최근순"]
+const GEAR_FILTER_ALL := "모든 부위"
+## 아이템 정보: 종류 줄(%s = 등급, 품질, 부위, %d = 장비 레벨) · 무기의 직업(%s = 직업 이름)
+const GEAR_KIND_LINE := "%s · %s · %s · Lv %d"
+const GEAR_JOB_ONLY := "%s 전용"
+## 못 끼는 까닭(GearRules.Problem 차례, OK는 "")
+const GEAR_PROBLEMS := ["", "%s 전용 무기", "Lv %d부터"]
+const GEAR_WORN_TAG := "착용 중"
+## 비교 제목(%s = 지금 낀 장비 이름) · 빈 칸에 끼울 때
+const GEAR_COMPARE := "착용 중(%s)과 비교"
+const GEAR_COMPARE_EMPTY := "빈 칸에 낌 — 모두 ▲"
+## 아무것도 고르지 않았을 때: 낀 장비로 오른 능력치 합계
+const GEAR_TOTAL_TITLE := "장비로 오른 능력치"
+const GEAR_TOTAL_NONE := "낀 장비 없음"
+const BTN_EQUIP := "장착"
+const BTN_UNEQUIP := "해제"
+## 캐릭터 탭 이야기 버튼 · 이야기 창(인물 · 섬에 온 계기 · 지금의 갈등, 기획서 3장 표)
+const STORY_BUTTON := "이야기"
+const STORY_TITLE := "%s 이야기"
+const STORY_PERSON := "인물 · 섬에 온 계기"
+const STORY_CONFLICT := "지금의 갈등"
+const STORY_PATHS := "전직 갈래 (MVP 이후)"
+
 # ─── 디버그 화면 (개발 확인용, GameConfig.DEV_DEBUG_PANEL, 출시 전에 끈다) ─────
 const DEBUG_BUTTON := "디버그"
 const DEBUG_TITLE := "디버그"
@@ -275,6 +310,7 @@ const DEBUG_DROP_BOOST := "드랍 확인 ×%d: %s"
 const DEBUG_DEV_NOTES := "스킬 창 개발 문구: %s"
 ## 섬 개방(다음 단계) 전에 다른 섬을 확인하려고 모두 연다(저장하지 않음)
 const DEBUG_OPEN_ISLANDS := "모든 섬 열기(개발용): %s"
+const DEBUG_GIVE_GEAR := "장비 받기(개발용)"
 const DEBUG_ON := "켜짐"
 const DEBUG_OFF := "꺼짐"
 

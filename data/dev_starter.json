@@ -1,6 +1,19 @@
 {
-  "about": "개발 확인용 시작 가방(GameConfig.DEV_STARTER_BAG). 아직 저장이 없어서 게임을 켤 때마다 이 코어들과 골드를 넣는다. 출시 전에 끈다. age: 0 어린 · 1 성체 · 2 늙은, gender: 0 암컷 · 1 수컷. 마지막 세 코어(솥마뱀 · 해마포 · 진주룡, Lv 1)는 파티 1~3번 자리에 넣은 채로 시작한다(party_slot, 기본 헨치가 없어져서 — 사용자 결정 2026-10-03).",
+  "about": "개발 확인용 시작 가방(GameConfig.DEV_STARTER_BAG). 아직 저장이 없어서 게임을 켤 때마다 이 코어들과 골드를 넣는다. 출시 전에 끈다. age: 0 어린 · 1 성체 · 2 늙은, gender: 0 암컷 · 1 수컷. 마지막 세 코어(솥마뱀 · 해마포 · 진주룡, Lv 1)는 파티 1~3번 자리에 넣은 채로 시작한다(party_slot, 기본 헨치가 없어져서 — 사용자 결정 2026-10-03). gear = 시작 장비(부위 · 등급 0 일반~4 세트 · 품질 0 하급~3 최상급 · 레벨, equip이면 끼고 시작, 이름 · 옵션은 씨앗 고정 굴림, 무기는 지금 직업 것). 장비가 생기기 전 저장(판 8까지)을 불러올 때도 장비만 넣는다.",
   "gold": 3000,
+  "gear": [
+    {"kind": "weapon", "grade": 0, "quality": 1, "level": 1, "equip": true},
+    {"kind": "helmet", "grade": 0, "quality": 0, "level": 1, "equip": true},
+    {"kind": "weapon", "grade": 1, "quality": 2, "level": 1},
+    {"kind": "armor", "grade": 1, "quality": 1, "level": 1},
+    {"kind": "gloves", "grade": 2, "quality": 2, "level": 1},
+    {"kind": "boots", "grade": 4, "quality": 1, "level": 1},
+    {"kind": "accessory", "grade": 3, "quality": 3, "level": 1},
+    {"kind": "accessory", "grade": 2, "quality": 1, "level": 1},
+    {"kind": "helmet", "grade": 1, "quality": 3, "level": 5},
+    {"kind": "armor", "grade": 2, "quality": 2, "level": 20},
+    {"kind": "boots", "grade": 0, "quality": 1, "level": 1}
+  ],
   "cores": [
     {
       "species": "gochuryong",

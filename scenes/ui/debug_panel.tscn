@@ -72,13 +72,24 @@ size_flags_horizontal = 0
 focus_mode = 0
 toggle_mode = true
 
-[node name="OpenIslands" type="Button" parent="Margin/Rows"]
+[node name="DevRow" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OpenIslands" type="Button" parent="Margin/Rows/DevRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 0
 focus_mode = 0
 toggle_mode = true
+
+[node name="GiveGear" type="Button" parent="Margin/Rows/DevRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
 
 [node name="PartyTitle" type="Label" parent="Margin/Rows"]
 unique_name_in_owner = true

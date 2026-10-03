@@ -1,22 +1,26 @@
 class_name JobPanel
 extends PanelContainer
 ## 직업 창(기획서 3장 스킬 시스템, 직업 1차): 오른쪽 위 "직업" 버튼으로 열고 닫는다.
-## 위 탭 "능력치 / 스킬 / 장비"(사용자 결정 2026-10-03)로 나눈다.
-## - 능력치: 주인공(직업 색 도형) · 직업 이름 · 역할 · 무기 · 인물 · 패시브 보정 · 직업 바꾸기(개발용) / 능력치 9종(코어와 같은 능력치) + HP · MP · 전투 값.
+## 위 탭 "캐릭터 / 스킬"로 나눈다(사용자 결정 2026-10-03: 능력치와 장비를 나누지 않고 한 탭에).
+## - 캐릭터: 왼쪽 = 주인공(직업 색 도형) · 직업 이름 · 역할 · 무기 · "이야기"(누르면 인물 · 섬에 온 계기 · 갈등 · 전직 갈래 창) · 패시브 보정 ·
+##   능력치 표(HP · MP · 9종 · 치명 확률 · 치명 피해, 장비 · 패시브로 오른 값은 초록) · 전투 값 · 직업 바꾸기(개발용),
+##   오른쪽 = 장비(GearView: 인형 7칸 · 아이템 정보 · 아이템 칸 · 정렬).
 ## - 스킬: 액티브 · 패시브 · 궁극기 한 섹터씩 위아래로. 섹터마다 이름 + "장착 n/m", 큰 장착 칸(JobSlot, 아직 안 열린 칸은 잠긴 모양),
 ##   그 종류의 스킬 목록(작은 카드 JobSkillTile, 가로로 넘겨 본다 — 업데이트로 스킬 · 궁극기가 늘어도 그대로 들어간다).
 ##   카드 상태: 잠김 = 회색 + 자물쇠 + 필요 레벨 / 배울 수 있음 = 빛나는 테두리 + "+" / 배움 = 컬러 + 레벨 점 / 장착 중 = 칸 번호 배지.
 ##   스킬을 누르면 고르고(흰 테두리 + 체크), 아래 행동 줄에서 배우기 · 장착 · 해제 · 레벨 올리기. 고른 스킬을 한 번 더 누르거나 "미리보기"를 누르면
 ##   스킬 상세 창(툴팁, 보기 전용). 스킬을 고른 채 장착 칸을 누르면 그 칸에 장착. 칸이 다 찼는데 "장착"이면 장착 모드(칸이 깜빡임) → 바꿀 칸을 누른다.
-## - 장비: 아직 없음(장비 단계에서 붙는다).
 ## 위치 · 크기는 job_panel.tscn에서 에디터로 정한다.
 
 const TITLE_FONT_SIZE := 24
 const TEXT_FONT_SIZE := 18
 const NAME_FONT_SIZE := 26
 const SMALL_FONT_SIZE := 15
-const STAT_FONT_SIZE := 19
-const STAT_NUMBER_WIDTH := 64.0
+const STAT_FONT_SIZE := 17
+const STAT_NUMBER_WIDTH := 58.0
+const STORY_TITLE_FONT_SIZE := 24
+const STORY_HEAD_FONT_SIZE := 16
+const STORY_TEXT_FONT_SIZE := 18
 const TAB_FONT_SIZE := 18
 const SWITCH_FONT_SIZE := 15
 const SECTION_TITLE_FONT_SIZE := 18
@@ -34,7 +38,8 @@ var _picking := false  # 칸이 다 차서 바꿀 칸을 고르는 중
 var _shown_skill := ""  # 스킬 상세 창에 띄운 직업 스킬(바뀌면 창도 다시 그린다)
 var _refresh_queued := false
 var _main_action := Callable()  # 행동 줄 가운데 버튼이 할 일(배우기 · 장착 · 해제)
-var _tab := "skills"  # 지금 탭(stats · skills · gear). 다시 열어도 그대로
+var _tab := "skills"  # 지금 탭(character · skills). 다시 열어도 그대로
+var _gear: GearBag
 
 @onready var _title: Label = %Title
 @onready var _points: Label = %Points
@@ -42,7 +47,13 @@ var _tab := "skills"  # 지금 탭(stats · skills · gear). 다시 열어도 �
 @onready var _portrait: JobPortrait = %Portrait
 @onready var _job_name: Label = %JobName
 @onready var _kind: Label = %Kind
-@onready var _person: Label = %Person
+@onready var _story_button: Button = %StoryButton
+@onready var _story_layer: ColorRect = %StoryLayer
+@onready var _story_card: PanelContainer = %StoryCard
+@onready var _story_title: Label = %StoryTitle
+@onready var _story_body: VBoxContainer = %StoryBody
+@onready var _story_close: Button = %StoryClose
+@onready var _gear_view: GearView = %GearView
 @onready var _stats: GridContainer = %Stats
 @onready var _combat: Label = %Combat
 @onready var _mods: Label = %Mods
@@ -50,9 +61,8 @@ var _tab := "skills"  # 지금 탭(stats · skills · gear). 다시 열어도 �
 @onready var _switch: HBoxContainer = %Switch
 @onready var _divider: VSeparator = %Divider
 @onready var _stats_title: Label = %StatsTitle
-@onready var _gear_text: Label = %GearText
 ## 탭 이름 → [탭 버튼, 페이지]
-@onready var _tabs := {"stats": [%TabStats, %StatsPage], "skills": [%TabSkills, %SkillsPage], "gear": [%TabGear, %GearPage]}
+@onready var _tabs := {"character": [%TabCharacter, %CharacterPage], "skills": [%TabSkills, %SkillsPage]}
 @onready var _action_bar: PanelContainer = %ActionBar
 @onready var _icon: TextureRect = %Icon
 @onready var _sel_name: Label = %SelName
@@ -77,7 +87,19 @@ func _ready() -> void:
 	UiKit.style_label(_job_name, NAME_FONT_SIZE, Palette.TEXT)
 	_job_name.add_theme_font_override("font", UiKit.bold_font())
 	UiKit.style_caption(_kind, TEXT_FONT_SIZE)
-	UiKit.style_caption(_person, SMALL_FONT_SIZE)
+	UiKit.style_button(_story_button, SMALL_FONT_SIZE)
+	_story_button.text = UiText.STORY_BUTTON
+	_story_button.pressed.connect(open_story)
+	_story_card.add_theme_stylebox_override("panel", UiKit.panel_box())
+	UiKit.style_label(_story_title, STORY_TITLE_FONT_SIZE, Palette.TEXT)
+	_story_title.add_theme_font_override("font", UiKit.bold_font())
+	UiKit.style_button(_story_close, TEXT_FONT_SIZE)
+	_story_close.text = UiText.JOB_CLOSE
+	_story_close.pressed.connect(_story_layer.hide)
+	_story_layer.gui_input.connect(func(event: InputEvent) -> void:
+		var press := event as InputEventMouseButton
+		if press != null and press.pressed:
+			_story_layer.hide())
 	UiKit.style_caption(_combat, SMALL_FONT_SIZE)
 	UiKit.style_label(_mods, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
 	UiKit.style_caption(_switch_title, SMALL_FONT_SIZE)
@@ -85,8 +107,6 @@ func _ready() -> void:
 	UiKit.style_label(_stats_title, SECTION_TITLE_FONT_SIZE, Palette.TEXT)
 	_stats_title.add_theme_font_override("font", UiKit.bold_font())
 	_stats_title.text = UiText.JOB_STATS_TITLE
-	UiKit.style_caption(_gear_text, TEXT_FONT_SIZE)
-	_gear_text.text = UiText.JOB_GEAR_EMPTY
 	for tab: String in _tabs:
 		var button: Button = _tabs[tab][0]
 		button.text = UiText.JOB_TABS[tab]
@@ -130,6 +150,51 @@ static func _box(color: Color, pad: float) -> StyleBoxFlat:
 	return box
 
 
+## 주인공 장비(캐릭터 탭 오른쪽)를 잇는다(HUD). 장비가 바뀌면 왼쪽 능력치 표도 다시 그린다.
+func bind_gear(gear: GearBag) -> void:
+	_gear = gear
+	_gear_view.bind(gear, _job, _progress)
+	_gear.changed.connect(_queue_refresh)
+
+
+## 이야기 창: 인물 · 섬에 온 계기 / 지금의 갈등 / 전직 갈래(기획서 3장 표, data/jobs.json). 창 밖이나 닫기를 누르면 닫힌다.
+func open_story() -> void:
+	var job := _job.job()
+	_story_title.text = UiText.STORY_TITLE % job.name
+	for child in _story_body.get_children():
+		_story_body.remove_child(child)
+		child.queue_free()
+	for part: Array in [[UiText.STORY_PERSON, job.person], [UiText.STORY_CONFLICT, job.conflict], [UiText.STORY_PATHS, job.paths]]:
+		if str(part[1]) == "":
+			continue
+		var head := Label.new()
+		UiKit.style_caption(head, STORY_HEAD_FONT_SIZE)
+		head.text = part[0]
+		var text := Label.new()
+		UiKit.style_label(text, STORY_TEXT_FONT_SIZE, Palette.TEXT)
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.text = part[1]
+		_story_body.add_child(head)
+		_story_body.add_child(text)
+	_story_layer.visible = true
+
+
+## 이야기 창 글자(실행 검사용): 제목 + 줄들.
+func story_texts() -> PackedStringArray:
+	var texts := PackedStringArray([_story_title.text])
+	for label: Label in _story_body.get_children():
+		texts.append(label.text)
+	return texts
+
+
+func is_story_open() -> bool:
+	return _story_layer.visible
+
+
+func gear_view() -> GearView:
+	return _gear_view
+
+
 ## 직업 상태 · 주인공 레벨 · 스킬 상세 창 · 확인 창을 잇는다(HUD).
 func bind(job: JobState, progress: PlayerProgress, window: SkillWindow, confirm: ConfirmBox) -> void:
 	_job = job
@@ -150,15 +215,16 @@ func open() -> void:
 	refresh()
 
 
-## 탭을 바꾼다(stats · skills · gear). 고른 탭 버튼은 밝은 바탕 + 아래 청록 줄.
+## 탭을 바꾼다(character · skills). 고른 탭 버튼은 밝은 바탕 + 아래 청록 줄.
 func show_tab(tab: String) -> void:
 	if not _tabs.has(tab):
 		return
 	_tab = tab
 	if tab != "skills":
 		_picking = false
-	# 스킬 포인트는 스킬 탭에서만(능력치 탭은 장비 · 패시브로 바뀐 능력치를 보는 곳이지 포인트를 나누는 곳이 아니다 — 사용자 결정 2026-10-03)
+	# 스킬 포인트는 스킬 탭에서만(능력치는 장비 · 패시브로 바뀐 능력치를 보는 곳이지 포인트를 나누는 곳이 아니다 — 사용자 결정 2026-10-03)
 	_points.visible = tab == "skills"
+	_story_layer.visible = false
 	for each: String in _tabs:
 		var on := each == tab
 		(_tabs[each][1] as Control).visible = on
@@ -167,6 +233,8 @@ func show_tab(tab: String) -> void:
 			button.add_theme_stylebox_override(state, _tab_box(on))
 		button.add_theme_color_override("font_color", Palette.TEXT if on else Palette.TEXT_LABEL)
 		button.add_theme_font_override("font", UiKit.bold_font() if on else ThemeDB.fallback_font)
+	if tab == "character" and _gear != null:
+		_gear_view.refresh()
 
 
 static func _tab_box(on: bool) -> StyleBoxFlat:
@@ -218,8 +286,8 @@ func refresh() -> void:
 	_portrait.body_color = job.color
 	_job_name.text = job.name
 	_kind.text = UiText.JOB_KIND % [UiText.ROLE_NAMES.get(job.role, job.role), job.weapon]
-	_person.text = job.person
-	_show_stats(JobRules.player_sheet(job.id, level, mods), JobRules.player_stats(job.id, level, mods), mods)
+	var gear_bonus := _gear.bonus() if _gear != null else {}
+	_show_stats(JobRules.player_sheet(job.id, level, mods, gear_bonus), JobRules.player_stats(job.id, level, mods, gear_bonus), mods, gear_bonus)
 	var parts := PackedStringArray()
 	for key: String in mods:
 		parts.append(UiText.JOB_MOD_NAMES.get(key, key + " %d%%") % roundi(float(mods[key]) * 100.0))
@@ -265,8 +333,10 @@ func _build_stat_table() -> void:
 		_stats.add_child(cell)
 
 
-func _show_stats(sheet: Dictionary, stats: UnitStats, mods: Dictionary) -> void:
+func _show_stats(sheet: Dictionary, stats: UnitStats, mods: Dictionary, gear_bonus: Dictionary) -> void:
 	var boosted := {}
+	for stat: String in gear_bonus:  # 장비로 오른 능력치도 초록
+		boosted[stat] = true
 	for key: String in JobRules.MOD_STATS:
 		if float(mods.get(key, 0.0)) > 0.0:
 			boosted[JobRules.MOD_STATS[key]] = true
@@ -483,7 +553,7 @@ func show_skill(id: String) -> void:
 		return
 	var level := _progress.level
 	var mods := _job.mods(level)
-	var sheet := SkillSheet.job_skill(skill, _job.skill_level(id), JobRules.player_stats(_job.job_id, level, mods), mods, level)
+	var sheet := SkillSheet.job_skill(skill, _job.skill_level(id), JobRules.player_stats(_job.job_id, level, mods, _gear.bonus() if _gear != null else {}), mods, level)
 	_shown_skill = id
 	_window.open(sheet, _job.job().color)
 

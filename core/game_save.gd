@@ -2,7 +2,7 @@ class_name GameSave
 extends RefCounted
 ## 저장할 내용 만들기(capture)와 되살리기(restore). 순수 함수라 테스트로 확인한다.
 ## 저장하는 것: 가방의 코어(파티 자리 · 잠금 · 유산 · 믹스 계승 · 경험치 포함), 골드 · 종마다 코어 조각 · 경험치 조각, 사냥 방식, 믹스 숙련도, 도감,
-## 주인공 레벨 · 경험치, 주인공 직업 · 직업 스킬(레벨 · 장착), 지금 있는 섬 · 지역과 열린 섬, 저장한 때.
+## 주인공 레벨 · 경험치, 주인공 직업 · 직업 스킬(레벨 · 장착), 지금 있는 섬 · 지역과 열린 섬, 장비(가진 것 · 낀 칸), 저장한 때.
 ## 저장하지 않는 것(임시): 처치 수와 사냥 기록(이번 접속만 잰다), 주인공 위치(켜면 그 지역 시작 지점), 날아오는 중인 코어.
 ## 어디에 저장하느냐는 SaveStore가 맡는다(지금은 기기 파일, 나중에 Firebase).
 
@@ -14,11 +14,12 @@ extends RefCounted
 ## 6: 코어 조각을 종마다(core_shards = {종 id: 개수}) — 5판까지의 종 없는 조각 수(shards)는 어느 종인지 몰라 버린다.
 ## 7: 주인공 직업 · 직업 스킬(job = {job, levels, actives, passives, ultimate}) — 6판까지는 처음 직업으로 그 레벨까지 배운 것으로 읽는다.
 ## 8: 섬 · 지역(world = {island, region, opened}) — 7판까지는 처음 섬 입문으로 읽는다.
-const VERSION := 8
+## 9: 장비(gear = {items, equipped, next_uid}) — 8판까지는 장비 없음으로 읽는다.
+const VERSION := 9
 
 
 ## 지금 상태 → 저장할 내용. now = 저장한 때(유닉스 초, 나중에 오프라인 보상 계산에 쓴다).
-static func capture(bag: Bag, wallet: Wallet, mode: AutoControl.Mode, now: int, mastery: MixMastery, codex: Codex, progress: PlayerProgress = null, job: JobState = null, world: WorldState = null) -> Dictionary:
+static func capture(bag: Bag, wallet: Wallet, mode: AutoControl.Mode, now: int, mastery: MixMastery, codex: Codex, progress: PlayerProgress = null, job: JobState = null, world: WorldState = null, gear: GearBag = null) -> Dictionary:
 	var cores := []
 	for item in bag.cores:
 		cores.append(item.to_dict())
@@ -34,6 +35,7 @@ static func capture(bag: Bag, wallet: Wallet, mode: AutoControl.Mode, now: int, 
 		"player": progress.to_dict() if progress != null else {},
 		"job": job.to_dict() if job != null else {},
 		"world": world.to_dict() if world != null else {},
+		"gear": gear.to_dict() if gear != null else {},
 		"cores": cores,
 	}
 
@@ -41,7 +43,7 @@ static func capture(bag: Bag, wallet: Wallet, mode: AutoControl.Mode, now: int, 
 ## 저장 내용 → 가방 · 지갑 · 숙련도 · 도감. 도감 데이터에 없는 종(데이터가 바뀐 경우)의 코어는 버리고 그 수를 돌려준다.
 ## 파티 자리는 0 ~ party_size-1만 받고, 같은 자리가 겹치면 먼저 나온 코어만 남긴다.
 ## 가방에 있는 코어의 종은 도감에도 등록한다(도감이 없던 옛 저장).
-static func restore(data: Dictionary, bag: Bag, wallet: Wallet, party_size: int, mastery: MixMastery, codex: Codex, progress: PlayerProgress = null, job: JobState = null, world: WorldState = null) -> int:
+static func restore(data: Dictionary, bag: Bag, wallet: Wallet, party_size: int, mastery: MixMastery, codex: Codex, progress: PlayerProgress = null, job: JobState = null, world: WorldState = null, gear: GearBag = null) -> int:
 	var dropped := 0
 	var taken := {}
 	for row: Variant in data.get("cores", []):
@@ -72,6 +74,9 @@ static func restore(data: Dictionary, bag: Bag, wallet: Wallet, party_size: int,
 	if world != null:
 		var world_row: Variant = data.get("world", {})
 		world.load_dict(world_row if world_row is Dictionary else {})
+	if gear != null:
+		var gear_row: Variant = data.get("gear", {})
+		gear.load_dict(gear_row if gear_row is Dictionary else {})
 	wallet.gold = maxi(int(data.get("gold", 0)), 0)
 	wallet.core_shards = {}
 	var shards: Variant = data.get("core_shards", {})

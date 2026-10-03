@@ -93,9 +93,9 @@ static func sum_mods(passive_ids: Array, levels: Dictionary) -> Dictionary:
 	return total
 
 
-## 주인공 능력치 9종(코어와 같은 능력치, 사용자 결정 2026-10-03) + HP · MP: 직업 Lv 1 값 × 레벨 배율 × 패시브 보정(체력 · 강력 · 충만).
-## 나중에 장비가 여기에 더해진다.
-static func player_sheet(job_id: String, player_level: int, mods: Dictionary = {}) -> Dictionary:
+## 주인공 능력치 9종(코어와 같은 능력치, 사용자 결정 2026-10-03) + HP · MP: 직업 Lv 1 값 × 레벨 배율 × 패시브 보정(체력 · 강력 · 충만)
+## + 낀 장비(gear = GearBag.bonus, 능력치마다 정수로 더한다).
+static func player_sheet(job_id: String, player_level: int, mods: Dictionary = {}, gear: Dictionary = {}) -> Dictionary:
 	var base: Dictionary = GameConfig.JOB_BASE_STATS.get(job_id, GameConfig.JOB_BASE_STATS[GameConfig.START_JOB])
 	var scale := Growth.stat_scale(player_level)
 	var boosted := {}
@@ -103,16 +103,16 @@ static func player_sheet(job_id: String, player_level: int, mods: Dictionary = {
 		boosted[MOD_STATS[key]] = float(mods.get(key, 0.0))
 	var sheet := {}
 	for stat: String in base:
-		sheet[stat] = roundi(float(base[stat]) * scale * (1.0 + float(boosted.get(stat, 0.0))))
+		sheet[stat] = roundi(float(base[stat]) * scale * (1.0 + float(boosted.get(stat, 0.0)))) + roundi(float(gear.get(stat, 0)))
 	sheet["hp"] = int(sheet.get("tough", 0)) * GameConfig.HP_PER_TOUGH
 	sheet["mp"] = int(sheet.get("abundant", 0)) * GameConfig.MP_PER_ABUNDANT
 	return sheet
 
 
-## 주인공 전투 능력치: 능력치 9종을 코어와 같은 환산으로(체력 → HP, 강력 → 공격력, 충만 → 회복력, 신속 → 공격 간격) +
+## 주인공 전투 능력치(장비의 치명 확률 · 치명 피해 옵션도 더한다): 능력치 9종을 코어와 같은 환산으로(체력 → HP, 강력 → 공격력, 충만 → 회복력, 신속 → 공격 간격) +
 ## 무기(공격 간격 · 사거리) + 전투 값 패시브(공격 속도 · 이동 속도 · 사거리).
-static func player_stats(job_id: String, player_level: int, mods: Dictionary = {}) -> UnitStats:
-	var sheet := player_sheet(job_id, player_level, mods)
+static func player_stats(job_id: String, player_level: int, mods: Dictionary = {}, gear: Dictionary = {}) -> UnitStats:
+	var sheet := player_sheet(job_id, player_level, mods, gear)
 	var weapon: Dictionary = GameConfig.JOB_WEAPONS.get(job_id, GameConfig.JOB_WEAPONS[GameConfig.START_JOB])
 	var s := UnitStats.new()
 	s.sheet = sheet
@@ -124,4 +124,6 @@ static func player_stats(job_id: String, player_level: int, mods: Dictionary = {
 	s.heal_interval = s.attack_interval
 	s.attack_range = float(weapon["attack_range"]) * (1.0 + float(mods.get("range", 0.0)))
 	s.speed = GameConfig.PLAYER_SPEED * (1.0 + float(mods.get("move_speed", 0.0)))
+	s.crit_chance += float(gear.get("crit_chance", 0.0))
+	s.crit_damage += float(gear.get("crit_damage", 0.0))
 	return s

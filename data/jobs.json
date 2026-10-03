@@ -7,7 +7,7 @@
       "name": "전사",
       "role": "tank",
       "weapon": "대형 방패",
-      "person": "군인 · 실종 해역 조사 중 부대 실종",
+      "person": "군인 · 실종 해역 조사 중 부대 실종", "conflict": "찾은 부대원이 검은 결정 편을 스스로 택함", "paths": "방패 + 한손검 / 방패 + 창",
       "color": "#5b8fd9",
       "skills": [
         {
@@ -73,7 +73,7 @@
       "name": "도적",
       "role": "melee",
       "weapon": "단검",
-      "person": "커플 A · 신혼여행 크루즈 조난",
+      "person": "커플 A · 신혼여행 크루즈 조난", "conflict": "재회 후 “빨리 돌아가자”", "paths": "쌍단검 / 투척 단검",
       "color": "#9b6bd6",
       "skills": [
         {
@@ -139,7 +139,7 @@
       "name": "궁수",
       "role": "ranged",
       "weapon": "활",
-      "person": "커플 B · 같은 사고로 다른 섬에 떨어짐",
+      "person": "커플 B · 같은 사고로 다른 섬에 떨어짐", "conflict": "재회 후 “섬 사람들을 구하고 가자”", "paths": "장궁 / 석궁",
       "color": "#4caf6a",
       "skills": [
         {
@@ -205,7 +205,7 @@
       "name": "힐러",
       "role": "healer",
       "weapon": "지팡이",
-      "person": "의사 · 원인 모를 병 조사 중 조난",
+      "person": "의사 · 원인 모를 병 조사 중 조난", "conflict": "흰 결정의 정화가 병을 고치는 걸 보고 흔들림", "paths": "완드 / 성배·향로",
       "color": "#e8e0a0",
       "skills": [
         {
@@ -271,7 +271,7 @@
       "name": "버퍼",
       "role": "buffer",
       "weapon": "첼로",
-      "person": "음대 첼로 전공 백수 · 공짜 투어 참가",
+      "person": "음대 첼로 전공 백수 · 공짜 투어 참가", "conflict": "바깥에선 필요 없던 사람이 섬에서 필요한 사람이 됨", "paths": "바이올린 / 북",
       "color": "#e0864a",
       "skills": [
         {

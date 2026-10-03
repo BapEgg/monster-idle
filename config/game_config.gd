@@ -328,6 +328,7 @@ const TARGET_VARIANTS_PER_MONTH := Vector2(3, 4)
 ## 2026-10-03 능력치 계수(주인공 능력치 9종 · 스킬 계수) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
 ## 2026-10-03 섬 · 지역(용섬 입문 필드를 섬 · 지역 씨앗으로 다시 지음) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
 ## 2026-10-03 파티 = 시작 가방 Lv 1 코어 셋 · 치명타(5% · 150%) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
+## 2026-10-03 장비 1차(시작 장비 무기 · 투구를 낀 채) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
 const MEASURED_DAILY_KILLS := 1152.0
 ## 확률 보너스 수확 체감 상수 K(기획서 8장 확정: 변이체 K = 50%). 유효 보너스 = B × K ÷ (B + K).
 const VARIANT_BONUS_K := 0.5
@@ -498,6 +499,25 @@ const COMMAND_DRAG_MIN := 30.0
 const COMMAND_SPREAD := 34.0
 ## 끌어다 놓은 자리에 잠깐 퍼지는 고리 반지름(px)
 const COMMAND_MARK_RADIUS := 40.0
+
+# ─── 장비 (기획서 3장 확정: 7칸 · 등급 · 품질 · 직업 전용 무기, 사용자 요청 2026-10-03). 수치는 모두 임시 ──────
+## 주 능력치: Lv 1 · 일반 · 중급일 때 값. 실제 값 = 이 값 × 레벨 배율(Growth.stat_scale) × 등급 배율 × 품질 배율
+const GEAR_MAIN_BASE := {"weapon": 10.0, "helmet": 8.0, "armor": 8.0, "gloves": 6.0, "boots": 6.0, "accessory": 6.0}
+## 등급(일반 · 마법 · 희귀 · 전설 · 세트) 배율과 옵션 수. 등급당 약 +10%(기획서 4장 헨치 등급 보정과 같은 폭). 세트 효과는 아직 없다
+const GEAR_GRADE_SCALE := [1.0, 1.1, 1.2, 1.3, 1.25]
+const GEAR_OPTION_COUNT := [0, 1, 2, 3, 2]
+## 품질(하급 · 중급 · 상급 · 최상급) 배율
+const GEAR_QUALITY_SCALE := [0.85, 1.0, 1.15, 1.3]
+## 옵션이 될 수 있는 것: 능력치 9종 + 치명 확률 · 치명 피해 + 헨치 간접 강화(파티 헨치 최대 체력, 장신구에만)
+const GEAR_OPTIONS := ["swift", "mighty", "precise", "nimble", "sturdy", "tough", "abundant", "steadfast", "lucky", "crit_chance", "crit_damage", "party_hp"]
+## 능력치 옵션 값 = 이 값 × 레벨 배율 × (반 ~ 전부 굴림)
+const GEAR_OPTION_STAT_BASE := 4.0
+## 퍼센트 옵션 [최소, 최대]
+const GEAR_OPTION_PERCENT := {"crit_chance": [0.01, 0.04], "crit_damage": [0.05, 0.2], "party_hp": [0.02, 0.06]}
+## 개발용 장비(디버그 화면 "장비 받기" · 시작 가방)의 등급 · 품질 비중과 레벨 폭(주인공 레벨 기준). 장비를 얻는 곳(장비 뽑기권 · 던전 · 미션)은 그 단계에서
+const GEAR_GRADE_WEIGHTS := [55.0, 28.0, 12.0, 4.0, 1.0]
+const GEAR_QUALITY_WEIGHTS := [30.0, 40.0, 22.0, 8.0]
+const GEAR_DEV_LEVEL_SPREAD := Vector2i(-3, 2)
 
 # ─── 저장 (나중에 Firebase로 갈아 끼운다, 코드 규칙 9) ──────
 ## 기기 안 저장 파일. user:// = Godot가 게임마다 따로 주는 사용자 데이터 폴더

@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/ui/job_panel.gd" id="1_job"]
 [ext_resource type="Script" path="res://scenes/ui/job_portrait.gd" id="2_portrait"]
+[ext_resource type="PackedScene" path="res://scenes/ui/gear_view.tscn" id="3_gear"]
 
 [node name="JobPanel" type="PanelContainer"]
 anchors_preset = 13
@@ -39,19 +40,13 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="TabStats" type="Button" parent="Margin/Rows/Header/Tabs"]
+[node name="TabCharacter" type="Button" parent="Margin/Rows/Header/Tabs"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(104, 44)
 layout_mode = 2
 focus_mode = 0
 
 [node name="TabSkills" type="Button" parent="Margin/Rows/Header/Tabs"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(104, 44)
-layout_mode = 2
-focus_mode = 0
-
-[node name="TabGear" type="Button" parent="Margin/Rows/Header/Tabs"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(104, 44)
 layout_mode = 2
@@ -73,92 +68,93 @@ custom_minimum_size = Vector2(88, 44)
 layout_mode = 2
 focus_mode = 0
 
-[node name="StatsPage" type="HBoxContainer" parent="Margin/Rows"]
+[node name="CharacterPage" type="HBoxContainer" parent="Margin/Rows"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 28
+theme_override_constants/separation = 18
 
-[node name="Profile" type="VBoxContainer" parent="Margin/Rows/StatsPage"]
-custom_minimum_size = Vector2(380, 0)
+[node name="Profile" type="VBoxContainer" parent="Margin/Rows/CharacterPage"]
+custom_minimum_size = Vector2(370, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Top" type="HBoxContainer" parent="Margin/Rows/CharacterPage/Profile"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Top" type="HBoxContainer" parent="Margin/Rows/StatsPage/Profile"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="Portrait" type="Control" parent="Margin/Rows/StatsPage/Profile/Top"]
+[node name="Portrait" type="Control" parent="Margin/Rows/CharacterPage/Profile/Top"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(96, 96)
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("2_portrait")
 
-[node name="Texts" type="VBoxContainer" parent="Margin/Rows/StatsPage/Profile/Top"]
+[node name="Texts" type="VBoxContainer" parent="Margin/Rows/CharacterPage/Profile/Top"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
-[node name="JobName" type="Label" parent="Margin/Rows/StatsPage/Profile/Top/Texts"]
+[node name="JobName" type="Label" parent="Margin/Rows/CharacterPage/Profile/Top/Texts"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Kind" type="Label" parent="Margin/Rows/StatsPage/Profile/Top/Texts"]
+[node name="Kind" type="Label" parent="Margin/Rows/CharacterPage/Profile/Top/Texts"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Person" type="Label" parent="Margin/Rows/StatsPage/Profile/Top/Texts"]
+[node name="StoryButton" type="Button" parent="Margin/Rows/CharacterPage/Profile/Top/Texts"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+
+[node name="Mods" type="Label" parent="Margin/Rows/CharacterPage/Profile"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="Mods" type="Label" parent="Margin/Rows/StatsPage/Profile"]
+[node name="StatsTitle" type="Label" parent="Margin/Rows/CharacterPage/Profile"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Stats" type="GridContainer" parent="Margin/Rows/CharacterPage/Profile"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 22
+theme_override_constants/v_separation = 4
+columns = 2
+
+[node name="Combat" type="Label" parent="Margin/Rows/CharacterPage/Profile"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="ProfileGap" type="Control" parent="Margin/Rows/StatsPage/Profile"]
+[node name="ProfileGap" type="Control" parent="Margin/Rows/CharacterPage/Profile"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="SwitchTitle" type="Label" parent="Margin/Rows/StatsPage/Profile"]
+[node name="SwitchTitle" type="Label" parent="Margin/Rows/CharacterPage/Profile"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="Switch" type="HBoxContainer" parent="Margin/Rows/StatsPage/Profile"]
+[node name="Switch" type="HBoxContainer" parent="Margin/Rows/CharacterPage/Profile"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Divider" type="VSeparator" parent="Margin/Rows/StatsPage"]
+[node name="Divider" type="VSeparator" parent="Margin/Rows/CharacterPage"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="StatsBox" type="VBoxContainer" parent="Margin/Rows/StatsPage"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 12
-
-[node name="StatsTitle" type="Label" parent="Margin/Rows/StatsPage/StatsBox"]
+[node name="GearView" parent="Margin/Rows/CharacterPage" instance=ExtResource("3_gear")]
 unique_name_in_owner = true
 layout_mode = 2
-
-[node name="Stats" type="GridContainer" parent="Margin/Rows/StatsPage/StatsBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/h_separation = 48
-theme_override_constants/v_separation = 8
-columns = 2
-
-[node name="Combat" type="Label" parent="Margin/Rows/StatsPage/StatsBox"]
-unique_name_in_owner = true
-layout_mode = 2
-autowrap_mode = 3
 
 [node name="SkillsPage" type="VBoxContainer" parent="Margin/Rows"]
 unique_name_in_owner = true
@@ -344,15 +340,50 @@ layout_mode = 2
 size_flags_vertical = 4
 focus_mode = 0
 
-[node name="GearPage" type="CenterContainer" parent="Margin/Rows"]
+[node name="StoryLayer" type="ColorRect" parent="."]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-size_flags_vertical = 3
+color = Color(0, 0, 0, 0.55)
 
-[node name="GearText" type="Label" parent="Margin/Rows/GearPage"]
+[node name="StoryCenter" type="CenterContainer" parent="StoryLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="StoryCard" type="PanelContainer" parent="StoryLayer/StoryCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(520, 0)
+custom_minimum_size = Vector2(560, 0)
 layout_mode = 2
-horizontal_alignment = 1
-autowrap_mode = 3
+
+[node name="StoryMargin" type="MarginContainer" parent="StoryLayer/StoryCenter/StoryCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 18
+
+[node name="StoryRows" type="VBoxContainer" parent="StoryLayer/StoryCenter/StoryCard/StoryMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StoryTitle" type="Label" parent="StoryLayer/StoryCenter/StoryCard/StoryMargin/StoryRows"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StoryBody" type="VBoxContainer" parent="StoryLayer/StoryCenter/StoryCard/StoryMargin/StoryRows"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StoryClose" type="Button" parent="StoryLayer/StoryCenter/StoryCard/StoryMargin/StoryRows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_horizontal = 8
+focus_mode = 0

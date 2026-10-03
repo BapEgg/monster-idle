@@ -273,6 +273,20 @@ const MODE_DOWN := Color("ff7a6b")
 const TEXT := Color(1, 1, 1)
 const TEXT_OUTLINE := Color(0, 0, 0, 0.6)
 
+# ─── 장비 (등급 색은 디아블로식: 일반 회색 · 마법 파랑 · 희귀 노랑 · 전설 주황 · 세트 초록) ─────
+const GEAR_GRADE_COLORS := [Color("b9bec8"), Color("5b8cff"), Color("ffd84a"), Color("ff8c2e"), Color("4fd27a")]
+const GEAR_CARD_BG := Color("232838")
+const GEAR_SLOT_BG := Color("1a1e2a")
+const GEAR_SLOT_EMPTY := Color(1, 1, 1, 0.18)
+const GEAR_GLYPH := Color(1, 1, 1, 0.9)
+const GEAR_GLYPH_EMPTY := Color(1, 1, 1, 0.16)
+const GEAR_DOLL := Color(1, 1, 1, 0.06)
+const GEAR_OPTION := Color("8fb4ff")
+const GEAR_UP := Color("7dff8a")
+const GEAR_DOWN := Color("ff7a6b")
+const GEAR_WORN := Color("3fb8a8")
+const GEAR_LEVEL_SHORT := Color("ff6b6b")
+
 # ─── 섬 · 지역 (로드맵 8) ──────────────────────────
 ## 미니맵: 바탕 · 필드 바닥(섬 종족 색을 섞음) · 가장자리 · 서식지 원 · 야생(비선공 · 선공) · 변이 기운 · 파티 · 주인공 · 섬의 왕 · 사냥 경로
 const MINIMAP_BG := Color(0.05, 0.07, 0.1, 0.72)

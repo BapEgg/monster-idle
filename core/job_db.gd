@@ -17,6 +17,9 @@ class Job:
 	var weapon := ""
 	## 인물 · 섬에 온 계기(기획서 3장)
 	var person := ""
+	## 이야기 창(기획서 3장 표): 지금의 갈등 · 전직 갈래(MVP 이후)
+	var conflict := ""
+	var paths := ""
 	var color := Color.WHITE
 	var skills: Array[Skill] = []
 
@@ -112,6 +115,8 @@ static func parse(text: String) -> Dictionary:
 		job.role = str(row.get("role", ""))
 		job.weapon = str(row.get("weapon", ""))
 		job.person = str(row.get("person", ""))
+		job.conflict = str(row.get("conflict", ""))
+		job.paths = str(row.get("paths", ""))
 		job.color = Color.from_string(str(row.get("color", "#ffffff")), Color.WHITE)
 		for skill_row: Variant in row.get("skills", []):
 			if not skill_row is Dictionary:

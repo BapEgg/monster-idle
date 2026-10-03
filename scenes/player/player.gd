@@ -34,6 +34,8 @@ var level := 1
 ## 직업 id와 장착 패시브 보정(바꿀 때는 set_job)
 var job_id := GameConfig.START_JOB
 var job_mods := {}
+## 낀 장비가 올려 주는 것 {능력치: 값}(GearBag.bonus, 바꿀 때는 set_gear)
+var gear_bonus := {}
 ## 직업 스킬 쓰기(스킬 칸 4~6 · 궁극기 칸)
 var caster := JobCaster.new(self)
 ## 사냥 방식과 자동/수동 판단.
@@ -68,9 +70,15 @@ func set_job(new_job: String, mods: Dictionary) -> void:
 	queue_redraw()
 
 
+## 장비를 바꾸면 능력치를 다시 정한다(체력 비율은 지킨다).
+func set_gear(bonus: Dictionary) -> void:
+	gear_bonus = bonus
+	_refresh_stats(false)
+
+
 func _refresh_stats(heal: bool) -> void:
 	var ratio := hp / stats.max_hp if stats != null and stats.max_hp > 0.0 else 1.0
-	stats = JobRules.player_stats(job_id, level, job_mods)
+	stats = JobRules.player_stats(job_id, level, job_mods, gear_bonus)
 	if is_alive():
 		hp = stats.max_hp if heal else stats.max_hp * ratio
 
@@ -81,7 +89,7 @@ func request_job_skill(index: int) -> bool:
 
 
 func _ready() -> void:
-	stats = JobRules.player_stats(job_id, level, job_mods)
+	stats = JobRules.player_stats(job_id, level, job_mods, gear_bonus)
 	_camera.zoom = Vector2.ONE * GameConfig.CAMERA_ZOOM
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = GameConfig.CAMERA_SMOOTHING_SPEED
