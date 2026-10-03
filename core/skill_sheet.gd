@@ -2,7 +2,7 @@ class_name SkillSheet
 extends RefCounted
 ## 스킬 상세 창의 내용(순수 함수, 사용자 결정 2026-10-03: 롤처럼 스킬을 누르면 모션 미리보기 · 설명 · 계수).
 ## 헨치 고유 스킬은 종마다 액티브 1 + 패시브 1로 정해져 있다(기획서 4장 확정). 패시브는 믹스할 때 유산으로만 바뀐다.
-## 고르는 스킬 창(장착)은 주인공 직업 스킬(액티브 3 · 패시브 1 · 궁극기 1) 단계에서 이 창을 다시 쓴다.
+## 주인공 직업 스킬(job_skill)도 같은 모양으로 만든다 — 직업 창에서 이 창에 장착 · 레벨 올리기 버튼을 붙여 쓴다.
 ## 돌려주는 내용(Dictionary): title(이름) · tag(꼬리표) · description(설명) · rows([이름표, 값] 줄들) · motion(미리보기 종류) · note(작은 안내),
 ## 액티브는 미리보기에 쓰는 radius(범위, 땅 위 px) · hits(때리는 횟수) · amount(지금 한 번 값, 모르면 0)도.
 ## 액티브 계수는 효과 종류(GameConfig.SKILL_KINDS) 값 그대로이고, stats(그 코어의 전투 능력치)를 주면 "지금 n"도 붙인다.
@@ -112,6 +112,146 @@ static func inherit(item: CoreItem) -> Dictionary:
 		"motion": MOTION_INHERIT,
 		"note": "",
 	}
+
+
+## 직업 스킬(기획서 3장). level = 스킬 레벨(0 = 아직 못 배움 → 1레벨 값으로 보여 줌), stats = 주인공 전투 능력치(없으면 지금 값 없이),
+## mods = 장착 패시브 보정(버프 · 회복이 커진다). 액티브 · 궁극기는 효과마다 계수 줄, 패시브는 보정 줄.
+static func job_skill(skill: JobDb.Skill, level: int, stats: UnitStats = null, mods: Dictionary = {}) -> Dictionary:
+	var job := JobDb.get_job(skill.job_id)
+	var shown_level := maxi(level, 1)
+	var rows := []
+	rows.append([UiText.JOB_ROW_LEVEL, UiText.JOB_LEVEL_VALUE % [level, GameConfig.JOB_SKILL_MAX_LEVEL] if level > 0 else UiText.JOB_LEVEL_LOCKED % skill.unlock])
+	var config := skill.config()
+	var motion := MOTION_PASSIVE
+	var amount := 0
+	var radius := 0.0
+	var hits := 1
+	if skill.is_passive():
+		var mods_of: Dictionary = JobRules.sum_mods([skill.id], {skill.id: shown_level})
+		for key: String in mods_of:
+			rows.append([UiText.JOB_ROW_MOD, UiText.JOB_MOD_NAMES.get(key, key + " %d%%") % roundi(float(mods_of[key]) * 100.0)])
+	else:
+		var first := true
+		for raw: Dictionary in config.get("effects", []):
+			var effect := JobRules.scaled_effect(raw, shown_level, mods)
+			rows.append_array(_effect_rows(effect, stats))
+			if first:
+				motion = job_motion(effect)
+				radius = float(effect.get("radius", 0.0))
+				hits = int(effect.get("hits", 1))
+				amount = _effect_amount(effect, stats)
+				first = false
+		rows.append([UiText.SKILL_ROW_COOLDOWN, UiText.SKILL_SECONDS % seconds(float(config.get("cooldown", 0.0)))])
+	rows.append([UiText.JOB_ROW_LEVEL_BONUS, UiText.JOB_LEVEL_BONUS_VALUE % roundi(GameConfig.JOB_SKILL_LEVEL_BONUS * 100.0)])
+	return {
+		"title": skill.name,
+		"tag": UiText.JOB_SKILL_TAG % [job.name if job != null else "", UiText.JOB_TYPE_NAMES.get(skill.type, skill.type)],
+		"description": skill.desc,
+		"rows": rows,
+		"motion": motion,
+		"radius": radius,
+		"hits": hits,
+		"amount": amount,
+		"note": UiText.JOB_PASSIVE_NOTE if skill.is_passive() else UiText.JOB_ACTIVE_NOTE,
+	}
+
+
+## 직업 스킬 효과 하나의 계수 줄들.
+static func _effect_rows(effect: Dictionary, stats: UnitStats) -> Array:
+	var rows := []
+	var power := float(effect.get("power", 0.0))
+	var percent := roundi(power * 100.0)
+	var attack := stats.attack if stats != null else 0.0
+	match str(effect.get("type", "")):
+		"hit":
+			var hits := int(effect.get("hits", 1))
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["one"]])
+			if hits > 1:
+				rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER_HITS % [percent, hits] + (UiText.SKILL_NOW_EACH % roundi(attack * power) if stats != null else "")])
+			else:
+				rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+		"area":
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["target" if effect.get("at", "target") == "target" else "around"]])
+			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
+			if effect.has("stun"):
+				rows.append([UiText.SKILL_ROW_STUN, UiText.SKILL_SECONDS % seconds(float(effect["stun"]))])
+			if effect.has("vulnerable"):
+				rows.append([UiText.JOB_ROW_DEBUFF, UiText.JOB_VULNERABLE_VALUE % [roundi(float(effect["vulnerable"]) * 100.0), seconds(float(effect.get("seconds", 0.0)))]])
+		"taunt":
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TAUNT_VALUE % roundi(float(effect.get("radius", 0.0)))])
+		"shield":
+			var share := float(effect.get("amount", 0.0))
+			var shield := UiText.SKILL_SHIELD_POWER % [roundi(share * 100.0), seconds(float(effect.get("seconds", 0.0)))]
+			rows.append([UiText.SKILL_ROW_SHIELD, shield + _now(stats, stats.max_hp * share if stats != null else 0.0) + " · " + UiText.JOB_TARGETS[str(effect.get("who", "self"))]])
+		"dash":
+			rows.append([UiText.JOB_ROW_MOVE, UiText.JOB_DASH_VALUE % roundi(float(effect.get("range", 0.0)))])
+			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			if float(effect.get("radius", 0.0)) > 0.0:
+				rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect["radius"]))])
+		"retreat":
+			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append([UiText.JOB_ROW_MOVE, UiText.JOB_RETREAT_VALUE % roundi(float(effect.get("distance", 0.0)))])
+		"pierce":
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["line"]])
+			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append([UiText.JOB_ROW_LENGTH, UiText.JOB_LENGTH_VALUE % [roundi(float(effect.get("length", 0.0))), roundi(float(effect.get("width", 0.0)))]])
+		"smoke":
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["around"]])
+			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
+			rows.append([UiText.JOB_ROW_SMOKE, UiText.JOB_SMOKE_VALUE % seconds(float(effect.get("seconds", 0.0)))])
+		"heal":
+			var heal := heal_power(stats) * power if stats != null else 0.0
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS[str(effect.get("who", "lowest"))]])
+			rows.append([UiText.SKILL_ROW_HEAL, UiText.SKILL_HEAL_POWER % percent + _now(stats, heal)])
+			if float(effect.get("radius", 0.0)) > 0.0:
+				rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect["radius"]))])
+			if effect.get("cleanse", false):
+				rows.append([UiText.JOB_ROW_CLEANSE, UiText.JOB_CLEANSE_VALUE])
+		"revive":
+			var count := int(effect.get("count", 1))
+			var hp := roundi(float(effect.get("hp", 0.5)) * 100.0)
+			rows.append([UiText.JOB_ROW_REVIVE, UiText.JOB_REVIVE_VALUE % [count, hp] if count < GameConfig.PARTY_HENCHES.size() else UiText.JOB_REVIVE_ALL % hp])
+		"buff":
+			var parts := PackedStringArray()
+			for key: String in JobRules.BUFF_KEYS:
+				if effect.has(key):
+					parts.append(UiText.JOB_BUFF_PARTS[key] % roundi(float(effect[key]) * 100.0))
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS[str(effect.get("who", "self"))]])
+			rows.append([UiText.JOB_ROW_BUFF, UiText.LIST_SEPARATOR.join(parts) + UiText.JOB_SECONDS_SUFFIX % seconds(float(effect.get("seconds", 0.0)))])
+		"storm":
+			var hits := int(effect.get("hits", 1))
+			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["around"]])
+			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER_HITS % [percent, hits] + (UiText.SKILL_NOW_EACH % roundi(attack * power) if stats != null else "")])
+			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
+	return rows
+
+
+## 직업 스킬 효과의 미리보기 종류(헨치 스킬과 같은 것은 같은 모션을 쓴다).
+static func job_motion(effect: Dictionary) -> String:
+	match str(effect.get("type", "")):
+		"hit":
+			return "flurry" if int(effect.get("hits", 1)) > 1 else "strike"
+		"area":
+			return "stun" if effect.has("stun") else "blast"
+		"shield":
+			return "shield_all" if effect.get("who", "self") == "party" else "shield"
+		"heal":
+			return "heal_all" if effect.get("who", "lowest") == "area" else "heal"
+	return str(effect.get("type", "strike"))
+
+
+## 미리보기에 띄울 숫자(지금 한 번 값, 모르면 0).
+static func _effect_amount(effect: Dictionary, stats: UnitStats) -> int:
+	if stats == null:
+		return 0
+	var power := float(effect.get("power", 0.0))
+	match str(effect.get("type", "")):
+		"heal":
+			return roundi(heal_power(stats) * power)
+		"shield":
+			return roundi(stats.max_hp * float(effect.get("amount", 0.0)))
+	return roundi(stats.attack * power)
 
 
 ## 도감 액티브 글의 괄호 안("매운 박치기 (공격 + 화상)" → "공격 + 화상"). 없으면 "".

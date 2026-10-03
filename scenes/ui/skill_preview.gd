@@ -21,7 +21,8 @@ const TARGET_AT := Vector2(130, 0)
 const CLUSTER := [Vector2(0, 0), Vector2(55, -60), Vector2(70, 55), Vector2(115, 10)]
 const ALLIES := [Vector2(80, 70), Vector2(-150, -90), Vector2(170, -80)]
 
-## 미리보기 종류: SkillSheet의 motion(strike · flurry · blast · stun · taunt · heal · heal_all · passive · variant · inherit)
+## 미리보기 종류: SkillSheet의 motion(strike · flurry · blast · stun · taunt · heal · heal_all · passive · variant · inherit,
+## 직업 스킬: shield · shield_all · dash · retreat · pierce · smoke · revive · buff · storm)
 var motion := "strike":
 	set(value):
 		motion = value
@@ -85,6 +86,22 @@ func _draw() -> void:
 			_draw_heal(t)
 		"heal_all":
 			_draw_heal_all(t)
+		"shield", "shield_all":
+			_draw_shield(t, motion == "shield_all")
+		"dash":
+			_draw_dash(t)
+		"retreat":
+			_draw_retreat(t)
+		"pierce":
+			_draw_pierce(t)
+		"smoke":
+			_draw_smoke(t)
+		"revive":
+			_draw_revive(t)
+		"buff":
+			_draw_buff(t)
+		"storm":
+			_draw_storm(t)
 		_:
 			_draw_aura(t)
 
@@ -205,6 +222,139 @@ func _draw_heal_all(t: float) -> void:
 			var since := t - 0.45 * (offset - home).length() / maxf(radius, 1.0)
 			_draw_number(offset, "+%d" % amount if amount > 0 else "+", since, Palette.PREVIEW_HEAL)
 	_draw_unit(home, caster_color, 1.0)
+
+
+## 보호막(나 / 파티 모두): 둥근 막이 차오르며 씌워진다.
+func _draw_shield(t: float, party: bool) -> void:
+	var on := clampf(t / 0.35, 0.0, 1.0)
+	var members: Array[Vector2] = [HEALER_HOME]
+	if party:
+		members.append_array([Vector2(80, 70), Vector2(-150, -60)])
+	for i in members.size():
+		var at: Vector2 = members[i]
+		_draw_unit(at, caster_color if i == 0 else Palette.PREVIEW_ALLY, 1.0)
+		var body := _at(at) - Vector2(0, UNIT_RADIUS * _scale())
+		var r := UNIT_RADIUS * _scale() * 1.7 * ease(on, 0.5)
+		draw_circle(body, r, Color(effect_color, 0.25), true, -1.0, true)
+		draw_arc(body, r, 0.0, TAU, 32, Color(effect_color, 0.9), 2.0, true)
+	if amount > 0:
+		_draw_number(HEALER_HOME, "+%d" % amount, t - 0.3, effect_color)
+
+
+## 돌진: 잔상을 남기며 대상 곁으로 순간 이동해 때린다(범위가 있으면 둘레가 터진다).
+func _draw_dash(t: float) -> void:
+	var blink := 0.25
+	var reach := TARGET_AT - Vector2(UNIT_RADIUS * 2.0, 0)
+	var at_target := t >= blink and t < 1.6
+	var caster := reach if at_target else CASTER_HOME
+	if t >= blink and t < blink + 0.3:
+		var fade := 1.0 - (t - blink) / 0.3
+		for i in 4:
+			var ghost := CASTER_HOME.lerp(reach, i / 4.0)
+			draw_circle(_at(ghost) - Vector2(0, UNIT_RADIUS * _scale()), UNIT_RADIUS * _scale(), Color(caster_color, 0.25 * fade), true, -1.0, true)
+	if radius > 0.0:
+		_draw_range(TARGET_AT, radius)
+		if t >= blink and t < blink + 0.4:
+			_draw_ring(TARGET_AT, radius * clampf((t - blink) / 0.25, 0.0, 1.0), Color(effect_color, 0.8), 4.0)
+	_draw_unit(TARGET_AT, Palette.PREVIEW_ENEMY, 0.4 if t >= blink else 1.0)
+	_draw_number(TARGET_AT, "-%d" % amount if amount > 0 else "", t - blink, Palette.PREVIEW_DAMAGE)
+	_draw_unit(caster, caster_color, 1.0)
+
+
+## 후퇴 사격: 쏘고 나서 뒤로 미끄러지듯 물러난다.
+func _draw_retreat(t: float) -> void:
+	var start := Vector2(-20, 0)
+	var back := Vector2(-170, 0)
+	var shot := 0.3
+	var caster := start if t < shot else start.lerp(back, ease(clampf((t - shot) / 0.3, 0.0, 1.0), 0.4))
+	_draw_unit(TARGET_AT, Palette.PREVIEW_ENEMY, 0.5 if t >= shot else 1.0)
+	if t < shot:
+		var orb := start.lerp(TARGET_AT, t / shot)
+		draw_circle(_at(orb) - Vector2(0, UNIT_RADIUS * _scale()), 4.0, effect_color, true, -1.0, true)
+	_draw_number(TARGET_AT, "-%d" % amount if amount > 0 else "", t - shot, Palette.PREVIEW_DAMAGE)
+	_draw_unit(caster, caster_color, 1.0)
+
+
+## 관통: 일직선 빛줄기가 줄지은 적을 모두 꿰뚫는다.
+func _draw_pierce(t: float) -> void:
+	var line := [Vector2(20, 0), Vector2(110, 0), Vector2(200, 0)]
+	var fire := 0.3
+	for at: Vector2 in line:
+		_draw_unit(at, Palette.PREVIEW_ENEMY, 0.5 if t >= fire else 1.0)
+		_draw_number(at, "-%d" % amount if amount > 0 else "", t - fire, Palette.PREVIEW_DAMAGE)
+	if t >= fire and t < fire + 0.5:
+		var fade := 1.0 - (t - fire) / 0.5
+		var from := _at(CASTER_HOME) - Vector2(0, UNIT_RADIUS * _scale())
+		var to := _at(Vector2(260, 0)) - Vector2(0, UNIT_RADIUS * _scale())
+		draw_line(from, to, Color(effect_color, 0.35 * fade), 10.0, true)
+		draw_line(from, to, Color(effect_color, fade), 3.0, true)
+	_draw_unit(CASTER_HOME, caster_color, 1.0)
+
+
+## 연막: 회색 연기가 퍼지고, 안의 적은 멈칫(별)하다 "?" 하며 물러난다.
+func _draw_smoke(t: float) -> void:
+	var home := HEALER_HOME
+	_draw_range(home, radius)
+	var spread := clampf(t / 0.4, 0.0, 1.0)
+	var fade := 1.0 - clampf((t - 1.4) / 0.6, 0.0, 1.0)
+	for offset: Vector2 in [Vector2(110, -20), Vector2(-90, 60), Vector2(60, 70)]:
+		var away := clampf((t - 1.2) / 0.8, 0.0, 1.0)
+		var at: Vector2 = home + offset + offset.normalized() * 60.0 * away
+		_draw_unit(at, Palette.PREVIEW_ENEMY, 1.0)
+		if t >= 0.4 and t < 1.2:
+			_draw_stars(at, t)
+		elif t >= 1.2:
+			_draw_text(at, "?", Palette.SHIELD_BAR, UNIT_RADIUS * 2.4)
+	_draw_unit(home, caster_color, 1.0)
+	if fade > 0.0:
+		for i in 6:
+			var a := i * TAU / 6.0 + t
+			var puff := home + Vector2(cos(a), sin(a)) * radius * 0.6 * spread
+			_draw_disc(puff, radius * 0.35 * spread, Color(effect_color, 0.35 * fade))
+
+
+## 일으키기: 쓰러진 헨치(흐림)가 빛에 감싸여 일어나고 체력이 찬다.
+func _draw_revive(t: float) -> void:
+	var ally := Vector2(90, 30)
+	var rise := clampf((t - 0.3) / 0.5, 0.0, 1.0)
+	_draw_unit(ally, Palette.PREVIEW_ALLY, 0.6 * rise, rise < 1.0)
+	if t >= 0.2 and t < 1.0:
+		var glow := 1.0 - absf(t - 0.6) / 0.4
+		draw_circle(_at(ally) - Vector2(0, UNIT_RADIUS * _scale()), UNIT_RADIUS * _scale() * 1.8, Color(effect_color, 0.35 * glow), true, -1.0, true)
+	_draw_sparkles(ally, t - 0.4)
+	_draw_unit(HEALER_HOME, caster_color, 1.0)
+
+
+## 강화: 나 · 동료 둘레에 금빛이 번지고 위로 화살표가 오른다.
+func _draw_buff(t: float) -> void:
+	var members: Array[Vector2] = [HEALER_HOME, Vector2(90, 60), Vector2(-160, -70), Vector2(120, -70)]
+	for i in members.size():
+		var at: Vector2 = members[i]
+		_draw_unit(at, caster_color if i == 0 else Palette.PREVIEW_ALLY, 1.0)
+		if t < 0.25:
+			continue
+		var pulse := 0.5 + 0.5 * sin((t - 0.25) * 8.0)
+		var body := _at(at) - Vector2(0, UNIT_RADIUS * _scale())
+		draw_circle(body, UNIT_RADIUS * _scale() * 1.5, Color(effect_color, 0.12 + 0.12 * pulse), true, -1.0, true)
+		var lift := fposmod(t * 1.5 + i * 0.3, 1.0)
+		var arrow := body + Vector2(UNIT_RADIUS * _scale() * 1.1, -lift * 24.0)
+		draw_colored_polygon(PackedVector2Array([arrow + Vector2(0, -6), arrow + Vector2(5, 2), arrow + Vector2(-5, 2)]), Color(effect_color, 1.0 - lift))
+
+
+## 휩쓸기: 내 둘레로 고리가 여러 번 퍼지며 둘레의 적이 모두 맞는다.
+func _draw_storm(t: float) -> void:
+	var home := HEALER_HOME
+	_draw_range(home, radius)
+	var gap := 1.6 / maxf(hits, 1)
+	for offset: Vector2 in [Vector2(90, -30), Vector2(-80, 50), Vector2(40, 70), Vector2(-60, -60)]:
+		var at := home + offset
+		var inside := offset.length() <= radius
+		_draw_unit(at, Palette.PREVIEW_ENEMY, 1.0 - (minf(t / 1.6, 1.0) * 0.8 if inside else 0.0), not inside)
+	for i in maxi(hits, 1):
+		var since := t - i * gap
+		if since >= 0.0 and since < 0.3:
+			_draw_ring(home, radius * since / 0.3, Color(effect_color, 0.9 * (1.0 - since / 0.3)), 3.0)
+	_draw_unit(home + Vector2(sin(t * 30.0) * 4.0, 0), caster_color, 1.0)
 
 
 ## 패시브 · 변이 · 계승: 늘 켜져 있는 효과라 시전자 둘레에 은은한 빛(변이는 보라 반짝임이 돈다).

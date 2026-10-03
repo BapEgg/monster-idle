@@ -278,7 +278,7 @@ func _use_skill(may_move := true) -> bool:
 				return true
 			return false
 		"taunt":
-			if asked or not _wilds_within(position, radius, true).is_empty():
+			if asked or not wilds_within(position, radius, true).is_empty():
 				_cast_skill(self)
 				return true
 			return false
@@ -306,7 +306,7 @@ func _skill_target() -> Unit:
 		return leader.target
 	var best: Unit = null
 	var best_distance := INF
-	for wild in _wilds_within(leader.position, GameConfig.PARTY_LEASH):
+	for wild in wilds_within(leader.position, GameConfig.PARTY_LEASH):
 		var d := Iso.ground_distance(position, wild.position)
 		if d < best_distance:
 			best = wild
@@ -326,29 +326,29 @@ func _cast_skill(target: Unit) -> void:
 	var radius := skill.value("radius")
 	match skill.kind:
 		"strike":
-			_skill_hit(target, stats.attack * power)
+			_skill_hit(target, attack_power() * power)
 		"flurry":
 			# 몇 번에 나눠 때린다. 트윈은 이 헨치에 묶여 있어서, 헨치가 사라지면 함께 멈춘다.
 			var tween := create_tween()
 			for i in int(skill.value("hits", 1.0)):
-				tween.tween_callback(_skill_hit.bind(target, stats.attack * power))
+				tween.tween_callback(_skill_hit.bind(target, attack_power() * power))
 				tween.tween_interval(skill.value("hit_gap"))
 		"blast", "stun":
 			field.show_burst(target.position, radius, color)
-			for wild in _wilds_within(target.position, radius):
-				wild.take_damage(stats.attack * power, self)
+			for wild in wilds_within(target.position, radius):
+				wild.take_damage(attack_power() * power, self)
 				if skill.kind == "stun":
 					wild.stun(skill.value("stun"))
 		"taunt":
 			field.show_burst(position, radius, color)
-			for wild in _wilds_within(position, radius):
+			for wild in wilds_within(position, radius):
 				wild.taunt(self)
 			add_shield(stats.max_hp * skill.value("shield"), skill.value("shield_seconds"))
 		"heal":
 			target.receive_heal(_heal_power() * power)
 		"heal_all":
 			field.show_burst(position, radius, color)
-			for ally in _allies_within(position, radius):
+			for ally in allies_within(position, radius):
 				ally.receive_heal(_heal_power() * power)
 
 
@@ -370,32 +370,13 @@ func _heal_power() -> float:
 
 ## 체력 비율이 threshold보다 낮은 동료 중 가장 낮은 것(radius = 나에게서 땅 위 거리). 없으면 null.
 func _most_hurt_ally(threshold: float, radius: float) -> Unit:
-	var allies := _allies_within(position, radius)
+	var allies := allies_within(position, radius)
 	var ratios: Array[float] = []
 	for ally in allies:
 		ratios.append(ally.hp / ally.stats.max_hp)
 	var index := Combat.heal_target_index(ratios, threshold)
 	return allies[index] if index >= 0 else null
 
-
-## 살아 있는 동료(주인공 포함) 중 center에서 radius 안.
-func _allies_within(center: Vector2, radius: float) -> Array[Unit]:
-	var result: Array[Unit] = []
-	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.PARTY)):
-		var ally := node as Unit
-		if ally.is_alive() and Iso.ground_distance(center, ally.position) <= radius:
-			result.append(ally)
-	return result
-
-
-## 살아 있는 야생 중 center에서 radius 안. fighting_only면 파티와 싸우는 중인 것만.
-func _wilds_within(center: Vector2, radius: float, fighting_only := false) -> Array[Hench]:
-	var result: Array[Hench] = []
-	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.WILD)):
-		var wild := node as Hench
-		if wild.is_alive() and (wild.is_fighting() or not fighting_only) and Iso.ground_distance(center, wild.position) <= radius:
-			result.append(wild)
-	return result
 
 
 ## 주인공 곁의 내 자리로 간다. 자리에서 조금 벗어난 정도면 가만히 있는다(덜 부산하게).
@@ -506,6 +487,12 @@ func taunt(by: Unit) -> void:
 	_threat[by] = top + GameConfig.TAUNT_THREAT
 	_returning = false
 	detect_gauge = 0.0
+
+
+## 연막(직업 스킬): 파티를 놓치고 자리로 돌아간다(파란 "?").
+func lose_track() -> void:
+	if team == Team.WILD and is_alive():
+		_give_up()
 
 
 func _give_up() -> void:

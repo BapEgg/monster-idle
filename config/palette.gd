@@ -202,6 +202,8 @@ const CHIP_PASSIVE := Color("8fa8c8")
 const CHIP_VARIANT := Color("9b5de5")
 const CHIP_INHERIT := Color("e0b84a")
 const CHIP_GLYPH := Color(0.08, 0.09, 0.12)
+## 직업 창: 궁극기 카드 색
+const JOB_ULTIMATE := Color("ff5ad0")
 ## 스킬 상세 창 모션 미리보기(임시 도형): 바닥 · 범위 · 적 · 동료 · 그림자 · 체력 바 · 피해 숫자 · 회복 숫자
 const PREVIEW_BG := Color(0.16, 0.2, 0.17)
 const PREVIEW_RANGE := Color(1, 1, 1, 0.12)
@@ -212,6 +214,13 @@ const PREVIEW_HP_BG := Color(0, 0, 0, 0.5)
 const PREVIEW_HP := Color("6fdc6f")
 const PREVIEW_DAMAGE := Color("ffd84a")
 const PREVIEW_HEAL := Color("7dff8a")
+## 주인공 직업 스킬: 머리 위 스킬 이름 · 효과 종류별 범위 연출 색(임시)
+const JOB_SKILL_CAST := Color("ffe9a8")
+const JOB_EFFECT_COLORS := {
+	"hit": Color("ff9a3d"), "area": Color("ff6a3d"), "taunt": Color("5ab8ff"), "shield": Color("8fd3ff"), "dash": Color("c9a6ff"),
+	"retreat": Color("9fe0a0"), "pierce": Color("fff07a"), "smoke": Color("a0a4b0"), "heal": Color("7dff8a"), "revive": Color("ffffff"),
+	"buff": Color("ffc93c"), "storm": Color("ff5ad0"),
+}
 ## 보호막 막대(체력 바 위) / 기절 별
 const SHIELD_BAR := Color("8fd3ff")
 const STUN_STAR := Color("ffe14d")

@@ -1,0 +1,150 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/job_panel.gd" id="1_job"]
+[ext_resource type="Script" path="res://scenes/ui/job_portrait.gd" id="2_portrait"]
+
+[node name="JobPanel" type="PanelContainer"]
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -610.0
+offset_top = 8.0
+offset_right = 610.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_job")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 14
+
+[node name="Rows" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Margin/Rows/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeaderGap" type="Control" parent="Margin/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Points" type="Label" parent="Margin/Rows/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="Close" type="Button" parent="Margin/Rows/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 44)
+layout_mode = 2
+focus_mode = 0
+
+[node name="Body" type="HBoxContainer" parent="Margin/Rows"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 22
+
+[node name="Left" type="VBoxContainer" parent="Margin/Rows/Body"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Top" type="HBoxContainer" parent="Margin/Rows/Body/Left"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Portrait" type="Control" parent="Margin/Rows/Body/Left/Top"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(112, 112)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("2_portrait")
+
+[node name="Texts" type="VBoxContainer" parent="Margin/Rows/Body/Left/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="JobName" type="Label" parent="Margin/Rows/Body/Left/Top/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Kind" type="Label" parent="Margin/Rows/Body/Left/Top/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Person" type="Label" parent="Margin/Rows/Body/Left/Top/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Stats" type="GridContainer" parent="Margin/Rows/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 28
+theme_override_constants/v_separation = 6
+columns = 2
+
+[node name="Mods" type="Label" parent="Margin/Rows/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="LeftGap" type="Control" parent="Margin/Rows/Body/Left"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="SwitchTitle" type="Label" parent="Margin/Rows/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="Switch" type="HBoxContainer" parent="Margin/Rows/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Divider" type="VSeparator" parent="Margin/Rows/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Right" type="VBoxContainer" parent="Margin/Rows/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="EquipTitle" type="Label" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Equip" type="GridContainer" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 3
+
+[node name="ListTitle" type="Label" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="List" type="GridContainer" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 2

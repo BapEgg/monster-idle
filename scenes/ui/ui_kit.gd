@@ -7,6 +7,8 @@ const PANEL_CORNER := 12
 const BADGE_FONT_SIZE := 11
 const BADGE_PAD := Vector2(4, 1)
 const BADGE_CORNER := 6
+const ACCENT_CORNER := 8
+const ACCENT_PAD := 10.0
 ## 굵은 글씨: 기본 글꼴을 이만큼 두껍게 그린다(굵은 글꼴 파일이 들어오면 바꾼다).
 const BOLD_EMBOLDEN := 0.7
 
@@ -51,6 +53,21 @@ static func style_label(label: Label, font_size: int, color: Color) -> void:
 static func style_button(button: BaseButton, font_size: int) -> void:
 	button.add_theme_font_size_override("font_size", font_size)
 	button.focus_mode = Control.FOCUS_NONE
+
+
+## 강조 버튼(창에서 하나만 눈에 띄게, 믹스 결과의 "파티에 넣기"와 같은 청록): 바탕 + 밝은 테두리 + 굵은 글씨.
+static func accent_button(button: Button) -> void:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Palette.MIX_ACCENT_BG
+	box.border_color = Palette.MIX_ACCENT_BORDER
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(ACCENT_CORNER)
+	box.set_content_margin_all(ACCENT_PAD)
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		button.add_theme_stylebox_override(state, box)
+	button.add_theme_color_override("font_color", Palette.TEXT)
+	button.add_theme_color_override("font_hover_color", Palette.TEXT)
+	button.add_theme_font_override("font", bold_font())
 
 
 ## 창 바탕(어두운 반투명 + 얇은 테두리).

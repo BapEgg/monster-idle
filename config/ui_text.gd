@@ -129,13 +129,82 @@ const SKILL_NOTE_ACTIVE := "수치 · 효과 종류는 임시입니다. 그림 �
 const SKILL_NOTE_PASSIVE := "패시브 수치는 아직 없습니다(스킬 단계에서 정함)."
 const SKILL_MOTION_CAPTION := "모션 미리보기(임시 도형)"
 const SKILL_CLOSE := "닫기"
+## 레벨이 올라 직업 스킬을 새로 배웠을 때(주인공 머리 위). %s = 스킬 이름
+const JOB_LEARNED := "새 스킬: %s"
+## 직업 창(기획서 3장, 직업 1차)
+const JOB_BUTTON := "직업"
+const JOB_TITLE := "직업 · 스킬"
+const JOB_POINTS := "스킬 포인트 %d"
+const JOB_CLOSE := "닫기"
+## 직업 이름 아래: 역할 · 기본 무기
+const JOB_KIND := "%s · %s"
+## 왼쪽 능력치 표(이름표, 값 형식)
+const JOB_STAT_ROWS := [["체력", "%d"], ["공격", "%d"], ["공격 간격", "%s초"], ["사거리", "%d"]]
+const JOB_MODS_LINE := "패시브 보정: %s"
+const JOB_SWITCH := "직업 바꾸기(개발용 · 출시 전엔 프롤로그에서 한 번 고름)"
+const JOB_SWITCH_ASK := "%s(으)로 바꿀까요?\n배운 스킬과 장착이 처음으로 돌아갑니다(개발용)."
+const JOB_EQUIP_TITLE := "장착(액티브 3 · 패시브 · 궁극기) — 칸을 누르면 그 스킬"
+const JOB_LIST_TITLE := "스킬 — 눌러서 모션 · 설명 · 계수를 보고 장착 · 레벨 올리기"
+const JOB_SLOT_CAPTIONS := {"active": "액티브 칸 %d", "passive": "패시브 칸 %d", "ultimate": "궁극기 칸"}
+const JOB_SLOT_EMPTY := "비어 있음"
+const JOB_SLOT_LOCKED := "Lv %d에 열림"
+## 스킬 목록 카드 위 작은 줄: 종류 · 스킬 레벨 / 해금 레벨, 장착 중이면 꼬리
+const JOB_CARD_CAPTION := "%s · Lv %d/%d"
+const JOB_CARD_LOCKED := "%s · Lv %d에 배움"
+const JOB_CARD_EQUIPPED := " · 장착 중"
+## 스킬 상세 창 아래 버튼(직업 스킬)
+const JOB_ACT_EQUIP := "장착"
+const JOB_ACT_EQUIP_AT := "%d번 칸에"
+const JOB_ACT_UNEQUIP := "해제"
+const JOB_ACT_LEVEL := "레벨 올리기 · 포인트 1"
+const JOB_ACT_NO_POINTS := "스킬 포인트 없음"
+const JOB_ACT_MAX := "최고 레벨"
+## 스킬 칸(궁극기 칸)이 아직 열리지 않았을 때
+const SKILL_SLOT_LOCKED := "Lv %d"
+## 직업 스킬 상세(직업 창 · 스킬 상세 창): 꼬리표 · 계수 줄
+const JOB_TYPE_NAMES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
+const JOB_SKILL_TAG := "%s · %s 스킬"
+const JOB_ROW_LEVEL := "스킬 레벨"
+const JOB_LEVEL_VALUE := "%d / %d"
+const JOB_LEVEL_LOCKED := "Lv %d에 배움"
+const JOB_ROW_LEVEL_BONUS := "레벨 효과"
+const JOB_LEVEL_BONUS_VALUE := "스킬 레벨 1당 +%d%%"
+const JOB_ROW_TARGET := "대상"
+const JOB_ROW_MOVE := "움직임"
+const JOB_ROW_LENGTH := "길이"
+const JOB_ROW_REVIVE := "일으키기"
+const JOB_ROW_BUFF := "강화"
+const JOB_ROW_DEBUFF := "약화"
+const JOB_ROW_SMOKE := "연막"
+const JOB_ROW_CLEANSE := "정화"
+const JOB_TARGETS := {"self": "나", "party": "파티 모두", "lowest": "체력이 가장 낮은 동료 하나", "area": "내 둘레의 동료 모두", "target": "대상 둘레의 적 모두", "around": "내 둘레의 적 모두", "one": "대상 하나", "line": "일직선의 적 모두"}
+const JOB_DASH_VALUE := "대상 곁으로 순간 이동(최대 %d)"
+const JOB_RETREAT_VALUE := "때린 뒤 %d만큼 물러남"
+const JOB_LENGTH_VALUE := "%d · 폭 %d"
+const JOB_REVIVE_VALUE := "쓰러진 헨치 %d명까지 · 체력 %d%%"
+const JOB_REVIVE_ALL := "쓰러진 헨치 모두 · 체력 %d%%"
+const JOB_VULNERABLE_VALUE := "받는 피해 +%d%% · %s초"
+const JOB_SMOKE_VALUE := "%s초 동안 아무것도 못 하고 나를 놓침"
+const JOB_CLEANSE_VALUE := "기절 풀기"
+const JOB_TAUNT_VALUE := "반지름 %d 안의 적이 나를 노림"
+const JOB_BUFF_PARTS := {"attack": "공격 +%d%%", "speed": "공격 속도 +%d%%", "guard": "받는 피해 −%d%%"}
+const JOB_SECONDS_SUFFIX := " · %s초"
+## 패시브 보정 이름(값 = %d%%)
+const JOB_MOD_NAMES := {
+	"hp": "최대 체력 +%d%%", "damage_taken": "받는 피해 −%d%%", "attack": "공격 +%d%%", "attack_speed": "공격 속도 +%d%%",
+	"move_speed": "이동 속도 +%d%%", "range": "사거리 +%d%%", "ambush": "기습 배율 +%d%%", "heal_power": "회복 +%d%%",
+	"tank_damage_taken": "탱커 헨치가 받는 피해 −%d%%", "party_hp": "파티 헨치 최대 체력 +%d%%", "buff_seconds": "버프 시간 +%d%%", "buff_power": "버프 효과 +%d%%",
+}
+const JOB_ROW_MOD := "보정"
+const JOB_PASSIVE_NOTE := "패시브 칸에 장착하면 늘 켜집니다. 수치는 임시입니다."
+const JOB_ACTIVE_NOTE := "수치는 임시입니다. 그림 단계에서 직업마다 다른 모션으로 바뀝니다."
 ## 정보창의 스킬 카드(눌러서 상세): 위 작은 이름표 · 아이콘 글자
 const CHIP_ACTIVE := "액티브"
 const CHIP_PASSIVE := "패시브"
 const CHIP_LEGACY := "유산 패시브"
 const CHIP_VARIANT := VARIANT
 const CHIP_INHERIT := TERM_MIX + " 계승"
-const CHIP_GLYPHS := {"active": "액", "passive": "패", "variant": "변", "inherit": "계"}
+const CHIP_GLYPHS := {"active": "액", "passive": "패", "ultimate": "궁", "variant": "변", "inherit": "계"}
 const CHIP_VARIANT_TITLE := "능력치 +%d%%"
 ## 여러 이름을 한 줄로 늘어놓을 때 사이
 const LIST_SEPARATOR := ", "
@@ -187,7 +256,7 @@ const DEBUG_ON := "켜짐"
 const DEBUG_OFF := "꺼짐"
 
 # ─── 가방 칸 · 코어 정보 · 믹스 (프로토타입 5) ─────────────
-const ROLE_NAMES := {"tank": "탱커", "melee": "근접딜러", "ranged": "원거리딜러", "healer": "힐러", "boss": "보스"}
+const ROLE_NAMES := {"tank": "탱커", "melee": "근접딜러", "ranged": "원거리딜러", "healer": "힐러", "buffer": "버퍼", "boss": "보스"}
 const GRADE_NAMES := {"low": "하급", "mid": "중급", "high": "상급", "king": "왕"}
 ## 가방 칸 배지
 const BADGE_LOCK := "잠금"

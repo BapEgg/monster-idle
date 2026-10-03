@@ -43,6 +43,9 @@ const CONTROLS_PADDING := 8.0
 @onready var debug_button: TextButton = $TopControls/DebugButton
 @onready var debug_panel: DebugPanel = $DebugPanel
 @onready var boss_button: TextButton = $TopControls/BossButton
+@onready var job_button: TextButton = $TopControls/JobButton
+@onready var job_panel: JobPanel = $JobPanel
+@onready var ultimate_slot: SkillSlot = $Controls/UltimateSlot
 @onready var _commands: Array[CommandButton] = [$Controls/CommandAll, $Controls/CommandMelee, $Controls/CommandRanged]
 @onready var mix_panel: MixPanel = $MixPanel
 @onready var skill_window: SkillWindow = $SkillWindow
@@ -56,6 +59,8 @@ var _player: Player
 var _party: Array[Hench] = []
 var _hunt_log: HuntLog
 var _skill_slots: Array[SkillSlot] = []
+var _job: JobState
+var _progress: PlayerProgress
 
 
 func _ready() -> void:
@@ -69,6 +74,13 @@ func _ready() -> void:
 		slot.pressed.connect(func() -> void: skill_requested.emit(index))
 		_skill_slots.append(slot)
 	bag_button.pressed.connect(_on_bag_button)
+	job_button.text = UiText.JOB_BUTTON
+	job_button.pressed.connect(func() -> void:
+		if job_panel.visible:
+			job_panel.close()
+		else:
+			job_panel.open())
+	ultimate_slot.pressed.connect(func() -> void: skill_requested.emit(SKILL_SLOT_COUNT))
 	debug_button.text = UiText.DEBUG_BUTTON
 	debug_button.visible = GameConfig.DEV_DEBUG_PANEL
 	boss_button.pressed.connect(func() -> void: boss_requested.emit())
@@ -127,6 +139,13 @@ func skill_slot(index: int) -> SkillSlot:
 
 func set_kills(count: int) -> void:
 	_kills.text = UiText.KILLS % count
+
+
+## 주인공 직업(직업 창 · 직업 스킬 칸)을 잇는다.
+func bind_job(job: JobState, progress: PlayerProgress) -> void:
+	_job = job
+	_progress = progress
+	job_panel.bind(job, progress, skill_window, confirm_box)
 
 
 ## 지갑·코어 다루기(믹스·분해·잠금)·파티 이름을 가방 창과 믹스창에 이어 준다.
@@ -188,14 +207,32 @@ func _process(_delta: float) -> void:
 		_show_mode(UiText.MODE_RETURNING % ceili(control.seconds_until_auto()), Palette.MODE_MANUAL)
 
 
-## 스킬 칸 1~3에 파티 헨치의 스킬(대기 시간 · 기다리는 중)을 보여 준다. 4~6은 빈 칸.
+## 스킬 칸 1~3에 파티 헨치의 스킬, 4~6에 직업 액티브, 궁극기 칸에 궁극기(대기 시간 · 기다리는 중)를 보여 준다.
 func _show_skills() -> void:
+	var party_count := mini(_party.size(), SKILL_SLOT_COUNT)
 	for i in _skill_slots.size():
-		var hench: Hench = _party[i] if i < _party.size() and is_instance_valid(_party[i]) else null
-		if hench == null or hench.skill == null:
-			_skill_slots[i].show_skill(null, Color.TRANSPARENT, false)
+		if i < party_count:
+			var hench: Hench = _party[i] if is_instance_valid(_party[i]) else null
+			if hench == null or hench.skill == null:
+				_skill_slots[i].show_skill(null, Color.TRANSPARENT, false)
+			else:
+				_skill_slots[i].show_skill(hench.skill, hench.species.color, hench.is_skill_requested())
 		else:
-			_skill_slots[i].show_skill(hench.skill, hench.species.color, hench.is_skill_requested())
+			_show_job_slot(_skill_slots[i], i - party_count)
+	_show_job_slot(ultimate_slot, JobCaster.SLOT_COUNT - 1)
+
+
+## 직업 스킬 칸 하나(index = JobCaster 칸). 비었으면 그 칸이 열리는 레벨(궁극기 칸)을 흐리게.
+func _show_job_slot(slot: SkillSlot, index: int) -> void:
+	var caster := _player.caster
+	var skill: JobSkill = caster.skills[index] if index < caster.skills.size() else null
+	var job := JobDb.get_job(_player.job_id)
+	var locked := ""
+	if skill == null and index == JobCaster.SLOT_COUNT - 1 and job != null and _job != null and _job.ultimate == "":
+		var ultimate := job.skills_of("ultimate")
+		if not ultimate.is_empty() and _progress != null and _progress.level < ultimate[0].unlock:
+			locked = UiText.SKILL_SLOT_LOCKED % ultimate[0].unlock
+	slot.show_skill(skill, job.color if job != null else Color.TRANSPARENT, caster.is_requested(index), locked)
 
 
 func _on_bag_button() -> void:
@@ -208,7 +245,7 @@ func _on_bag_button() -> void:
 
 ## 화면을 덮는 창들(가방 · 믹스 · 디버그 · 확인).
 func _modals() -> Array[Control]:
-	return [bag_panel, mix_panel, debug_panel, skill_window, confirm_box]
+	return [bag_panel, mix_panel, job_panel, debug_panel, skill_window, confirm_box]
 
 
 ## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸), 오른쪽 위 버튼(가방 · 디버그)을 숨겨,

@@ -10,6 +10,8 @@ extends Unit
 ## 공격 버튼(attack 액션: 화면 공격 버튼·Space): 대상(없으면 가까운 적)에게 다가가 쓰러질 때까지 싸운다.
 ##   한 번 누르면 그 대상과 끝까지 싸우고, 누르고 있으면 다음 적으로 이어 간다. 조이스틱으로 움직이면 다가가기를 멈춘다.
 ## 레벨(PlayerProgress)만큼 체력 · 공격이 오른다(Growth.stat_scale). 레벨이 오르면 체력이 다 찬다.
+## 직업(기획서 3장, 직업 1차): 직업마다 기본 능력치(GameConfig.JOB_STATS) · 몸 색이 다르고, 장착 패시브가 능력치를 고친다(JobRules).
+## 장착한 직업 스킬(액티브 3 + 궁극기)은 JobCaster가 쓴다: 풀오토면 알아서, 아니면 스킬 칸을 눌러서.
 ## 원점 = 발밑(y정렬 기준). 그림은 도형(그림자 + 몸 + 머리)으로 대체한다.
 
 # 임시 도형 치수(px). 그림이 들어오면 사라진다.
@@ -28,6 +30,11 @@ const BOB_SPEED := 16.0
 
 ## 주인공 레벨(능력치 배율). 바꿀 때는 set_level.
 var level := 1
+## 직업 id와 장착 패시브 보정(바꿀 때는 set_job)
+var job_id := GameConfig.START_JOB
+var job_mods := {}
+## 직업 스킬 쓰기(스킬 칸 4~6 · 궁극기 칸)
+var caster := JobCaster.new(self)
 ## 사냥 방식과 자동/수동 판단.
 var control := AutoControl.new(GameConfig.MANUAL_RETURN_SECONDS, GameConfig.START_CONTROL_MODE)
 ## 조이스틱에 손을 대고 있나(HUD 조이스틱 신호로 main이 알려 준다). 기울이지 않고 대기만 해도 수동이 된다.
@@ -46,15 +53,34 @@ var _walk_time := 0.0
 
 ## 레벨을 바꾸고 능력치를 다시 정한다. heal이면 체력을 다 채운다(레벨업), 아니면 체력 비율을 지킨다.
 func set_level(new_level: int, heal := false) -> void:
-	var ratio := hp / stats.max_hp if stats != null and stats.max_hp > 0.0 else 1.0
 	level = new_level
-	stats = UnitStats.for_player(level)
+	_refresh_stats(heal)
+
+
+## 직업과 장착 패시브 보정을 바꾸고 능력치를 다시 정한다(체력 비율은 지킨다).
+func set_job(new_job: String, mods: Dictionary) -> void:
+	job_id = new_job
+	job_mods = mods
+	damage_taken_scale = 1.0 - float(mods.get("damage_taken", 0.0))
+	ambush_bonus = float(mods.get("ambush", 0.0))
+	_refresh_stats(false)
+	queue_redraw()
+
+
+func _refresh_stats(heal: bool) -> void:
+	var ratio := hp / stats.max_hp if stats != null and stats.max_hp > 0.0 else 1.0
+	stats = JobRules.player_stats(job_id, level, job_mods)
 	if is_alive():
 		hp = stats.max_hp if heal else stats.max_hp * ratio
 
 
+## 직업 스킬 칸 하나를 눌렀을 때(0~2 = 액티브, 3 = 궁극기). 쓸 수 없으면 false.
+func request_job_skill(index: int) -> bool:
+	return is_alive() and caster.request(index)
+
+
 func _ready() -> void:
-	stats = UnitStats.for_player(level)
+	stats = JobRules.player_stats(job_id, level, job_mods)
 	_camera.zoom = Vector2.ONE * GameConfig.CAMERA_ZOOM
 	_camera.position_smoothing_enabled = true
 	_camera.position_smoothing_speed = GameConfig.CAMERA_SMOOTHING_SPEED
@@ -65,6 +91,9 @@ func _think(delta: float) -> void:
 	var input := read_move_input()
 	control.update(delta, touching or input != Vector2.ZERO)
 	_drop_lost_target(control.is_manual())
+	caster.tick(delta)
+	if caster.update(control.auto_skills(), input == Vector2.ZERO and not touching):
+		return  # 눌러서 쓰려는 스킬의 대상에게 다가가는 중
 	if not control.is_manual():
 		if not _auto_dodge():  # 자동일 때만 보스 장판을 알아서 피한다(조금 늦게). 직접 움직이면 바로 피할 수 있다.
 			_hunt()
@@ -234,7 +263,9 @@ func _draw() -> void:
 	var lift := Vector2(0, -absf(sin(_walk_time * BOB_SPEED)) * BOB_HEIGHT) + _body_offset()
 
 	var body := BODY_CENTER + lift
-	draw_circle(body, BODY_RADIUS, Palette.HIT_FLASH if _is_flashing() else Palette.PLAYER_BODY, true, -1.0, true)
+	var job := JobDb.get_job(job_id)
+	var body_color := job.color if job != null else Palette.PLAYER_BODY  # 직업마다 몸 색(임시)
+	draw_circle(body, BODY_RADIUS, Palette.HIT_FLASH if _is_flashing() else body_color, true, -1.0, true)
 	draw_arc(body, BODY_RADIUS, 0.0, TAU, 32, Palette.OUTLINE, OUTLINE_WIDTH, true)
 
 	# 머리: 위쪽(화면 위)을 보고 있으면 뒤통수(머리카락)만 보인다.

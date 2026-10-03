@@ -1,6 +1,6 @@
 class_name UnitStats
 extends RefCounted
-## 유닛 능력치 한 벌. 값은 GameConfig의 표(PLAYER_STATS, ROLE_STATS)나 코어 능력치(from_core)에서 만든다.
+## 유닛 능력치 한 벌. 값은 GameConfig의 표(JOB_STATS, ROLE_STATS)나 코어 능력치(from_core)에서 만든다.
 ## 표에서 만들 때는 레벨만큼 체력 · 공격 · 회복이 오른다(Growth.stat_scale, 주인공 · 야생 · 코어 없는 헨치).
 
 var max_hp := 1.0
@@ -28,9 +28,9 @@ static func from_table(row: Dictionary, move_speed: float, hp_scale := 1.0, atta
 	return s
 
 
+## 처음 직업(GameConfig.START_JOB)의 주인공, 패시브 없이. 직업 · 패시브까지는 JobRules.player_stats.
 static func for_player(level := 1) -> UnitStats:
-	var scale := Growth.stat_scale(level)
-	return from_table(GameConfig.PLAYER_STATS, GameConfig.PLAYER_SPEED, scale, scale)
+	return JobRules.player_stats(GameConfig.START_JOB, level)
 
 
 ## 섬의 왕(보스전, 연습용 임시 능력치).

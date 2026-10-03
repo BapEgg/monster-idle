@@ -26,5 +26,6 @@ static func absorb(shield: float, damage: float) -> Vector2:
 
 ## 실제로 들어가는 피해. 기습(아직 파티를 알아채지 못한 적에게 수동 조작 중에 넣은 첫 타)이면 배율만큼 세다.
 ## 사용자 결정(2026-10-02): 기습 보너스는 수동 중일 때만 준다. 자동 사냥은 손해가 아니라 보너스가 없을 뿐이다.
-static func hit_damage(damage: float, ambush: bool) -> float:
-	return damage * (GameConfig.AMBUSH_SCALE if ambush else 1.0)
+## bonus = 공격한 쪽의 기습 배율 보너스(직업 패시브: 기습의 달인).
+static func hit_damage(damage: float, ambush: bool, bonus := 0.0) -> float:
+	return damage * (GameConfig.AMBUSH_SCALE + bonus if ambush else 1.0)

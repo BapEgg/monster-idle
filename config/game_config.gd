@@ -110,6 +110,89 @@ const PERSONAL_SPACE := 44.0
 ## 밀어내는 힘의 최대치(이동 입력 길이 기준 0~1).
 const PERSONAL_SPACE_PUSH := 0.6
 
+# ─── 주인공 직업 · 직업 스킬 (기획서 3장, 직업 1차 — 수치는 모두 임시) ─────
+## 처음 시작할 때 직업(직업 고르기는 프롤로그 단계에서. 지금은 직업 창에서 개발용으로 바꾼다)
+const START_JOB := "warrior"
+## 직업별 기본 능력치(레벨만큼 오른다, Growth.stat_scale). heal = 회복 스킬의 바탕(없으면 공격).
+const JOB_STATS := {
+	"warrior": {"hp": 420.0, "attack": 10.0, "attack_interval": 1.1, "attack_range": 60.0},
+	"rogue": {"hp": 280.0, "attack": 13.0, "attack_interval": 0.75, "attack_range": 56.0},
+	"archer": {"hp": 250.0, "attack": 12.0, "attack_interval": 1.0, "attack_range": 240.0},
+	"healer": {"hp": 270.0, "attack": 8.0, "attack_interval": 1.1, "attack_range": 200.0, "heal": 14.0},
+	"buffer": {"hp": 290.0, "attack": 9.0, "attack_interval": 1.0, "attack_range": 180.0},
+}
+## 장착 칸: 액티브 3 · 궁극기 1(기획서 3장 확정), 패시브 칸이 열리는 레벨(기획서 초안 Lv 10 · 30, MVP 최대 2칸)
+const JOB_ACTIVE_SLOTS := 3
+const JOB_PASSIVE_SLOT_LEVELS := [10, 30]
+## 스킬 포인트: 주인공 레벨이 오를 때마다 이만큼(기획서: 레벨업마다 스킬 포인트, 메이플키우기식)
+const JOB_SKILL_POINTS_PER_LEVEL := 1
+## 스킬 레벨 상한과 레벨 1당 효과(배율 · 보호막 · 버프 · 회복 · 패시브 보정) 증가
+const JOB_SKILL_MAX_LEVEL := 10
+const JOB_SKILL_LEVEL_BONUS := 0.1
+## 버프 · 보호막 · 회복이 닿는 "파티 모두"의 거리(땅 위 px)
+const JOB_PARTY_RADIUS := 600.0
+## 풀오토에서 직업 스킬을 알아서 쓰는 조건: 회복은 체력이 이 비율 아래인 동료가 있을 때
+const JOB_AUTO_HEAL_THRESHOLD := 0.7
+## 직업 스킬 수치(스킬 id → 값). 액티브 · 궁극기 = {cooldown(초), effects: [효과…]}, 패시브 = {mods: {보정…}}.
+## 효과 type:
+##   hit = 대상 하나(power = 공격력 배율, hits · gap = 여러 번, range = 사거리를 이 값으로)
+##   area = 범위(at = target | self, power, radius, stun = 기절 초, vulnerable · seconds = 그동안 받는 피해 +)
+##   taunt = 둘레(radius)의 적이 나를 노림 · shield = 보호막(amount = 최대 체력 비율, seconds, who = self | party)
+##   dash = 대상 곁으로 순간 이동해 때림(power, range, radius) · retreat = 때리고 물러남(power, distance)
+##   pierce = 일직선 관통(power, length, width) · smoke = 둘레의 적이 seconds초 아무것도 못 하고 나를 놓침(radius)
+##   heal = 회복(who = lowest | area, power = 회복력 배율, radius, cleanse = 기절 풀기) · revive = 쓰러진 헨치 일으킴(count, hp = 체력 비율)
+##   buff = 강화(who = self | party, attack = 공격 +, speed = 공격 속도 +, guard = 받는 피해 −, seconds)
+##   storm = 둘레(radius)를 여러 번 휩쓴다(power, hits, gap)
+## 패시브 mods: hp(최대 체력 +) · damage_taken(받는 피해 −) · attack · attack_speed · move_speed · range(사거리 +) · ambush(기습 배율 +)
+##   · heal_power(회복 +) · tank_damage_taken(파티 탱커 헨치가 받는 피해 −) · party_hp(파티 헨치 최대 체력 +) · buff_seconds · buff_power
+const JOB_SKILLS := {
+	# 전사
+	"shield_bash": {"cooldown": 9.0, "effects": [{"type": "area", "at": "self", "power": 1.0, "radius": 80.0, "stun": 1.2}]},
+	"war_cry": {"cooldown": 14.0, "effects": [{"type": "taunt", "radius": 180.0}, {"type": "shield", "who": "self", "amount": 0.2, "seconds": 6.0}]},
+	"shield_block": {"cooldown": 16.0, "effects": [{"type": "shield", "who": "self", "amount": 0.35, "seconds": 6.0}, {"type": "buff", "who": "self", "guard": 0.3, "seconds": 6.0}]},
+	"charge": {"cooldown": 10.0, "effects": [{"type": "dash", "power": 1.6, "range": 320.0, "radius": 70.0}]},
+	"shield_throw": {"cooldown": 9.0, "effects": [{"type": "hit", "power": 2.0, "range": 280.0}]},
+	"iron_stance": {"mods": {"hp": 0.15, "damage_taken": 0.1}},
+	"comradeship": {"mods": {"tank_damage_taken": 0.15}},
+	"fortress": {"cooldown": 60.0, "effects": [{"type": "shield", "who": "party", "amount": 0.4, "seconds": 8.0}, {"type": "taunt", "radius": 240.0}]},
+	# 도적
+	"double_slash": {"cooldown": 8.0, "effects": [{"type": "hit", "power": 0.6, "hits": 4, "gap": 0.1}]},
+	"shadow_dash": {"cooldown": 9.0, "effects": [{"type": "dash", "power": 1.5, "range": 340.0, "radius": 0.0}]},
+	"vital_stab": {"cooldown": 10.0, "effects": [{"type": "hit", "power": 3.0}]},
+	"poison_coat": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "self", "attack": 0.3, "seconds": 10.0}]},
+	"smoke_bomb": {"cooldown": 18.0, "effects": [{"type": "smoke", "radius": 150.0, "seconds": 3.0}]},
+	"ambush_master": {"mods": {"ambush": 0.5}},
+	"nimble_body": {"mods": {"attack_speed": 0.15, "move_speed": 0.1}},
+	"blade_storm": {"cooldown": 60.0, "effects": [{"type": "storm", "power": 0.6, "hits": 10, "gap": 0.15, "radius": 140.0}]},
+	# 궁수
+	"aimed_shot": {"cooldown": 7.0, "effects": [{"type": "hit", "power": 2.4}]},
+	"arrow_rain": {"cooldown": 10.0, "effects": [{"type": "area", "at": "target", "power": 1.3, "radius": 130.0}]},
+	"retreat_shot": {"cooldown": 9.0, "effects": [{"type": "retreat", "power": 1.6, "distance": 140.0}]},
+	"snare_trap": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "power": 0.5, "radius": 90.0, "stun": 2.0}]},
+	"piercing_arrow": {"cooldown": 10.0, "effects": [{"type": "pierce", "power": 1.8, "length": 420.0, "width": 45.0}]},
+	"hawk_eye": {"mods": {"range": 0.15, "attack": 0.05}},
+	"hunter_mark": {"mods": {"attack": 0.12}},
+	"sky_splitter": {"cooldown": 60.0, "effects": [{"type": "area", "at": "target", "power": 3.5, "radius": 240.0}]},
+	# 힐러
+	"healing_light": {"cooldown": 8.0, "effects": [{"type": "heal", "who": "lowest", "power": 2.5}]},
+	"purify": {"cooldown": 12.0, "effects": [{"type": "heal", "who": "area", "power": 0.8, "radius": 220.0, "cleanse": true}]},
+	"healing_field": {"cooldown": 13.0, "effects": [{"type": "heal", "who": "area", "power": 1.4, "radius": 260.0}]},
+	"protective_veil": {"cooldown": 16.0, "effects": [{"type": "shield", "who": "party", "amount": 0.2, "seconds": 6.0}]},
+	"first_aid": {"cooldown": 30.0, "effects": [{"type": "revive", "count": 1, "hp": 0.5}]},
+	"house_call": {"mods": {"heal_power": 0.2}},
+	"diagnosis": {"mods": {"party_hp": 0.1}},
+	"breath_of_life": {"cooldown": 70.0, "effects": [{"type": "revive", "count": 9, "hp": 0.6}, {"type": "heal", "who": "area", "power": 3.0, "radius": 600.0}]},
+	# 버퍼
+	"courage_melody": {"cooldown": 16.0, "effects": [{"type": "buff", "who": "party", "attack": 0.25, "seconds": 8.0}]},
+	"sprint_beat": {"cooldown": 16.0, "effects": [{"type": "buff", "who": "party", "speed": 0.3, "seconds": 8.0}]},
+	"concerto": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "party", "attack": 0.15, "speed": 0.15, "seconds": 10.0}]},
+	"guard_bass": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "party", "guard": 0.25, "seconds": 8.0}]},
+	"dissonance": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "power": 0.9, "radius": 120.0, "vulnerable": 0.25, "seconds": 6.0}]},
+	"encore": {"mods": {"buff_seconds": 0.3}},
+	"stage_presence": {"mods": {"buff_power": 0.2}},
+	"grand_ensemble": {"cooldown": 70.0, "effects": [{"type": "buff", "who": "party", "attack": 0.5, "speed": 0.4, "seconds": 12.0}]},
+}
+
 # ─── 내 파티 ─────────────────────────────────────
 ## 함께 다니는 헨치 3마리(data/henches.json의 id).
 const PARTY_HENCHES := ["sotmabaem", "haemapo", "jinjuryong"]

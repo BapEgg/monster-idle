@@ -21,6 +21,8 @@ const REPATH_SECONDS := 0.5
 const LUNGE_DISTANCE := 8.0
 const LUNGE_SECONDS := 0.12
 const FLASH_SECONDS := 0.12
+## 강화 · 약화 종류: attack = 공격 +, speed = 공격 속도 +, guard = 받는 피해 −, vulnerable = 받는 피해 +
+const BOOST_KINDS := ["attack", "speed", "guard", "vulnerable"]
 
 var team := Team.PARTY
 ## 머리 위 이름표. 비우면 이름표를 안 그린다.
@@ -34,6 +36,10 @@ var facing := Vector2.DOWN
 var targeted := false
 ## 보호막(스킬): 피해를 먼저 받아 준다. 정해진 시간이 지나면 사라진다. 체력 바 위에 막대로 보인다.
 var shield := 0.0
+## 늘 받는 피해 배율(직업 패시브: 철벽 자세 · 전우애). 1 = 그대로.
+var damage_taken_scale := 1.0
+## 기습 배율에 더하는 값(직업 패시브: 기습의 달인). 이 유닛이 넣은 기습이 이만큼 더 세다.
+var ambush_bonus := 0.0
 
 var _delta := 0.0
 var _cooldown := 0.0
@@ -48,6 +54,7 @@ var _flash_left := 0.0
 var _shield_left := 0.0
 var _stun_left := 0.0
 var _dodge_to := Vector2.INF  # 장판을 피해 가는(간) 자리. 장판이 다 터질 때까지 그 자리에 머문다
+var _boosts := {}  # 강화 · 약화(직업 스킬): 종류 → [양, 남은 초]. 종류는 BOOST_KINDS
 
 
 static func group_name(of_team: Team) -> StringName:
@@ -77,6 +84,10 @@ func _physics_process(delta: float) -> void:
 	if _shield_left <= 0.0:
 		shield = 0.0
 	_stun_left = maxf(_stun_left - delta, 0.0)
+	for kind: String in _boosts.keys():
+		_boosts[kind][1] -= delta
+		if _boosts[kind][1] <= 0.0:
+			_boosts.erase(kind)
 	_desired = Vector2.ZERO
 	_speed_scale = 1.0
 	if is_alive():
@@ -239,18 +250,66 @@ func nearest_alive(of_team: Team) -> Unit:
 	return best
 
 
-## 공격 대기가 끝났으면 공격한다. 사거리가 길면 투사체, 짧으면 몸으로 부딪친다.
+## 공격 대기가 끝났으면 공격한다. 사거리가 길면 투사체, 짧으면 몸으로 부딪친다. 강화(공격 · 공격 속도)를 받는다.
 func try_attack(target: Unit) -> bool:
 	if _cooldown > 0.0 or not target.is_alive():
 		return false
-	_cooldown = stats.attack_interval
+	_cooldown = stats.attack_interval / (1.0 + boost("speed"))
 	face(target.position)
 	if stats.attack_range > GameConfig.MELEE_RANGE_MAX:
-		field.shoot(self, target, stats.attack)
+		field.shoot(self, target, attack_power())
 	else:
 		_lunge_left = LUNGE_SECONDS
-		target.take_damage(stats.attack, self)
+		target.take_damage(attack_power(), self)
 	return true
+
+
+## 몸으로 부딪치는 연출(근접 공격 · 스킬).
+func lunge() -> void:
+	_lunge_left = LUNGE_SECONDS
+
+
+## 지금 공격력(강화 포함). 기본 공격 · 스킬 피해의 바탕.
+func attack_power() -> float:
+	return stats.attack * (1.0 + boost("attack"))
+
+
+## 강화 · 약화를 건다(종류는 BOOST_KINDS). 이미 걸려 있으면 더 큰 양 · 더 긴 시간으로.
+func add_boost(kind: String, amount: float, seconds: float) -> void:
+	if not is_alive() or amount <= 0.0 or seconds <= 0.0:
+		return
+	var now: Array = _boosts.get(kind, [0.0, 0.0])
+	_boosts[kind] = [maxf(float(now[0]), amount), maxf(float(now[1]), seconds)]
+
+
+## 지금 걸린 강화 · 약화의 양(없으면 0).
+func boost(kind: String) -> float:
+	return float(_boosts[kind][0]) if _boosts.has(kind) else 0.0
+
+
+## 받는 피해 배율: 늘 받는 배율 × (1 − 막기 강화) × (1 + 약화).
+func damage_taken_factor() -> float:
+	return damage_taken_scale * (1.0 - minf(boost("guard"), JobRules.GUARD_CAP)) * (1.0 + boost("vulnerable"))
+
+
+## 살아 있는 야생 중 center에서 radius 안. fighting_only면 파티와 싸우는 중인 것만.
+func wilds_within(center: Vector2, radius: float, fighting_only := false) -> Array[Hench]:
+	var result: Array[Hench] = []
+	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.WILD)):
+		var wild := node as Hench
+		if wild.is_alive() and (wild.is_fighting() or not fighting_only) and Iso.ground_distance(center, wild.position) <= radius:
+			result.append(wild)
+	return result
+
+
+## 살아 있는 내 편(주인공 · 파티 헨치) 중 center에서 radius 안.
+func allies_within(center: Vector2, radius: float) -> Array[Unit]:
+	var result: Array[Unit] = []
+	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.PARTY)):
+		var ally := node as Unit
+		if ally.is_alive() and Iso.ground_distance(center, ally.position) <= radius:
+			result.append(ally)
+	return result
 
 
 ## 회복 대기가 끝났으면 회복한다. 기본 공격과 대기 시간을 따로 쓰므로 같은 때에 공격도 할 수 있다.
@@ -269,7 +328,8 @@ func take_damage(amount: float, from: Unit) -> void:
 	if not is_alive():
 		return
 	var ambush := is_instance_valid(from) and _is_ambushed_by(from)
-	var after := Combat.absorb(shield, Combat.hit_damage(amount, ambush))
+	var bonus := from.ambush_bonus if ambush else 0.0
+	var after := Combat.absorb(shield, Combat.hit_damage(amount, ambush, bonus) * damage_taken_factor())
 	var blocked := shield - after.y
 	amount = after.x
 	shield = after.y
@@ -310,6 +370,11 @@ func is_stunned() -> bool:
 	return _stun_left > 0.0
 
 
+## 기절을 푼다(직업 스킬: 정화).
+func clear_stun() -> void:
+	_stun_left = 0.0
+
+
 ## 보호막(스킬)을 씌운다. 겹치지 않고 더 큰 쪽이 남으며, 남는 시간은 새로 센다.
 func add_shield(amount: float, seconds: float) -> void:
 	shield = maxf(shield, amount)
@@ -320,6 +385,7 @@ func add_shield(amount: float, seconds: float) -> void:
 func revive_at(point: Vector2) -> void:
 	hp = stats.max_hp
 	_stun_left = 0.0
+	_boosts.clear()
 	_dodge_to = Vector2.INF
 	modulate.a = 1.0
 	place_at(point)

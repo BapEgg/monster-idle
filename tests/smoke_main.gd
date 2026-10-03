@@ -214,13 +214,13 @@ func _run(main: Node) -> void:
 	_remove(wild)
 	_set_party_paused(main, false)
 
-	# 7-2) 스킬(헨치 고유 액티브): 스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 빈 칸(주인공 직업 스킬 자리).
+	# 7-2) 스킬(헨치 고유 액티브): 스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 주인공 직업 액티브(Lv 1 전사는 방패 밀치기 하나), 궁극기 칸.
 	#      수동·세미오토에서는 칸을 눌러야 쓰고, 풀오토는 알아서 쓴다.
 	var squad: Array = main.get("party")
 	var slots_ok := true
 	for i in 3:
 		slots_ok = slots_ok and hud.skill_slot(i).skill != null and hud.skill_slot(i).skill == (squad[i] as Hench).skill
-	_expect(slots_ok and hud.skill_slot(3).skill == null and hud.skill_slot(5).skill == null, "스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 빈 칸")
+	_expect(slots_ok and hud.skill_slot(3).skill != null and hud.skill_slot(3).skill.title == "방패 밀치기" and hud.skill_slot(4).skill == null and hud.ultimate_slot.locked_text == UiText.SKILL_SLOT_LOCKED % 25, "스킬 칸 1~3 = 파티 헨치 스킬, 4 = 직업 액티브(방패 밀치기), 5~6 빈 칸, 궁극기 칸 \"Lv 25\"")
 	await _switch_mode(hud, player, AutoControl.Mode.MANUAL)
 	var tank := squad[0] as Hench
 	var shooter := squad[1] as Hench
@@ -309,7 +309,7 @@ func _run(main: Node) -> void:
 		to_twenty += Growth.exp_to_next(lv)
 	progress.gain(to_twenty)
 	await _physics_frames(2)
-	_expect(progress.level == 20 and player.level == 20 and hud.level_bar.level_text() == UiText.LEVEL_LABEL % 20 and is_equal_approx(player.stats.max_hp, UnitStats.for_player(20).max_hp) and player.hp == player.stats.max_hp, "경험치 → 주인공 Lv 20(왼쪽 위 막대 · 능력치 · 체력 회복)")
+	_expect(progress.level == 20 and player.level == 20 and hud.level_bar.level_text() == UiText.LEVEL_LABEL % 20 and is_equal_approx(player.stats.max_hp, JobRules.player_stats(player.job_id, 20, player.job_mods).max_hp) and player.hp == player.stats.max_hp, "경험치 → 주인공 Lv 20(왼쪽 위 막대 · 능력치 · 체력 회복)")
 	_expect(feed.disabled and feed.text == UiText.FEED_PROBLEMS[Workshop.FeedProblem.NO_SHARDS], "경험치 조각이 없으면 먹이기 꺼짐(%s)" % feed.text)
 	var money: Wallet = main.get("wallet")
 	var shop: Workshop = main.get("workshop")
@@ -619,6 +619,66 @@ func _run(main: Node) -> void:
 	await _tap(close.get_global_rect().get_center())
 	await process_frame
 	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
+	# 8-2) 주인공 직업(기획서 3장, 직업 1차): Lv 20 전사 → 직업 스킬 칸 · 직업 창 · 스킬 상세 창에서 장착 · 레벨 올리기 · 직업 바꾸기
+	var job: JobState = main.get("job")
+	_expect(job.job_id == "warrior" and job.actives == ["shield_bash", "war_cry", "shield_block"] and job.levels.has("charge") and not job.is_equipped("charge") and job.passives[0] == "iron_stance", "Lv 20 전사: 액티브 3칸 · 패시브(철벽 자세) 장착, 돌진 충격은 배우기만")
+	_expect(hud.skill_slot(3).skill.title == "방패 밀치기" and hud.skill_slot(5).skill.title == "방패 막기" and hud.ultimate_slot.skill == null and hud.ultimate_slot.locked_text == UiText.SKILL_SLOT_LOCKED % 25, "스킬 칸 4~6 = 직업 액티브, 궁극기 칸은 \"Lv 25\"")
+	_expect(is_equal_approx(player.stats.max_hp, JobRules.player_stats("warrior", 20, job.mods(20)).max_hp) and player.damage_taken_scale < 1.0, "철벽 자세: 주인공 최대 체력 + · 받는 피해 −")
+	await _tap(hud.job_button.global_position)
+	var panel := hud.job_panel
+	_expect(panel.visible and (panel.find_child("Points", true, false) as Label).text == UiText.JOB_POINTS % job.points(20), "직업 버튼 → 직업 창(스킬 포인트 %d)" % job.points(20))
+	var charge_chip := panel.skill_chip("charge")
+	_expect(charge_chip != null and charge_chip.caption == UiText.JOB_CARD_CAPTION % [UiText.JOB_TYPE_NAMES["active"], 1, GameConfig.JOB_SKILL_MAX_LEVEL] and panel.skill_chip("fortress").modulate.a < 1.0, "스킬 목록: 돌진 충격 Lv 1, 궁극기(철옹성)는 흐리게 \"Lv 25에 배움\"")
+	await _tap(charge_chip.get_global_rect().get_center())
+	var window := hud.skill_window
+	var expected_actions := PackedStringArray([UiText.JOB_ACT_EQUIP_AT % 1, UiText.JOB_ACT_EQUIP_AT % 2, UiText.JOB_ACT_EQUIP_AT % 3, UiText.JOB_ACT_LEVEL])
+	_expect(window.visible and window.preview_motion() == "dash" and window.action_texts() == expected_actions, "스킬을 누름 → 스킬 상세 창(돌진 모션 · 계수) + 버튼 %s" % " / ".join(window.action_texts()))
+	await _seconds(0.45)
+	await _save_shot("job_skill")
+	await _seconds(0.2)
+	await _tap(window.action_button(UiText.JOB_ACT_EQUIP_AT % 2).get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(job.actives[1] == "charge" and not job.is_equipped("war_cry") and window.visible and UiText.JOB_ACT_UNEQUIP in window.action_texts(), "2번 칸에 → 돌진 충격 장착(도발 함성은 빠짐), 창은 그대로 \"해제\"")
+	_expect(hud.skill_slot(4).skill.title == "돌진 충격", "스킬 칸 5 = 돌진 충격")
+	var points_before := job.points(20)
+	await _tap(window.action_button(UiText.JOB_ACT_LEVEL).get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(job.skill_level("charge") == 2 and job.points(20) == points_before - 1 and player.caster.skills[1].level == 2, "레벨 올리기 → 스킬 레벨 2, 포인트 −1, 필드 스킬도 2레벨")
+	await _tap(_center_of(window, "Close"))
+	await _physics_frames(2)
+	_expect(not window.visible and panel.visible, "스킬 상세 창 닫기 → 직업 창")
+	await _save_shot("job")
+	await _seconds(0.2)
+	# 직업 바꾸기(개발용): 궁수 → 원거리 공격, 궁수 스킬
+	await _tap(panel.switch_button("archer").get_global_rect().get_center())
+	_expect(hud.confirm_box.visible, "직업 바꾸기 → 확인 창")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	_expect(job.job_id == "archer" and player.job_id == "archer" and player.stats.attack_range > GameConfig.MELEE_RANGE_MAX and hud.skill_slot(3).skill.title == "조준 사격", "궁수로 → 원거리 공격 · 스킬 칸 = 궁수 스킬")
+	await _tap(_center_of(panel, "Close"))
+	_expect(not panel.visible, "직업 창 닫기")
+	# 직업 스킬 효과(필드): 강화 · 보호막 · 일으키기 · 회복 · 범위(약화) · 연막을 하나씩 직접 걸어 본다
+	var crew: Array = main.get("party")
+	var caster := player.caster
+	caster.call("_apply", {"type": "buff", "who": "party", "attack": 0.25, "speed": 0.3, "seconds": 8.0}, null)
+	_expect(is_equal_approx((crew[0] as Hench).boost("attack"), 0.25) and is_equal_approx(player.boost("speed"), 0.3), "강화(파티 모두): 헨치 공격 +25% · 주인공 공격 속도 +30%")
+	caster.call("_apply", {"type": "shield", "who": "party", "amount": 0.2, "seconds": 6.0}, null)
+	_expect((crew[1] as Hench).shield > 0.0 and player.shield > 0.0, "보호막(파티 모두)")
+	var downed := crew[2] as Hench
+	downed.shield = 0.0
+	downed.take_damage(downed.hp + 1.0, null)
+	_expect(not downed.is_alive(), "헨치 하나를 쓰러뜨려 둠")
+	caster.call("_apply", {"type": "revive", "count": 1, "hp": 0.5}, null)
+	_expect(downed.is_alive() and is_equal_approx(downed.hp, downed.stats.max_hp * 0.5), "일으키기: 쓰러진 헨치가 체력 50%로")
+	caster.call("_apply", {"type": "heal", "who": "lowest", "power": 2.0}, null)
+	_expect(downed.hp > downed.stats.max_hp * 0.5, "회복: 체력이 가장 낮은 동료부터")
+	var foe := _spawn_wild(main, "sotmabaem", Vector2(90, 0), Vector2.RIGHT)
+	await _physics_frames(2)
+	caster.call("_apply", {"type": "area", "at": "target", "power": 1.0, "radius": 100.0, "vulnerable": 0.25, "seconds": 6.0}, foe)
+	_expect(foe.hp < foe.stats.max_hp and is_equal_approx(foe.boost("vulnerable"), 0.25), "범위(불협화음): 피해 + 받는 피해 +25%")
+	caster.call("_apply", {"type": "smoke", "radius": 150.0, "seconds": 2.0}, null)
+	_expect(foe.is_stunned() and not foe.is_fighting(), "연막: 기절하고 파티를 놓침")
+	_remove(foe)
 	# 디버그 화면: 사냥 기록 · 시간당 처치 · 파티 전투 값(가방 창 위에 있던 것을 옮김)
 	await _tap(hud.debug_button.global_position)
 	var first_hench := (main.get("party") as Array)[0] as Hench
@@ -643,6 +703,7 @@ func _run(main: Node) -> void:
 	var hunter := _find_core(bag, "gombogom", CoreItem.Gender.MALE)  # 파티 헨치도 처치 경험치를 받는지 본다
 	main.call("assign_party", hunter, 1)
 	var hunter_before := Vector2i(hunter.level, hunter.exp_points)
+	var job_casts_before := player.caster.casts
 	Engine.time_scale = 6.0
 	var shot := _shot_path()
 	var frames := int(180.0 * Engine.physics_ticks_per_second / Engine.time_scale)
@@ -671,6 +732,7 @@ func _run(main: Node) -> void:
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
 		casts += hench.skill_casts
 	_expect(casts >= 2, "풀오토: 헨치가 스킬을 알아서 씀 (%d번)" % casts)
+	_expect(player.caster.casts > job_casts_before, "풀오토: 주인공도 직업 스킬을 알아서 씀 (%d번)" % (player.caster.casts - job_casts_before))
 
 	# 9-2) 보스전(프로토타입 6, 연습): 섬의 왕 버튼 → 확인 → 야생을 치우고 섬의 왕. 장판 피하기 · 지휘 버튼 · 구간 · 해방.
 	await _switch_mode(hud, player, AutoControl.Mode.MANUAL)
@@ -831,6 +893,8 @@ func _run(main: Node) -> void:
 	_expect(player_again.control.mode == AutoControl.Mode.SEMI_AUTO and hud_again.auto_button.mode == AutoControl.Mode.SEMI_AUTO, "사냥 방식(세미오토)을 기억함")
 	var progress_again: PlayerProgress = again.get("progress")
 	_expect(progress_again.level == progress.level and player_again.level == progress.level and hud_again.level_bar.level_text() == UiText.LEVEL_LABEL % progress.level, "주인공 레벨(Lv %d)을 기억함" % progress.level)
+	var job_again: JobState = again.get("job")
+	_expect(job_again.to_dict() == job.to_dict() and player_again.job_id == job.job_id and hud_again.skill_slot(3).skill != null, "직업 · 직업 스킬(레벨 · 장착)을 기억함 (%s)" % JobDb.get_job(job.job_id).name)
 	LocalSaveStore.new(SMOKE_SAVE_PATH).erase()
 
 	for failure in _failures:

@@ -2,8 +2,9 @@
 class_name SkillSlot
 extends TouchScreenButton
 ## 스킬 칸 하나(사용자 결정 2026-10-02: 공격 버튼 옆 6칸). 1~3번 = 파티 헨치 1~3의 고유 액티브,
-## 4~6번 = 나중에 주인공 직업 스킬(지금은 빈 자리). 누르면 그 스킬을 쓴다(풀오토가 아니어도).
-## 그림은 헨치 색 바탕 + 스킬 이름(두 줄)으로 대체한다. 대기 중에는 이름 대신 어두운 부채꼴과 남은 초가 보인다.
+## 4~6번 = 주인공 직업 액티브, 따로 하나 = 궁극기 칸. 누르면 그 스킬을 쓴다(풀오토가 아니어도).
+## 그림은 주인(헨치 · 직업) 색 바탕 + 스킬 이름(두 줄)으로 대체한다. 대기 중에는 이름 대신 어두운 부채꼴과 남은 초가 보인다.
+## 아직 열리지 않은 칸(궁극기 Lv 25 전)은 locked_text("Lv 25")를 흐리게 보여 준다.
 ## 테두리: 쓸 수 있으면 금빛, 눌러서 쓰려고 기다리는 중이면 흰색.
 ## 원점 = 칸 가운데. 크기는 shape(RectangleShape2D)의 크기를 따른다(여섯 칸이 같은 shape를 함께 써서 한 번에 바뀐다).
 ## @tool: 에디터에서도 그려져서, hud.tscn을 열고 칸마다 끌어서 자리를 잡을 수 있다(에디터에서는 빈 칸으로 보인다).
@@ -18,7 +19,9 @@ const TINT_ALPHA := 0.45
 const PIE_POINTS := 32
 
 ## 보여 줄 스킬(없으면 빈 칸). HUD가 매 프레임 넣어 준다.
-var skill: HenchSkill
+var skill: SkillTimer
+## 빈 칸일 때 흐리게 보일 글자(예: 궁극기 칸 "Lv 25")
+var locked_text := ""
 ## 스킬 주인(헨치) 색
 var tint := Color.TRANSPARENT
 ## 눌러서 쓰려고 기다리는 중
@@ -26,8 +29,9 @@ var requested := false
 
 
 ## 보여 줄 것을 한 번에 바꾸고 다시 그린다.
-func show_skill(of_skill: HenchSkill, of_tint: Color, is_requested: bool) -> void:
+func show_skill(of_skill: SkillTimer, of_tint: Color, is_requested: bool, of_locked := "") -> void:
 	skill = of_skill
+	locked_text = of_locked
 	tint = of_tint
 	requested = is_requested
 	queue_redraw()
@@ -51,6 +55,8 @@ func _draw() -> void:
 		box.set_border_width_all(READY_BORDER)
 	draw_style_box(box, rect)
 	if skill == null:
+		if locked_text != "":
+			_draw_centered(locked_text, FONT_SIZE, FONT_SIZE * 0.35, Palette.TEXT_LABEL)
 		return
 	if skill.is_ready():
 		_draw_title(skill.title)
@@ -93,9 +99,9 @@ func _draw_cooldown(rect: Rect2, ratio: float) -> void:
 		draw_colored_polygon(piece, Palette.SKILL_SLOT_COOLDOWN)
 
 
-func _draw_centered(text: String, font_size: int, baseline: float) -> void:
+func _draw_centered(text: String, font_size: int, baseline: float, color := Palette.TEXT) -> void:
 	var font := ThemeDB.fallback_font
 	var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	var at := Vector2(-width * 0.5, baseline)
 	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, OUTLINE, Palette.TEXT_OUTLINE)
-	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Palette.TEXT)
+	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)

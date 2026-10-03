@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scenes/ui/level_bar.gd" id="13_level"]
 [ext_resource type="Script" path="res://scenes/ui/currency_bar.gd" id="14_currency"]
 [ext_resource type="PackedScene" path="res://scenes/ui/skill_window.tscn" id="15_skill_window"]
+[ext_resource type="PackedScene" path="res://scenes/ui/job_panel.tscn" id="16_job_panel"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -30,6 +31,9 @@ size = Vector2(84, 38)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_command"]
 size = Vector2(84, 38)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ultimate"]
+size = Vector2(62, 62)
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -152,6 +156,11 @@ position = Vector2(-244, -99)
 shape = SubResource("RectangleShape2D_slot")
 script = ExtResource("4_slot")
 
+[node name="UltimateSlot" type="TouchScreenButton" parent="Controls"]
+position = Vector2(-436, -130)
+shape = SubResource("RectangleShape2D_ultimate")
+script = ExtResource("4_slot")
+
 [node name="CommandAll" type="TouchScreenButton" parent="Controls"]
 visible = false
 position = Vector2(-428, -224)
@@ -184,13 +193,18 @@ position = Vector2(-98, 138)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("6_bag_button")
 
-[node name="DebugButton" type="TouchScreenButton" parent="TopControls"]
+[node name="JobButton" type="TouchScreenButton" parent="TopControls"]
 position = Vector2(-98, 186)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 
-[node name="BossButton" type="TouchScreenButton" parent="TopControls"]
+[node name="DebugButton" type="TouchScreenButton" parent="TopControls"]
 position = Vector2(-98, 234)
+shape = SubResource("RectangleShape2D_bag")
+script = ExtResource("10_text_button")
+
+[node name="BossButton" type="TouchScreenButton" parent="TopControls"]
+position = Vector2(-98, 282)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 
@@ -201,6 +215,9 @@ visible = false
 visible = false
 
 [node name="DebugPanel" parent="." instance=ExtResource("11_debug")]
+visible = false
+
+[node name="JobPanel" parent="." instance=ExtResource("16_job_panel")]
 visible = false
 
 [node name="SkillWindow" parent="." instance=ExtResource("15_skill_window")]

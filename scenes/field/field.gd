@@ -101,6 +101,16 @@ func show_burst(at: Vector2, radius: float, color: Color) -> void:
 	ground_effects.add_child(burst)
 
 
+## 일직선 스킬 연출(관통 화살): from → to 바닥에 폭 width(땅 위 px)의 빛줄기가 잠깐 남았다 사라진다.
+func show_beam(from: Vector2, to: Vector2, width: float, color: Color) -> void:
+	var beam := SkillBeam.new()
+	beam.from = from
+	beam.to = to
+	beam.width = width
+	beam.color = color
+	ground_effects.add_child(beam)
+
+
 ## 보스 장판을 바닥 위(유닛 아래)에 깐다.
 func add_danger(zone: BossZone) -> void:
 	ground_effects.add_child(zone)

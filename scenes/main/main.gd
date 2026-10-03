@@ -9,6 +9,8 @@ extends Node2D
 ## 파티 코어도 같은 경험치를 받고(상한 = 주인공 레벨), 파티 밖 코어는 사냥에서 떨어지는 경험치 조각을 가방 정보창에서 먹인다.
 ## 파티 코어가 오르면 그 헨치 능력치도 바로 바뀐다.
 ## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
+## 주인공 직업(기획서 3장, 직업 1차): 레벨이 오르면 직업 스킬을 배우고(JobState.sync), 직업 · 장착이 바뀌면 주인공 능력치 ·
+## 스킬 칸 4~6 · 궁극기 칸 · 파티 헨치(패시브: 전우애 · 진찰)를 다시 맞춘다. 저장된다.
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
@@ -19,6 +21,8 @@ var workshop := Workshop.new(bag, wallet)
 var hunt_log := HuntLog.new()
 ## 주인공 레벨 · 경험치(Workshop이 코어 레벨업 상한으로도 쓴다)
 var progress: PlayerProgress = workshop.progress
+## 주인공 직업 · 직업 스킬(레벨 · 장착)
+var job := JobState.new()
 ## 보스전 중인 섬의 왕(보스전 밖이면 null).
 var boss: Boss
 ## 세이브 저장소. 비워 두면 기기 파일(GameConfig.SAVE_PATH). 실행 검사는 장면을 띄우기 전에 따로 쓰는 파일을 넣는다.
@@ -50,6 +54,7 @@ func _ready() -> void:
 		_player.control.mode = mode
 		_save_schedule.mark_dirty(true))
 	_load_game()
+	job.sync(progress.level)
 	_player.set_level(progress.level)
 	_hud.bind_player(_player)
 	_hud.bind_progress(progress)
@@ -64,10 +69,11 @@ func _ready() -> void:
 	_loot_rng.seed = GameConfig.FIELD_SEED + 2
 	_fx_rng.randomize()
 	_spawn_party()
+	_apply_job()
+	job.changed.connect(_on_job_changed)
 	_hud.bind_party(party)
-	_hud.skill_requested.connect(func(slot: int) -> void:
-		if slot >= 0 and slot < party.size():
-			party[slot].request_skill())
+	_hud.bind_job(job, progress)
+	_hud.skill_requested.connect(_on_skill_requested)
 	bag.changed.connect(_save_schedule.mark_dirty)
 	wallet.changed.connect(_save_schedule.mark_dirty)
 	workshop.acted.connect(_save_schedule.mark_dirty.bind(true))
@@ -94,18 +100,18 @@ func _party_core(slot: int) -> CoreItem:
 
 
 ## item이 있으면 그 코어의 레벨·나이·성별·변이와 능력치(UnitStats.from_core)로 싸운다.
-## 없으면 역할 표의 능력치를 주인공 레벨만큼 키워서 싸운다(코어를 넣기 전 임시 헨치).
+## 없으면 역할 표의 능력치를 주인공 레벨만큼 키워서 싸운다(코어를 넣기 전 임시 헨치). 직업 패시브(진찰 · 전우애)도 받는다.
 func _spawn_party_member(slot: int, species: HenchSpecies, at: Vector2, item: CoreItem = null) -> Hench:
 	var hench := Hench.create(species, Unit.Team.PARTY)
+	hench.stats = _member_stats(species, item)
 	if item != null:
-		hench.stats = UnitStats.from_core(item)
 		hench.level = item.level
 		hench.age = item.age
 		hench.gender = item.gender
 		hench.variant = item.variant
 	else:
 		hench.level = progress.level
-		hench.stats = UnitStats.for_hench(species.role, false, progress.level)
+	_apply_job_to_hench(hench, job.mods(progress.level))
 	hench.field = _field
 	hench.leader = _player
 	hench.slot = GameConfig.FOLLOW_SLOTS[slot]
@@ -171,7 +177,7 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress)
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex, progress, job)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
 	_player.control.mode = GameSave.control_mode(data)
@@ -179,7 +185,7 @@ func _load_game() -> void:
 
 ## 지금 상태를 바로 저장한다. 보통은 묶어서(_process) 부르고, 끌 때·앱이 뒤로 갈 때는 바로 부른다.
 func save_game() -> bool:
-	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress)
+	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex, progress, job)
 	if not save_store.save_data(data):
 		push_warning(save_store.last_error)
 		_save_schedule.mark_dirty()  # 다음 차례에 다시 해 본다
@@ -262,8 +268,14 @@ func _on_level_up(level: int) -> void:
 	_player.set_level(level, true)
 	for i in party.size():
 		if _party_core(i) == null:
-			_set_member_stats(party[i], UnitStats.for_hench(party[i].species.role, false, level), level)
+			_set_member_stats(party[i], _member_stats(party[i].species, null), level)
 	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 40.0), UiText.LEVEL_UP % level, Palette.LEVEL_UP_TEXT)
+	var learned := job.sync(level)  # 새로 배운 직업 스킬(바뀌면 changed → _apply_job)
+	for i in learned.size():
+		var skill := JobDb.get_skill(learned[i])
+		_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 64.0 - 18.0 * i), UiText.JOB_LEARNED % skill.name, Palette.JOB_SKILL_CAST)
+	if learned.is_empty() and level in GameConfig.JOB_PASSIVE_SLOT_LEVELS:
+		_apply_job()  # 패시브 칸이 열렸다
 	_save_schedule.mark_dirty(true)
 
 
@@ -271,9 +283,49 @@ func _on_level_up(level: int) -> void:
 func _on_core_leveled(item: CoreItem) -> void:
 	if item.party_slot >= 0 and item.party_slot < party.size():
 		var hench := party[item.party_slot]
-		_set_member_stats(hench, UnitStats.from_core(item), item.level)
+		_set_member_stats(hench, _member_stats(hench.species, item), item.level)
 		if is_instance_valid(hench):
 			_field.show_number(hench.position + Vector2(0, -hench.overlay_height() - 30.0), UiText.LEVEL_UP % item.level, Palette.LEVEL_UP_TEXT)
+
+
+## 파티 헨치의 능력치: 코어가 있으면 코어 능력치, 없으면 역할 표 × 주인공 레벨. 직업 패시브(진찰)로 최대 체력 +.
+func _member_stats(species: HenchSpecies, item: CoreItem) -> UnitStats:
+	var stats := UnitStats.from_core(item) if item != null else UnitStats.for_hench(species.role, false, progress.level)
+	stats.max_hp *= 1.0 + float(job.mods(progress.level).get("party_hp", 0.0))
+	return stats
+
+
+## 직업 패시브 중 헨치에게 가는 것: 전우애 = 탱커 헨치가 받는 피해 −.
+static func _apply_job_to_hench(hench: Hench, mods: Dictionary) -> void:
+	var guard := float(mods.get("tank_damage_taken", 0.0)) if hench.species.role == "tank" else 0.0
+	hench.damage_taken_scale = 1.0 - guard
+
+
+## 직업 · 장착 · 스킬 레벨에 맞춰 주인공 능력치, 직업 스킬 칸, 파티 헨치(패시브)를 다시 맞춘다.
+func _apply_job() -> void:
+	var mods := job.mods(progress.level)
+	_player.set_job(job.job_id, mods)
+	var list: Array[JobSkill] = []
+	for id in job.actives:
+		list.append(JobSkill.create(JobDb.get_skill(id), job.skill_level(id), mods) if id != "" else null)
+	list.append(JobSkill.create(JobDb.get_skill(job.ultimate), job.skill_level(job.ultimate), mods) if job.ultimate != "" else null)
+	_player.caster.set_skills(list)
+	for i in party.size():
+		_set_member_stats(party[i], _member_stats(party[i].species, _party_core(i)), party[i].level)
+		_apply_job_to_hench(party[i], mods)
+
+
+func _on_job_changed() -> void:
+	_apply_job()
+	_save_schedule.mark_dirty(true)
+
+
+## 스킬 칸을 누름: 0~2 = 파티 헨치 스킬, 3~5 = 직업 액티브, 6 = 궁극기.
+func _on_skill_requested(slot: int) -> void:
+	if slot < party.size():
+		party[slot].request_skill()
+	else:
+		_player.request_job_skill(slot - party.size())
 
 
 ## 헨치 능력치를 바꾼다(체력 비율은 지킨다).
