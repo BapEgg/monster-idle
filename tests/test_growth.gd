@@ -46,8 +46,8 @@ func test_rewards_and_stats() -> void:
 	expect_true(UnitStats.for_hench("tank", true, 10).max_hp > UnitStats.for_hench("tank", true, 1).max_hp, "야생도 레벨만큼 세다")
 
 
-## 기획서 4장: 헨치 레벨 상한 = 플레이어 레벨. 골드로 레벨업.
-func test_hench_level_up() -> void:
+## 사용자 결정(2026-10-03): 헨치도 경험치로 오른다. 파티 헨치 = 처치 경험치, 파티 밖 = 경험치 조각. 상한 = 주인공 레벨(기획서 4장).
+func test_hench_exp_and_shards() -> void:
 	var bag := Bag.new()
 	var wallet := Wallet.new()
 	var shop := Workshop.new(bag, wallet)
@@ -56,11 +56,24 @@ func test_hench_level_up() -> void:
 	item.level = 3
 	bag.add(item)
 	shop.progress.level = 4
-	expect_true(shop.level_up_problem(item) == Workshop.LevelUpProblem.NO_GOLD and not shop.level_up(item), "골드가 없으면 못 올린다")
-	wallet.add_gold(100000)
-	var cost := shop.level_up_cost(item)
+	expect_true(shop.feed_problem(item) == Workshop.FeedProblem.NO_SHARDS and shop.feed_shards(item) == 0, "경험치 조각이 없으면 못 먹인다")
+	var need := shop.shards_to_next(item)
+	expect_true(need == ceili(float(Growth.exp_to_next(3)) / Growth.shard_exp(3)), "다음 레벨까지 조각 %d개(조각 하나 = 몹 %d마리 경험치)" % [need, GameConfig.EXP_SHARD_KILLS])
+	wallet.add_exp_shards(need + 50)
 	var leveled := []
 	shop.core_leveled.connect(func(c: CoreItem) -> void: leveled.append(c))
-	expect_true(shop.level_up(item) and item.level == 4 and wallet.gold == 100000 - cost and leveled == [item], "골드를 내고 한 레벨(비용 %d)" % cost)
-	expect_true(shop.level_up_problem(item) == Workshop.LevelUpProblem.AT_CAP and not shop.level_up(item) and item.level == 4, "주인공 레벨(4)에서 멈춘다")
-	expect_true(Growth.level_up_cost(20) > Growth.level_up_cost(10), "높은 레벨일수록 비싸다")
+	expect_true(shop.feed_shards(item) == need and item.level == 4 and wallet.exp_shards == 50 and leveled == [item], "먹이기 → 다음 레벨까지 필요한 만큼만 써서 한 레벨")
+	expect_true(shop.feed_problem(item) == Workshop.FeedProblem.AT_CAP and shop.feed_shards(item) == 0 and item.level == 4, "주인공 레벨(4)에서 멈춘다")
+	# 파티 헨치의 처치 경험치도 상한에서 멈춘다(다음 레벨 직전까지만 쌓임)
+	expect_true(not shop.gain_kill_exp(item, 100000000) and item.level == 4 and item.exp_points == Growth.exp_to_next(4) - 1, "상한에서는 경험치가 다음 레벨 직전까지만 쌓인다")
+	shop.progress.level = 6
+	expect_true(shop.gain_kill_exp(item, 1) and item.level == 5, "주인공 레벨이 오르면 다시 오른다")
+	# 모자라면 가진 만큼만 먹인다
+	wallet.exp_shards = 1
+	var before := item.exp_points
+	expect_true(shop.feed_shards(item) == 1 and wallet.exp_shards == 0 and item.exp_points == before + Growth.shard_exp(5), "조각이 모자라면 가진 만큼만")
+
+
+func test_add_exp_capped() -> void:
+	expect_true(Growth.add_exp_capped(1, 0, 100000000, 3) == Vector2i(3, Growth.exp_to_next(3) - 1), "상한 3: 여러 번 올라도 3에서 멈추고 직전까지")
+	expect_true(Growth.add_exp_capped(2, 5, 10, 10) == Growth.add_exp(2, 5, 10), "상한보다 낮으면 보통 더하기와 같다")

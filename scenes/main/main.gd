@@ -5,8 +5,9 @@ extends Node2D
 ## 가방 창에서 코어를 파티에 넣거나 믹스·분해·잠금한다(프로토타입 5, 실제 처리는 Workshop).
 ## 켤 때 저장을 불러오고(가방 · 골드 · 파티 · 사냥 방식), 바뀐 것은 묶어서 저장한다(SaveSchedule, 기획서 9장).
 ## 끌 때와 앱이 뒤로 갈 때(휴대폰 홈 버튼 · PC 창에서 다른 곳을 누름)는 기다리지 않고 바로 저장한다.
-## 성장(1차): 처치하면 몹 레벨만큼 경험치 · 골드(Growth). 주인공 레벨이 오르면 주인공과 코어 없는 헨치가 세지고,
-## 코어는 가방 정보창에서 골드로 레벨업한다(상한 = 주인공 레벨). 파티 코어가 오르면 그 헨치 능력치도 바로 바뀐다.
+## 성장: 처치하면 몹 레벨만큼 경험치 · 골드(Growth). 주인공 레벨이 오르면 주인공과 코어 없는 헨치가 세진다.
+## 파티 코어도 같은 경험치를 받고(상한 = 주인공 레벨), 파티 밖 코어는 사냥에서 떨어지는 경험치 조각을 가방 정보창에서 먹인다.
+## 파티 코어가 오르면 그 헨치 능력치도 바로 바뀐다.
 ## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
 
 ## 지금까지 처치한 야생 헨치 수.
@@ -222,7 +223,15 @@ func _on_kill(hench: Hench) -> void:
 	_hud.set_kills(kills)
 	hunt_log.add_kill(_player.control.is_manual())
 	wallet.add_gold(Growth.gold_per_kill(hench.level))
-	progress.gain(Growth.exp_per_kill(hench.level))
+	var gained := Growth.exp_per_kill(hench.level)
+	progress.gain(gained)  # 주인공 먼저(헨치 상한이 주인공 레벨이므로)
+	for i in party.size():
+		var core := _party_core(i)
+		if core != null:
+			workshop.gain_kill_exp(core, gained)
+	if Drops.roll_exp_shard(_loot_rng):
+		wallet.add_exp_shards(1)
+		_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 52.0), UiText.EXP_SHARD_PICKUP % 1, Palette.EXP_SHARD)
 	var item := Drops.roll_core(_loot_rng, hench.core_template())
 	if item != null:
 		drop_core(hench.position, item)
@@ -258,10 +267,13 @@ func _on_level_up(level: int) -> void:
 	_save_schedule.mark_dirty(true)
 
 
-## 파티 코어를 골드로 레벨업함: 그 자리 헨치의 능력치를 바로 바꾼다.
+## 파티 코어의 레벨이 오름(처치 경험치 · 경험치 조각): 그 자리 헨치의 능력치를 바로 바꾸고 머리 위에 "레벨 업!".
 func _on_core_leveled(item: CoreItem) -> void:
 	if item.party_slot >= 0 and item.party_slot < party.size():
-		_set_member_stats(party[item.party_slot], UnitStats.from_core(item), item.level)
+		var hench := party[item.party_slot]
+		_set_member_stats(hench, UnitStats.from_core(item), item.level)
+		if is_instance_valid(hench):
+			_field.show_number(hench.position + Vector2(0, -hench.overlay_height() - 30.0), UiText.LEVEL_UP % item.level, Palette.LEVEL_UP_TEXT)
 
 
 ## 헨치 능력치를 바꾼다(체력 비율은 지킨다).

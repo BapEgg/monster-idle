@@ -6,7 +6,9 @@ extends RefCounted
 ## 다음 레벨까지 경험치 = 그 레벨 동안 잡을 처치 수 × 그 레벨 몹 한 마리 경험치. 보간이 만든 작은 굴곡 때문에 처치 수가
 ## 앞 레벨보다 줄어들면 앞 레벨 값을 쓴다(다음 레벨이 늘 같거나 더 오래 걸리게).
 ## 처치 보상(경험치 · 골드)은 몹 레벨에 따라 오르고, 레벨이 오르면 체력 · 공격 · 회복이 오른다(주인공 · 야생 · 코어 없는 헨치).
-## 헨치(코어)는 골드로 레벨업하고, 상한은 주인공 레벨이다(기획서 4장 확정). 수치는 모두 GameConfig(곡선만 확정, 나머지는 임시).
+## 헨치(코어)도 경험치로 오른다(사용자 결정 2026-10-03): 파티에 있으면 처치 경험치를 주인공과 똑같이 받고, 파티 밖 헨치는
+## 사냥에서 떨어지는 경험치 조각을 먹인다. 상한은 주인공 레벨(기획서 4장 확정) — 상한에서는 다음 레벨 직전까지만 쌓인다.
+## 수치는 모두 GameConfig(곡선만 확정, 나머지는 임시).
 
 
 ## 그 레벨에 닿는 날(0 = 처음). 곡선 밖이면 양 끝 값.
@@ -105,6 +107,29 @@ static func stat_scale(level: int) -> float:
 	return 1.0 + GameConfig.LEVEL_STAT_GROWTH * maxi(level - 1, 0)
 
 
-## 헨치(코어)를 그 레벨에서 한 레벨 올리는 골드.
-static func level_up_cost(level: int) -> int:
-	return roundi(GameConfig.HENCH_LEVEL_COST_BASE * pow(float(maxi(level, 1)), GameConfig.HENCH_LEVEL_COST_POWER))
+## 상한(cap, 주인공 레벨)까지만 오르는 경험치 더하기(헨치). 상한에서는 다음 레벨 직전(필요 경험치 - 1)까지만 쌓인다.
+static func add_exp_capped(level: int, exp_points: int, gained: int, cap: int) -> Vector2i:
+	var top := clampi(cap, 1, GameConfig.MAX_LEVEL)
+	var lv := clampi(level, 1, GameConfig.MAX_LEVEL)
+	var points := exp_points + maxi(gained, 0)
+	while lv < top and points >= exp_to_next(lv):
+		points -= exp_to_next(lv)
+		lv += 1
+	if lv >= GameConfig.MAX_LEVEL:
+		points = 0
+	elif lv >= top:
+		points = mini(points, exp_to_next(lv) - 1)
+	return Vector2i(lv, points)
+
+
+## 경험치 조각 하나가 그 레벨 헨치에게 주는 경험치 = 그 레벨 몹 GameConfig.EXP_SHARD_KILLS마리만큼.
+static func shard_exp(level: int) -> int:
+	return GameConfig.EXP_SHARD_KILLS * exp_per_kill(level)
+
+
+## 그 헨치(레벨 · 모은 경험치)가 다음 레벨까지 먹어야 할 경험치 조각 수.
+static func shards_to_next(level: int, exp_points: int) -> int:
+	var need := exp_to_next(level) - exp_points
+	if need <= 0:
+		return 0
+	return ceili(float(need) / shard_exp(level))

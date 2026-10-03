@@ -14,6 +14,8 @@ var suffix_id := ""
 var age := Age.ADULT
 var gender := Gender.FEMALE
 var level := 1
+## 지금 레벨에서 모은 경험치(헨치도 경험치로 오른다: 파티에서 처치 · 경험치 조각, 상한 = 주인공 레벨)
+var exp_points := 0
 ## 빛나는 코어(기획서 8장: 좋은 접미사 확률↑). 지금은 접미사 보너스가 더 크다(GameConfig.SHINING_SUFFIX_BONUS).
 var shining := false
 ## 변이체의 코어(기획서 4장: 필드 헨치만, 처치하면 코어 확정).
@@ -50,7 +52,7 @@ func in_party() -> bool:
 ## 저장용 사전. 나중에 로컬 저장·Firebase에 그대로 쓴다.
 func to_dict() -> Dictionary:
 	return {
-		"species": species_id, "suffix": suffix_id, "age": age, "gender": gender, "level": level,
+		"species": species_id, "suffix": suffix_id, "age": age, "gender": gender, "level": level, "exp": exp_points,
 		"shining": shining, "variant": variant, "locked": locked, "party_slot": party_slot, "passive": passive_species_id,
 		"inherit_stat": inherit_stat, "inherit_value": inherit_value,
 	}
@@ -63,6 +65,7 @@ static func from_dict(row: Dictionary) -> CoreItem:
 	item.age = clampi(int(row.get("age", Age.ADULT)), 0, Age.size() - 1) as Age
 	item.gender = clampi(int(row.get("gender", Gender.FEMALE)), 0, Gender.size() - 1) as Gender
 	item.level = maxi(int(row.get("level", 1)), 1)
+	item.exp_points = maxi(int(row.get("exp", 0)), 0)
 	item.shining = bool(row.get("shining", false))
 	item.variant = bool(row.get("variant", false))
 	item.locked = bool(row.get("locked", false))

@@ -119,6 +119,8 @@ const MIX_RECIPE_READY := Color("8ee28e")
 const LEVEL_BAR_BG := Color(0, 0, 0, 0.45)
 const LEVEL_BAR_FILL := Color("ffd84a")
 const LEVEL_UP_TEXT := Color("ffd84a")
+## 경험치 조각(주웠을 때 글자 · 먹이기 버튼)
+const EXP_SHARD := Color("7fd4ff")
 const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")

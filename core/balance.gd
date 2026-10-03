@@ -64,6 +64,12 @@ static func core_chance() -> float:
 	return minf(chances_for(GameConfig.MEASURED_DAILY_KILLS)["core"] * dev_boost, 1.0)
 
 
+## 처치했을 때 경험치 조각이 떨어질 확률(하루 목표 ÷ 잰 하루 처치 수, 개발 배율 포함).
+static func exp_shard_chance() -> float:
+	var base := drop_chance(per_day(GameConfig.TARGET_EXP_SHARDS_PER_DAY, 1.0), GameConfig.MEASURED_DAILY_KILLS)
+	return minf(base * dev_boost, 1.0)
+
+
 static func shining_chance() -> float:
 	return chances_for(GameConfig.MEASURED_DAILY_KILLS)["shining"]
 

@@ -45,6 +45,7 @@ func test_capture_and_restore_round_trip() -> void:
 	wallet.shards = 7
 	var party_core := _core("gochuryong", CoreItem.Gender.FEMALE, "swift")
 	party_core.level = 12
+	party_core.exp_points = 33  # 헨치 경험치도 저장된다
 	party_core.age = CoreItem.Age.OLD
 	party_core.party_slot = 1
 	var born := _core("dolguana", CoreItem.Gender.MALE, "lucky")
@@ -63,6 +64,7 @@ func test_capture_and_restore_round_trip() -> void:
 	mastery.gain(true)
 	var codex := Codex.new()
 	codex.register("mireu")
+	wallet.add_exp_shards(7)
 	var progress := PlayerProgress.new()
 	progress.gain(Growth.exp_to_next(1) + Growth.exp_to_next(2) + 5)
 	var data := GameSave.capture(bag, wallet, AutoControl.Mode.SEMI_AUTO, 1_800_000_000, mastery, codex, progress)
@@ -75,6 +77,7 @@ func test_capture_and_restore_round_trip() -> void:
 	var progress2 := PlayerProgress.new()
 	var dropped := GameSave.restore(parsed, bag2, wallet2, GameConfig.PARTY_HENCHES.size(), mastery2, codex2, progress2)
 	expect_true(progress2.level == 3 and progress2.exp_points == 5, "주인공 레벨 · 경험치를 기억한다 (Lv %d, %d)" % [progress2.level, progress2.exp_points])
+	expect_true(wallet2.exp_shards == 7, "경험치 조각을 기억한다")
 	expect_true(dropped == 0 and bag2.count() == 3, "코어 3개가 그대로 돌아온다")
 	for i in bag.count():
 		expect_true(bag2.cores[i].to_dict() == bag.cores[i].to_dict(), "%s: 종·접미사·나이·성별·레벨·빛남·변이·잠금·파티·유산·주 코어 성별이 같다" % bag.cores[i].species_id)

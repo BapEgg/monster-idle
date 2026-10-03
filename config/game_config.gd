@@ -231,9 +231,11 @@ const GOLD_PER_KILL_BASE := 10
 const GOLD_PER_KILL_PER_LEVEL := 1
 ## 레벨당 능력치 성장(체력 · 공격 · 회복, 임시): 주인공 · 야생 · 코어 없는 헨치. 코어는 CORE_STAT_GROWTH를 따른다.
 const LEVEL_STAT_GROWTH := 0.08
-## 헨치(코어) 골드 레벨업 비용 = 기본 × 지금 레벨^지수(임시). 상한 = 주인공 레벨(기획서 4장 확정).
-const HENCH_LEVEL_COST_BASE := 20.0
-const HENCH_LEVEL_COST_POWER := 1.6
+## 헨치(코어)도 경험치로 오른다(사용자 결정 2026-10-03, 상한 = 주인공 레벨). 파티 헨치는 처치 경험치를 주인공과 똑같이 받는다.
+## 경험치 조각(사냥에서 떨어짐, 파티 밖 헨치에게 먹인다) 하나 = 그 헨치 레벨 몹 이만큼 잡은 경험치(임시).
+const EXP_SHARD_KILLS := 10
+## 경험치 조각 하루 목표(임시, 드랍률 = 하루 목표 ÷ 잰 하루 처치 수, Balance).
+const TARGET_EXP_SHARDS_PER_DAY := Vector2(40, 60)
 
 # ─── 코어 능력치 (프로토타입 5, 모두 임시 — 밸런스 단계에서 다시 정한다) ─────
 ## 역할별 1레벨 기본 능력치. 열쇠는 접미사 id와 같다(신속=공격 속도, 강력=공격, 정밀=명중, 날렵=회피,

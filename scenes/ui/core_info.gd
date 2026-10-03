@@ -4,7 +4,7 @@ extends VBoxContainer
 ## 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV, HP·MP 막대 /
 ## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 보정 줄(변이 효과 · 믹스 계승 스탯) / 고유 액티브·패시브 / 버튼 4개.
 ## 글자: 숫자는 흰색 굵게, 이름표는 연한 회색. 접미사로 강한 능력치 한 줄만 강조색(Palette.STAT_ACCENT).
-## LV 옆에 골드 레벨업 버튼(성장 1차, 상한 = 주인공 레벨 — 못 하면 까닭이 버튼에 보인다).
+## LV 옆에 경험치 조각 먹이기 버튼, HP · MP 아래에 경험치 막대(헨치도 경험치로 오른다, 상한 = 주인공 레벨 — 못 하면 까닭이 버튼에 보인다).
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
 ## 믹스창도 이 정보창을 쓴다(사용자 결정 2026-10-03): 버튼은 숨기고(show_actions = false), 재료를 누르면 그 코어,
@@ -16,7 +16,7 @@ signal party_leave_requested(item: CoreItem)
 signal mix_requested(item: CoreItem)
 signal dismantle_requested(item: CoreItem)
 signal lock_requested(item: CoreItem)
-signal level_up_requested(item: CoreItem)
+signal feed_requested(item: CoreItem)
 
 const TITLE_FONT_SIZE := 26
 const TEXT_FONT_SIZE := 17
@@ -47,7 +47,7 @@ var heading := "":
 			_heading.visible = value != ""
 ## 파티 자리마다 지금 헨치 이름을 돌려주는 함수(main.party_names)
 var party_names := Callable()
-## 레벨업 비용 · 상한을 물어볼 곳(가방 창이 넣어 준다). 없으면 레벨업 버튼을 숨긴다.
+## 경험치 조각 · 상한을 물어볼 곳(가방 창이 넣어 준다). 없으면 먹이기 버튼을 숨긴다.
 var workshop: Workshop
 
 var _stat_names := {}  # 능력치 id → 이름 Label
@@ -68,6 +68,7 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _level: Label = %Level
 @onready var _hp_bar: ValueBar = %HpBar
 @onready var _mp_bar: ValueBar = %MpBar
+@onready var _exp_bar: ValueBar = %ExpBar
 @onready var _stats: GridContainer = %Stats
 @onready var _bonus: Label = %Bonus
 @onready var _active_caption: Label = %ActiveCaption
@@ -79,7 +80,7 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _mix: Button = %MixButton
 @onready var _dismantle: Button = %Dismantle
 @onready var _lock: Button = %Lock
-@onready var _level_up: Button = %LevelUp
+@onready var _feed: Button = %Feed
 @onready var _party_pick: VBoxContainer = %PartyPick
 @onready var _party_pick_title: Label = %PartyPickTitle
 @onready var _party_slots: HBoxContainer = %PartySlots
@@ -107,9 +108,9 @@ func _ready() -> void:
 	_party_pick_title.text = UiText.PARTY_PICK
 	for button: Button in [_party, _mix, _dismantle, _lock]:
 		UiKit.style_button(button, BUTTON_FONT_SIZE)
-	UiKit.style_button(_level_up, SMALL_FONT_SIZE)
-	_level_up.add_theme_color_override("font_color", Palette.CORE_SHINE)
-	_level_up.pressed.connect(func() -> void: level_up_requested.emit(item))
+	UiKit.style_button(_feed, SMALL_FONT_SIZE)
+	_feed.add_theme_color_override("font_color", Palette.EXP_SHARD)
+	_feed.pressed.connect(func() -> void: feed_requested.emit(item))
 	_mix.text = UiText.BTN_MIX
 	_dismantle.text = UiText.BTN_DISMANTLE
 	_build_stat_table()
@@ -203,7 +204,7 @@ func preview_values() -> PackedStringArray:
 
 ## 코어 보기(true)와 미리보기(false)에서 보이는 칸이 다르다.
 func _set_core_parts_visible(on: bool) -> void:
-	for part: Control in [_badge_row, _hp_bar, _mp_bar, _stats, _bonus, _notice]:
+	for part: Control in [_badge_row, _hp_bar, _mp_bar, _exp_bar, _stats, _bonus, _notice]:
 		part.visible = on
 	_buttons.visible = on and show_actions
 	_preview.visible = not on
@@ -247,6 +248,11 @@ func refresh() -> void:
 	var stats := CoreStats.compute(item)
 	_hp_bar.show_value(UiText.INFO_HP, str(stats["hp"]), Palette.INFO_HP_BAR)
 	_mp_bar.show_value(UiText.INFO_MP, str(stats["mp"]), Palette.INFO_MP_BAR)
+	var need := Growth.exp_to_next(item.level)
+	if need <= 0:
+		_exp_bar.show_value(UiText.INFO_EXP, UiText.LEVEL_MAX, Palette.LEVEL_BAR_FILL, 1.0)
+	else:
+		_exp_bar.show_value(UiText.INFO_EXP, UiText.INFO_EXP_VALUE % [item.exp_points, need], Palette.LEVEL_BAR_FILL, float(item.exp_points) / need)
 	for stat: String in _stat_values:
 		var accent := stat == item.suffix_id
 		(_stat_values[stat] as Label).text = str(stats.get(stat, 0))
@@ -262,24 +268,26 @@ func refresh() -> void:
 	_lock.text = UiText.BTN_UNLOCK if item.locked else UiText.BTN_LOCK
 	_dismantle.disabled = item.locked or item.in_party()
 	_mix.disabled = item.locked or item.in_party() or item.variant
-	_show_level_up()
+	_show_feed()
 
 
-## 골드 레벨업 버튼: "레벨업 n 골드", 못 하면 까닭(주인공 레벨까지 · 골드 부족)과 함께 꺼진다.
-func _show_level_up() -> void:
-	_level_up.visible = show_actions and workshop != null
-	if not _level_up.visible:
+## 경험치 조각 먹이기 버튼: 다음 레벨까지 조각이 넉넉하면 "레벨업 (조각 n개)", 모자라면 "조각 n개 먹이기"(가진 만큼).
+## 못 하면 까닭(주인공 레벨까지 · 경험치 조각 없음)과 함께 꺼진다.
+func _show_feed() -> void:
+	_feed.visible = show_actions and workshop != null
+	if not _feed.visible:
 		return
-	var cost := workshop.level_up_cost(item)
-	var problem := workshop.level_up_problem(item)
+	var problem := workshop.feed_problem(item)
 	match problem:
-		Workshop.LevelUpProblem.NONE:
-			_level_up.text = UiText.BTN_LEVEL_UP % cost
-		Workshop.LevelUpProblem.AT_CAP:
-			_level_up.text = UiText.LEVEL_UP_PROBLEMS[problem] % workshop.progress.level
+		Workshop.FeedProblem.NONE:
+			var need := workshop.shards_to_next(item)
+			var have := workshop.wallet.exp_shards
+			_feed.text = UiText.BTN_FEED_LEVEL % need if have >= need else UiText.BTN_FEED_SOME % have
+		Workshop.FeedProblem.AT_CAP:
+			_feed.text = UiText.FEED_PROBLEMS[problem] % workshop.progress.level
 		_:
-			_level_up.text = UiText.LEVEL_UP_PROBLEMS[problem] % cost
-	_level_up.disabled = problem != Workshop.LevelUpProblem.NONE
+			_feed.text = UiText.FEED_PROBLEMS[problem]
+	_feed.disabled = problem != Workshop.FeedProblem.NONE
 
 
 ## 보정 줄: 변이 효과 또는 믹스 계승 스탯(보조 코어에게서). 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).

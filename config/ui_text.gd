@@ -111,9 +111,12 @@ const LEVEL_LABEL := "Lv %d"
 const LEVEL_MAX := "최고"
 ## 레벨이 올랐을 때 주인공 머리 위
 const LEVEL_UP := "레벨 업! Lv %d"
-## 코어 정보창 레벨업 버튼: 비용 / 못 하는 까닭(Workshop.LevelUpProblem 순서: NONE, AT_CAP, NO_GOLD)
-const BTN_LEVEL_UP := "레벨업 %d 골드"
-const LEVEL_UP_PROBLEMS := ["", "주인공 레벨(Lv %d)까지", "골드 부족(%d 골드)"]
+## 코어 정보창 경험치 조각 먹이기 버튼: 다음 레벨까지 넉넉함 / 모자라 가진 만큼 / 못 하는 까닭(Workshop.FeedProblem 순서: NONE, AT_CAP, NO_SHARDS)
+const BTN_FEED_LEVEL := "레벨업 (조각 %d개)"
+const BTN_FEED_SOME := "조각 %d개 먹이기"
+const FEED_PROBLEMS := ["", "주인공 레벨(Lv %d)까지", "경험치 조각 없음"]
+## 사냥 중 경험치 조각을 주웠을 때 주인공 머리 위
+const EXP_SHARD_PICKUP := "경험치 조각 +%d"
 ## 밸런스 1차(기획서 8장): 지금 확률과, 그 확률로 하루 처치 수만큼 잡으면 얻는 양(목표 대비)
 const DEBUG_BALANCE := "확률(하루 처치 %s마리 기준): " + TERM_CORE + " %.3f%% · 빛나는 %.1f%% · 변이 %.4f%%\n목표 대비: 하루 " + TERM_CORE + " %.1f개(목표 %d~%d) · 주 빛나는 %.1f개(목표 %d) · 월 변이 %.1f마리(목표 %d~%d)"
 ## 개발 확인용 드랍 배율 버튼(켜짐/꺼짐)
@@ -128,7 +131,7 @@ const GRADE_NAMES := {"low": "하급", "mid": "중급", "high": "상급", "king"
 const BADGE_LOCK := "잠금"
 const BADGE_PARTY := "파티"
 ## 가방 창 위: 골드 · 코어 조각
-const MONEY := "골드 %d · " + TERM_CORE + " 조각 %d"
+const MONEY := "골드 %d · " + TERM_CORE + " 조각 %d · 경험치 조각 %d"
 ## 코어 정보창
 const INFO_EMPTY := "칸을 누르면 정보가 보입니다"
 ## 종족 · 역할 · 등급
@@ -136,6 +139,8 @@ const INFO_KIND := "%s · %s · %s"
 const INFO_LEVEL := "LV %d"
 const INFO_HP := "HP"
 const INFO_MP := "MP"
+const INFO_EXP := "EXP"
+const INFO_EXP_VALUE := "%d/%d"
 ## 믹스로 태어난 코어: 보조 코어에게서 물려받은 추가 스탯. %s = 능력치 이름, %d = 더한 값
 const INFO_INHERIT := TERM_MIX + " 계승: %s +%d (보조 " + TERM_CORE + "에게서)"
 ## 변이 코어: %s = 오른 능력치들, %d = 몇 %. 믹스 재료로는 못 쓴다.

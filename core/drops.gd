@@ -16,6 +16,11 @@ static func roll_core(rng: RandomNumberGenerator, wild: CoreItem) -> CoreItem:
 	return item
 
 
+## 처치했을 때 경험치 조각이 떨어지나(Balance.exp_shard_chance).
+static func roll_exp_shard(rng: RandomNumberGenerator) -> bool:
+	return rng.randf() < Balance.exp_shard_chance()
+
+
 ## 야생 헨치의 나이(GameConfig.AGE_WEIGHTS 비율대로).
 static func roll_age(rng: RandomNumberGenerator) -> CoreItem.Age:
 	return weighted_index(GameConfig.AGE_WEIGHTS, rng.randf()) as CoreItem.Age

@@ -295,25 +295,30 @@ func _run(main: Node) -> void:
 	var core_stats := UnitStats.from_core(gochu)
 	var fighter := party[0] as Hench
 	_expect(is_equal_approx(fighter.stats.max_hp, core_stats.max_hp) and is_equal_approx(fighter.stats.attack, core_stats.attack) and fighter.level == gochu.level, "파티 헨치가 코어 능력치로 싸운다(체력 %d · 공격 %d · LV %d)" % [roundi(fighter.stats.max_hp), roundi(fighter.stats.attack), fighter.level])
-	# 성장: 코어 골드 레벨업(상한 = 주인공 레벨). 처음엔 주인공 Lv 1이라 못 올린다 → 경험치로 주인공을 Lv 20까지 올린 뒤 올린다.
+	# 성장: 헨치도 경험치로 오른다(상한 = 주인공 레벨). 파티 밖 헨치는 경험치 조각을 먹인다.
+	# 처음엔 주인공 Lv 1이라 못 먹인다 → 경험치로 주인공을 Lv 20까지 올리고, 조각을 넣어 먹인다.
 	var progress: PlayerProgress = main.get("progress")
-	var level_up := info.find_child("LevelUp", true, false) as Button
-	_expect(level_up.visible and level_up.disabled and level_up.text == UiText.LEVEL_UP_PROBLEMS[Workshop.LevelUpProblem.AT_CAP] % progress.level, "레벨업 버튼: 주인공 Lv %d보다 높여 올릴 수 없음(%s)" % [progress.level, level_up.text])
+	var feed := info.find_child("Feed", true, false) as Button
+	_expect(feed.visible and feed.disabled and feed.text == UiText.FEED_PROBLEMS[Workshop.FeedProblem.AT_CAP] % progress.level, "먹이기 버튼: 주인공 Lv %d보다 높게는 못 올림(%s)" % [progress.level, feed.text])
 	var to_twenty := -progress.exp_points
 	for lv in range(progress.level, 20):
 		to_twenty += Growth.exp_to_next(lv)
 	progress.gain(to_twenty)
 	await _physics_frames(2)
 	_expect(progress.level == 20 and player.level == 20 and hud.level_bar.level_text() == UiText.LEVEL_LABEL % 20 and is_equal_approx(player.stats.max_hp, UnitStats.for_player(20).max_hp) and player.hp == player.stats.max_hp, "경험치 → 주인공 Lv 20(왼쪽 위 막대 · 능력치 · 체력 회복)")
+	_expect(feed.disabled and feed.text == UiText.FEED_PROBLEMS[Workshop.FeedProblem.NO_SHARDS], "경험치 조각이 없으면 먹이기 꺼짐(%s)" % feed.text)
 	var money: Wallet = main.get("wallet")
-	var gold_before_level := money.gold
+	var shop: Workshop = main.get("workshop")
+	var need_shards := shop.shards_to_next(gochu)
+	money.add_exp_shards(need_shards + 3)
+	await _physics_frames(2)
 	var level_before := gochu.level
-	var level_cost := Growth.level_up_cost(gochu.level)
-	_expect(not level_up.disabled and level_up.text == UiText.BTN_LEVEL_UP % level_cost, "레벨업 버튼: %s" % level_up.text)
-	await _tap(level_up.get_global_rect().get_center())
+	_expect(not feed.disabled and feed.text == UiText.BTN_FEED_LEVEL % need_shards, "먹이기 버튼: %s" % feed.text)
+	await _tap(feed.get_global_rect().get_center())
 	await _physics_frames(2)
 	fighter = (main.get("party") as Array)[0] as Hench
-	_expect(gochu.level == level_before + 1 and money.gold == gold_before_level - level_cost and fighter.level == gochu.level and is_equal_approx(fighter.stats.max_hp, UnitStats.from_core(gochu).max_hp), "골드 레벨업 → Lv %d(%d 골드), 파티 헨치 능력치도 바로 오름" % [gochu.level, level_cost])
+	_expect(gochu.level == level_before + 1 and money.exp_shards == 3 and fighter.level == gochu.level and is_equal_approx(fighter.stats.max_hp, UnitStats.from_core(gochu).max_hp), "경험치 조각 %d개 먹임 → Lv %d, 파티 헨치 능력치도 바로 오름" % [need_shards, gochu.level])
+	_expect((info.find_child("ExpBar", true, false) as Control).visible, "정보창에 경험치 막대")
 	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
 	_expect(info.stat_value_label(gochu.suffix_id).get_theme_color("font_color") == Palette.STAT_ACCENT and info.stat_value_label(other_stat).get_theme_color("font_color") == Palette.TEXT, "정보창 능력치 표: 접미사로 강한 능력치만 강조색")
 	await _tap(_center_of(info, "Party"))
@@ -536,6 +541,9 @@ func _run(main: Node) -> void:
 	Balance.dev_boost = 600.0  # 실행 검사 전용: 실제 확률로는 40초 안에 코어가 거의 안 떨어지므로 크게
 	var level_before_hunt := progress.level
 	var exp_before_hunt := progress.exp_points
+	var hunter := _find_core(bag, "gombogom", CoreItem.Gender.MALE)  # 파티 헨치도 처치 경험치를 받는지 본다
+	main.call("assign_party", hunter, 1)
+	var hunter_before := Vector2i(hunter.level, hunter.exp_points)
 	Engine.time_scale = 6.0
 	var shot := _shot_path()
 	var frames := int(180.0 * Engine.physics_ticks_per_second / Engine.time_scale)
@@ -552,6 +560,8 @@ func _run(main: Node) -> void:
 	var kills: int = main.get("kills")
 	_expect(kills >= 2, "자동 사냥 3분 → 2마리 이상 처치 (실제 %d)" % kills)
 	_expect(progress.level > level_before_hunt or progress.exp_points > exp_before_hunt, "처치 → 경험치가 쌓임 (Lv %d · %d/%d)" % [progress.level, progress.exp_points, progress.exp_to_next()])
+	_expect(hunter.level > hunter_before.x or hunter.exp_points > hunter_before.y, "파티 헨치(곰보곰)도 처치 경험치를 받음 (Lv %d · %d/%d)" % [hunter.level, hunter.exp_points, Growth.exp_to_next(hunter.level)])
+	main.call("leave_party", hunter)
 	_expect(hunt_log.kills() == kills and hunt_log.kills_per_hour(false) > 0.0, "사냥 기록: 처치 %d · 자동 시간당 %.0f마리" % [hunt_log.kills(), hunt_log.kills_per_hour(false)])
 	await _seconds(GameConfig.CORE_POP_SECONDS + GameConfig.CORE_REST_SECONDS + 1.0)
 	var picked := hunt_log.cores - cores_before_hunt
