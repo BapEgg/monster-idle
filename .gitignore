@@ -1,3 +1,6 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# 안드로이드로 내보낸 APK(export_presets.cfg의 export_path)
+/build/

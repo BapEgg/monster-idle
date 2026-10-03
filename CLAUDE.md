@@ -49,6 +49,10 @@
 | 2026-10-03 | **주 코어가 암컷이냐 수컷이냐에 따라 태어난 코어의 능력치 경향이 다르다**: 능력치 3개 +10%(암컷 주 = 공격 · 체력 · 드랍·코어 확률, 수컷 주 = 공격 속도 · 방어 · 마나). 고른 능력치와 배율은 임시 | `GameConfig.MIX_MAIN_GENDER_*`, `core/core_stats.gd` |
 | 2026-10-03 | 코어 능력치는 **밸런스 없이 역할군에 맞춰 대략** 둔다(정보창 능력치 화면 확인용). **파티에 넣은 코어는 그 능력치로 싸운다**(체력 = 코어 HP, 공격 = 강력, 공격 간격 = 신속, 회복 = 충만). 환산 값은 밸런스 단계에서 다시 정한다 | `GameConfig.CORE_BASE_STATS` · `CORE_COMBAT_*`, `core/unit_stats.gd`, `scenes/main/main.gd` |
 | 2026-10-03 | **돌연변이 헨치(= 기획서의 변이체)는 드롭으로만 얻는다.** 믹스로 태어나지 않고 **믹스 재료로도 쓸 수 없다.** 대신 믹스로 태어난 코어처럼 **능력치 보정을 조금** 받아 드롭한 그대로도 쓸 만하고, 나중에 **원종과 다른 공격 패턴·스킬**을 갖는다. 믹스의 장점은 능력치 경향과 부모 특성(유산 패시브)을 물려받는 것 | `core/mix.gd`(믹스 재료 금지), `GameConfig.VARIANT_STATS` · `VARIANT_STAT_BONUS`, `core/core_stats.gd`, `scenes/ui/core_info.gd`. 다른 공격 패턴·스킬은 스킬 단계 |
+| 2026-10-03 | (위 “코어 가방은 믹스마스터식”의 배치를 바꿈) **가방 창: 정보창 왼쪽 · 코어 칸 오른쪽, 화면 세로를 꽉 채운다.** 정보창은 위에서부터 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV, HP·MP 막대 / 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 변이 효과 / 고유 액티브·패시브 / 버튼 4개 | `scenes/ui/bag_panel.tscn`, `core_info.tscn` · `core_info.gd` |
+| 2026-10-03 | **글자는 휴대폰 가로 화면 기준으로 크게. 숫자는 흰색 굵게, 라벨은 연한 회색. 접미사로 강한 능력치만 강조색 1개** | `UiKit.style_number` · `style_caption`, `Palette.TEXT_LABEL` · `STAT_ACCENT` |
+| 2026-10-03 | **칸 테두리 뜻 통일: 노랑 = 빛나는, 흰색 = 고른 칸, 보라 반짝임 = 변이**(겹치면 안쪽 고리로 함께). **종족마다 보석 색을 뚜렷이 다르게**(빨강·초록·보라·주황·은회색·청록·연두·파랑) | `scenes/ui/core_card.gd`, `data/tribes.json`, `art/tribes/` |
+| 2026-10-03 | **사냥 기록·시간당 처치 문구는 가방 창에서 빼서 디버그 화면으로 옮긴다**(파티 전투 값도 함께). 오른쪽 위 디버그 버튼, 출시 전에 끈다 | `scenes/ui/debug_panel.tscn`, `GameConfig.DEV_DEBUG_PANEL` |
 
 ## 기술 결정
 
@@ -60,7 +64,7 @@
 | 시점 | 2D 쿼터뷰. 타일은 2:1 마름모(128×64). 격자↔화면 좌표 변환은 `core/iso.gd` 한곳에서만 한다 |
 | 그림 | 당분간 도형·색으로 대체한다. 헨치 = 색 원 + 이름표, 선공 = 빨간 이름표, 비선공 = 흰 이름표 |
 | 조작 | 키보드(WASD·방향키)와 가상 조이스틱이 같은 입력 액션(`move_*`)을 누른다. 조이스틱은 Godot 4.7 기본 노드 `VirtualJoystick`(동적 모드). 공격은 `attack` 액션(Space · 화면 공격 버튼). 공격·오토 버튼은 조이스틱을 쥔 채 누를 수 있게(멀티터치) 기본 노드 `TouchScreenButton`을 쓴다. 몹을 누르면 대상 지정, 두 번 누르면 바로 공격(`TargetPicker`가 조이스틱보다 먼저 입력을 받아 가로챈다). PC에서는 마우스가 터치로 취급된다(`emulate_touch_from_mouse`) |
-| 플랫폼 | 안드로이드(Google Play). PC 실행은 개발·확인용 |
+| 플랫폼 | 안드로이드(Google Play). PC 실행은 개발·확인용. 휴대폰 확인용 내보내기 설정은 `export_presets.cfg`의 “Android”(arm64, `*.json` 포함, `tests/`·`tools/` 제외, APK는 `build/`에 — 저장소에 올리지 않음) |
 | 백엔드 | Firebase. 프로토타입 단계에서는 붙이지 않는다 |
 | 버전 관리 | Git, **기능 단위로 커밋**, 커밋 메시지는 한국어 |
 
@@ -114,7 +118,7 @@ unzip -o /tmp/godot.zip -d /tmp/godot && GODOT=/tmp/godot/Godot_v4.7.2-stable_li
 | `art/` | 그림 파일. `tribes/<종족>/icon.png`(가방 칸·떨어진 코어) · `portrait.png`(정보창·믹스창, 배경 투명 = 힌트 실루엣). 지금은 `tools/make_placeholder_art.gd`로 만든 임시 그림이고, 같은 이름으로 덮어쓰면 바뀐다. Godot가 만드는 `*.png.import`도 함께 커밋한다 |
 | `tools/` | 개발 도구(임시 그림 생성 등). 게임 빌드에는 넣지 않는다 |
 | `core/` | 장면과 상관없는 계산·도우미: `iso.gd` 쿼터뷰 좌표, `combat.gd` 전투 계산(기습 포함), `detection.gd` 선공 시야 감지, `targeting.gd` 대상 고르기, `hp_bar.gd` 체력 바(잔상), `auto_control.gd` 사냥 방식·손대면 수동, `unit_stats.gd` 필드 전투 능력치(코어 → 전투 환산 포함), `hench_db.gd` 도감 읽기, `suffix_db.gd` 접미사 읽기, `tribe_db.gd` 종족(색·그림 경로), `core_item.gd` 코어, `drops.gd` 드랍·나이·성별·변이·레벨 굴림, `core_stats.gd` 능력치 9종·HP·MP, `hench_skill.gd` 헨치 고유 액티브(효과 종류·대기 시간·범위), `mix.gd` 믹스 규칙(주 코어 기준 공식), `workshop.gd` 믹스·분해·잠금 처리, `wallet.gd` 골드·코어 조각, `bag.gd` 가방, `hunt_log.gd` 사냥 기록(하루 처치 수 측정), 저장: `save_store.gd` 저장소 틀(나중에 Firebase로 갈아 끼움) · `local_save_store.gd` 기기 파일(`user://save.json`) · `game_save.gd` 저장 내용 만들기·되살리기 · `save_schedule.gd` 묶어서 저장 |
-| `scenes/<기능>/` | 장면(`.tscn`)과 그 스크립트를 기능별로 함께 둔다: `main`(+야생 출현·몹 눌러 대상 지정), `field`, `player`, `units`(Unit 바탕·헨치·이름표와 머리 위 표시), `effects`(숫자·투사체·떨어진 코어·스킬 범위 고리), `ui`(HUD 장면 = 화면 배치, 공격 버튼·오토 버튼·스킬 칸(1~3 = 파티 헨치 스킬, 4~6 = 나중에 주인공 직업 스킬)·대상 창·가방 버튼·가방 창·코어 칸·코어 정보창·믹스창·확인 창) |
+| `scenes/<기능>/` | 장면(`.tscn`)과 그 스크립트를 기능별로 함께 둔다: `main`(+야생 출현·몹 눌러 대상 지정), `field`, `player`, `units`(Unit 바탕·헨치·이름표와 머리 위 표시), `effects`(숫자·투사체·떨어진 코어·스킬 범위 고리), `ui`(HUD 장면 = 화면 배치, 공격 버튼·오토 버튼·스킬 칸(1~3 = 파티 헨치 스킬, 4~6 = 나중에 주인공 직업 스킬)·대상 창·가방 버튼·가방 창·코어 칸·코어 정보창(배지 줄·HP/MP 막대)·믹스창·확인 창·디버그 버튼과 디버그 화면) |
 | `data/` | 게임 데이터. `henches.json` = 헨치 도감 64종(믹스 공식 `recipes` = [주, 보조], 반대 방향 초안 `draft_recipes`, 고유 액티브 효과 종류 `skill` = 임시 분류, 수치는 `GameConfig.SKILL_KINDS`), `suffixes.json` = 코어 접미사 9종, `tribes.json` = 종족 8개(색·그림 경로), `dev_starter.json` = 개발 확인용 시작 가방(저장이 없을 때만 넣는다, `GameConfig.DEV_STARTER_BAG`, 출시 전에 끔). 안드로이드로 내보낼 때 “리소스가 아닌 파일” 필터에 `*.json`을 넣어야 한다 |
 | `tests/` | 테스트(`test_*.gd`)와 실행기. 게임 빌드에는 넣지 않는다 |
 | `docs/` | 기획서(읽기 전용) |

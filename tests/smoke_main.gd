@@ -6,7 +6,7 @@ extends SceneTree
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
 ## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png",
 ## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png", 변이 코어 정보창을 "<이름>_variant.png",
-## 스킬(기절 별 · 보호막 · 스킬 칸 대기 시간)을 "<이름>_skills.png"로 저장한다.
+## 스킬(기절 별 · 보호막 · 스킬 칸 대기 시간)을 "<이름>_skills.png", 디버그 화면을 "<이름>_debug.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -294,7 +294,8 @@ func _run(main: Node) -> void:
 	var core_stats := UnitStats.from_core(gochu)
 	var fighter := party[0] as Hench
 	_expect(is_equal_approx(fighter.stats.max_hp, core_stats.max_hp) and is_equal_approx(fighter.stats.attack, core_stats.attack) and fighter.level == gochu.level, "파티 헨치가 코어 능력치로 싸운다(체력 %d · 공격 %d · LV %d)" % [roundi(fighter.stats.max_hp), roundi(fighter.stats.attack), fighter.level])
-	_expect((info.find_child("Combat", true, false) as Label).text != "", "정보창에 파티 전투 값(임시)")
+	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
+	_expect(info.stat_value_label(gochu.suffix_id).get_theme_color("font_color") == Palette.STAT_ACCENT and info.stat_value_label(other_stat).get_theme_color("font_color") == Palette.TEXT, "정보창 능력치 표: 접미사로 강한 능력치만 강조색")
 	await _tap(_center_of(info, "Party"))
 	await _physics_frames(2)
 	party = main.get("party")
@@ -365,6 +366,14 @@ func _run(main: Node) -> void:
 	await _tap(close.get_global_rect().get_center())
 	await process_frame
 	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
+	# 디버그 화면: 사냥 기록 · 시간당 처치 · 파티 전투 값(가방 창 위에 있던 것을 옮김)
+	await _tap(hud.debug_button.global_position)
+	var first_hench := (main.get("party") as Array)[0] as Hench
+	_expect(hud.debug_panel.visible and hud.debug_panel.party_text().contains(first_hench.display_name), "디버그 버튼 → 디버그 화면(사냥 기록 · 파티 전투 값)")
+	await _save_shot("debug")
+	await _seconds(0.2)
+	await _tap((hud.debug_panel.find_child("Close", true, false) as Button).get_global_rect().get_center())
+	_expect(not hud.debug_panel.visible, "디버그 화면 닫기")
 
 	# 9) 자동 사냥: 야생 헨치를 다시 풀고, 시간을 4배로 빨리 돌려 게임 시간 40초 동안 지켜본다
 	var hunt_log: HuntLog = main.get("hunt_log")

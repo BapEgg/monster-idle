@@ -1,10 +1,12 @@
 class_name CoreInfo
 extends VBoxContainer
-## 코어 정보창(가방 창 오른쪽): 임시 초상화, "접미사 + 이름", 종족·역할·등급·나이·성별, LV, HP·MP, 능력치 9종,
-## 파티에 넣으면 싸우는 값(임시 환산), 보정 줄(믹스로 태어났으면 주 코어 성별에 따른 능력치 경향, 변이면 변이 보정),
-## 고유 액티브·패시브(유산이면 원래 주인 표시). 버튼: 파티 편성 / 믹스 / 분해 / 잠금.
+## 코어 정보창(가방 창 왼쪽, 사용자 결정 2026-10-03). 위에서부터:
+## 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV, HP·MP 막대 /
+## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 보정 줄(변이 효과 · 믹스 출생 경향) / 고유 액티브·패시브 / 버튼 4개.
+## 글자: 숫자는 흰색 굵게, 이름표는 연한 회색. 접미사로 강한 능력치 한 줄만 강조색(Palette.STAT_ACCENT).
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
+## 휴대폰 가로 화면 기준 글자 크기다. 자리·크기는 core_info.tscn을 에디터에서 열어 바꾼다.
 
 signal party_requested(item: CoreItem, slot: int)
 signal party_leave_requested(item: CoreItem)
@@ -12,16 +14,23 @@ signal mix_requested(item: CoreItem)
 signal dismantle_requested(item: CoreItem)
 signal lock_requested(item: CoreItem)
 
-const TITLE_FONT_SIZE := 19
-const TEXT_FONT_SIZE := 14
-const SMALL_FONT_SIZE := 13
-const BUTTON_FONT_SIZE := 14
+const TITLE_FONT_SIZE := 26
+const TEXT_FONT_SIZE := 17
+const LEVEL_FONT_SIZE := 20
+const STAT_FONT_SIZE := 17
+const STAT_NUMBER_FONT_SIZE := 18
+const SMALL_FONT_SIZE := 15
+const BUTTON_FONT_SIZE := 18
 const PORTRAIT_BORDER := 2
+const STAT_NUMBER_WIDTH := 44
 
 ## 보고 있는 코어(없으면 null)
 var item: CoreItem
 ## 파티 자리마다 지금 헨치 이름을 돌려주는 함수(main.party_names)
 var party_names := Callable()
+
+var _stat_names := {}  # 능력치 id → 이름 Label
+var _stat_values := {}  # 능력치 id → 숫자 Label
 
 @onready var _empty: Label = %Empty
 @onready var _body: VBoxContainer = %Body
@@ -29,13 +38,15 @@ var party_names := Callable()
 @onready var _portrait: TextureRect = %Portrait
 @onready var _title: Label = %Title
 @onready var _kind: Label = %Kind
-@onready var _body_text: Label = %BodyText
+@onready var _badges: BadgeStrip = %Badges
 @onready var _level: Label = %Level
-@onready var _hp_mp: Label = %HpMp
+@onready var _hp_bar: ValueBar = %HpBar
+@onready var _mp_bar: ValueBar = %MpBar
 @onready var _stats: GridContainer = %Stats
-@onready var _combat: Label = %Combat
 @onready var _bonus: Label = %Bonus
+@onready var _active_caption: Label = %ActiveCaption
 @onready var _active: Label = %Active
+@onready var _passive_caption: Label = %PassiveCaption
 @onready var _passive: Label = %Passive
 @onready var _notice: Label = %Notice
 @onready var _party: Button = %Party
@@ -48,32 +59,53 @@ var party_names := Callable()
 
 
 func _ready() -> void:
-	UiKit.style_label(_empty, TEXT_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_caption(_empty, TEXT_FONT_SIZE)
 	_empty.text = UiText.INFO_EMPTY
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
-	for label: Label in [_kind, _body_text, _level, _hp_mp]:
-		UiKit.style_label(label, TEXT_FONT_SIZE, Palette.TEXT)
-	for label: Label in [_active, _passive]:
-		UiKit.style_label(label, SMALL_FONT_SIZE, Palette.TEXT)
-	UiKit.style_label(_combat, SMALL_FONT_SIZE, Palette.TEXT_DIM)
+	_title.add_theme_font_override("font", UiKit.bold_font())
+	UiKit.style_caption(_kind, TEXT_FONT_SIZE)
+	UiKit.style_number(_level, LEVEL_FONT_SIZE)
 	UiKit.style_label(_bonus, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
+	for caption: Label in [_active_caption, _passive_caption]:
+		UiKit.style_caption(caption, SMALL_FONT_SIZE)
+	_active_caption.text = UiText.INFO_ACTIVE
+	_passive_caption.text = UiText.INFO_PASSIVE
+	for label: Label in [_active, _passive]:
+		UiKit.style_label(label, TEXT_FONT_SIZE, Palette.TEXT)
 	UiKit.style_label(_notice, SMALL_FONT_SIZE, Palette.TEXT_WARNING)
-	UiKit.style_label(_party_pick_title, SMALL_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_caption(_party_pick_title, SMALL_FONT_SIZE)
 	_party_pick_title.text = UiText.PARTY_PICK
 	for button: Button in [_party, _mix, _dismantle, _lock]:
 		UiKit.style_button(button, BUTTON_FONT_SIZE)
 	_mix.text = UiText.BTN_MIX
 	_dismantle.text = UiText.BTN_DISMANTLE
-	for stat in SuffixDb.ids():
-		var label := Label.new()
-		UiKit.style_label(label, SMALL_FONT_SIZE, Palette.TEXT_DIM)
-		label.name = stat
-		_stats.add_child(label)
+	_build_stat_table()
 	_party.pressed.connect(_on_party)
 	_mix.pressed.connect(func() -> void: mix_requested.emit(item))
 	_dismantle.pressed.connect(func() -> void: dismantle_requested.emit(item))
 	_lock.pressed.connect(func() -> void: lock_requested.emit(item))
 	show_core(null)
+
+
+## 능력치 표: 칸마다 이름(왼쪽, 연한 회색) + 숫자(오른쪽, 흰색 굵게). 2열이라 9개가 5줄로 들어간다.
+func _build_stat_table() -> void:
+	for stat in SuffixDb.ids():
+		var cell := HBoxContainer.new()
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var stat_name := Label.new()
+		UiKit.style_caption(stat_name, STAT_FONT_SIZE)
+		stat_name.text = SuffixDb.stat_name(stat)
+		stat_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var number := Label.new()
+		UiKit.style_number(number, STAT_NUMBER_FONT_SIZE)
+		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		number.custom_minimum_size.x = STAT_NUMBER_WIDTH
+		cell.add_child(stat_name)
+		cell.add_child(number)
+		cell.name = stat
+		_stats.add_child(cell)
+		_stat_names[stat] = stat_name
+		_stat_values[stat] = number
 
 
 ## 그 코어를 보여 준다(null = 빈 안내).
@@ -82,6 +114,11 @@ func show_core(of_item: CoreItem) -> void:
 	_party_pick.visible = false
 	_notice.text = ""
 	refresh()
+
+
+## 능력치 한 칸의 숫자 Label(실행 검사용).
+func stat_value_label(stat: String) -> Label:
+	return _stat_values[stat]
 
 
 func refresh() -> void:
@@ -101,45 +138,35 @@ func refresh() -> void:
 	_title.text = item.title()
 	_title.add_theme_color_override("font_color", Palette.CORE_SHINE if item.shining else Palette.TEXT)
 	_kind.text = UiText.INFO_KIND % [tribe.name, UiText.ROLE_NAMES.get(species.role, species.role), UiText.GRADE_NAMES.get(species.grade, species.grade)]
-	var body := UiText.INFO_BODY % [UiText.AGE_NAMES[item.age], UiText.GENDER_NAMES[item.gender]]
-	if item.shining:
-		body += " · " + UiText.SHINING
+	var badges := [
+		[UiText.AGE_NAMES[item.age], Palette.BADGE_AGE],
+		[UiText.GENDER_NAMES[item.gender], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE],
+	]
 	if item.variant:
-		body += " · " + UiText.VARIANT
-	_body_text.text = body
-	var stats := CoreStats.compute(item)
+		badges.append([UiText.VARIANT, Palette.BADGE_VARIANT])
+	_badges.badges = badges
 	_level.text = UiText.INFO_LEVEL % item.level
-	_hp_mp.text = UiText.INFO_HP_MP % [stats["hp"], stats["mp"]]
-	var boosted := CoreStats.main_gender_stats(item)
-	var mutated := CoreStats.variant_stats(item)
-	for label in _stats.get_children():
-		var stat := String(label.name)
-		var color := Palette.TEXT_DIM
-		if stat == item.suffix_id:
-			color = Palette.CORE_SHINE
-		elif stat in boosted:
-			color = Palette.STAT_BOOSTED
-		elif stat in mutated:
-			color = Palette.STAT_VARIANT
-		(label as Label).text = UiText.INFO_STAT % [SuffixDb.stat_name(stat), stats.get(stat, 0)]
-		(label as Label).add_theme_color_override("font_color", color)
-	var combat := UnitStats.from_core(item)
-	_combat.text = UiText.INFO_COMBAT % [roundi(combat.attack), combat.attack_interval]
-	if combat.heal > 0.0:
-		_combat.text += UiText.INFO_COMBAT_HEAL % roundi(combat.heal)
-	_show_bonus(boosted, mutated)
-	_active.text = UiText.INFO_ACTIVE % species.active
+	var stats := CoreStats.compute(item)
+	_hp_bar.show_value(UiText.INFO_HP, stats["hp"], Palette.INFO_HP_BAR)
+	_mp_bar.show_value(UiText.INFO_MP, stats["mp"], Palette.INFO_MP_BAR)
+	for stat: String in _stat_values:
+		var accent := stat == item.suffix_id
+		(_stat_values[stat] as Label).text = str(stats.get(stat, 0))
+		(_stat_values[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT)
+		(_stat_names[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT_LABEL)
+	_show_bonus(CoreStats.main_gender_stats(item), CoreStats.variant_stats(item))
+	_active.text = species.active
 	if species.skill != "":
 		_active.text += UiText.INFO_SKILL_KIND % UiText.SKILL_KIND_NAMES.get(species.skill, species.skill)
 	var holder := HenchDb.get_species(item.passive_owner_id())
-	_passive.text = (UiText.INFO_LEGACY % [holder.name, holder.passive]) if holder != species else (UiText.INFO_PASSIVE % species.passive)
+	_passive.text = (UiText.INFO_LEGACY % [holder.passive, holder.name]) if holder != species else species.passive
 	_party.text = UiText.BTN_PARTY_LEAVE if item.in_party() else UiText.BTN_PARTY
 	_lock.text = UiText.BTN_UNLOCK if item.locked else UiText.BTN_LOCK
 	_dismantle.disabled = item.locked or item.in_party()
 	_mix.disabled = item.locked or item.in_party() or item.variant
 
 
-## 보정 줄: 믹스 출생(주 코어 성별 경향) 또는 변이 보정. 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).
+## 보정 줄: 변이 효과 또는 믹스 출생(주 코어 성별 경향). 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).
 func _show_bonus(boosted: Array, mutated: Array) -> void:
 	_bonus.visible = not boosted.is_empty() or not mutated.is_empty()
 	if not boosted.is_empty():
@@ -161,6 +188,7 @@ func _on_party() -> void:
 	for slot in names.size():
 		var button := Button.new()
 		button.text = UiText.PARTY_SLOT % [slot + 1, names[slot]]
+		button.custom_minimum_size.y = BUTTON_FONT_SIZE * 2.4
 		UiKit.style_button(button, BUTTON_FONT_SIZE)
 		button.pressed.connect(func() -> void:
 			_party_pick.visible = false
@@ -168,6 +196,7 @@ func _on_party() -> void:
 		_party_slots.add_child(button)
 	var cancel := Button.new()
 	cancel.text = UiText.BTN_CANCEL
+	cancel.custom_minimum_size.y = BUTTON_FONT_SIZE * 2.4
 	UiKit.style_button(cancel, BUTTON_FONT_SIZE)
 	cancel.pressed.connect(func() -> void: _party_pick.visible = false)
 	_party_slots.add_child(cancel)

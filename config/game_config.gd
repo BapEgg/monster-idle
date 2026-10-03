@@ -273,3 +273,5 @@ const SAVE_SOON_SECONDS := 2.0
 # ─── 개발 확인용 ──────────────────────────────────
 ## 켜면 저장이 없을 때(처음 켤 때) data/dev_starter.json의 코어와 골드를 가방에 넣는다. 출시 전에 끈다.
 const DEV_STARTER_BAG := true
+## 켜면 화면 오른쪽 위에 디버그 버튼이 보인다(사냥 기록 · 시간당 처치 · 파티 전투 값). 출시 전에 끈다.
+const DEV_DEBUG_PANEL := true

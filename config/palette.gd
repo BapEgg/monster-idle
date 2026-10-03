@@ -61,14 +61,25 @@ const PANEL_BORDER := Color(1, 1, 1, 0.25)
 const CARD_BG := Color(1, 1, 1, 0.08)
 const CARD_BORDER := Color(1, 1, 1, 0.15)
 const TEXT_DIM := Color(1, 1, 1, 0.65)
+## 이름표(라벨) 글자: 연한 회색(숫자는 흰색 굵게, 사용자 결정 2026-10-03)
+const TEXT_LABEL := Color(0.72, 0.75, 0.8)
+## 코어 정보창: 접미사로 강한 능력치 한 줄만 이 색(강조색 1개). 빛나는 코어의 금빛과 같다.
+const STAT_ACCENT := Color("ffd84a")
+## 코어 정보창 HP · MP 막대, 막대 바탕
+const INFO_HP_BAR := Color("e5534b")
+const INFO_MP_BAR := Color("4a8ef0")
+const INFO_BAR_BACK := Color(1, 1, 1, 0.1)
 ## 코어 정보창: 주 코어 성별 때문에 오른 능력치와 그 설명 줄 / 변이라서 오른 능력치와 그 설명 줄
 const STAT_BOOSTED := Color("8ee28e")
 const STAT_VARIANT := Color("c9a6ff")
 ## 가방 버튼
 const BAG_BUTTON := Color(0, 0, 0, 0.45)
-## 가방 칸: 고른 칸 바탕·테두리
-const CARD_SELECTED_BG := Color(1, 1, 1, 0.2)
+## 가방 칸: 고른 칸 바탕·테두리. 칸 테두리 뜻(사용자 결정 2026-10-03): 노랑 = 빛나는(CORE_SHINE), 흰색 = 고른 칸, 보라 반짝임 = 변이
+const CARD_SELECTED_BG := Color(1, 1, 1, 0.16)
 const CARD_SELECTED_BORDER := Color(1, 1, 1, 0.95)
+## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
+const CARD_VARIANT_DIM := Color("7b3fd0")
+const CARD_VARIANT_BRIGHT := Color("e2c6ff")
 ## 가방 칸 배지: 나이 / 암컷 / 수컷 / 변이 / 잠금 / 파티, 배지 글자
 const BADGE_AGE := Color(0.25, 0.27, 0.32, 0.95)
 const BADGE_FEMALE := Color("e8558f")

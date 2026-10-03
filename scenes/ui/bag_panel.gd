@@ -1,7 +1,8 @@
 class_name BagPanel
 extends PanelContainer
-## 코어 가방 창(믹스마스터식): 왼쪽은 5열 칸(새로 얻은 것이 앞), 오른쪽은 고른 코어의 정보창.
-## 위쪽에 골드·코어 조각과 사냥 기록(하루 처치 수 측정). 가방 버튼으로 열고 닫는다.
+## 코어 가방 창(믹스마스터식, 사용자 결정 2026-10-03): 왼쪽은 고른 코어의 정보창, 오른쪽은 5열 칸(새로 얻은 것이 앞).
+## 화면 세로를 꽉 채운다. 위쪽에 골드·코어 조각. 사냥 기록(하루 처치 수 측정)은 디버그 화면으로 옮겼다.
+## 가방 버튼으로 열고 닫는다.
 ## 정보창의 버튼: 파티 편성·믹스는 신호로 HUD(→ main · 믹스창)에, 분해·잠금은 여기서 Workshop으로 처리한다.
 ## 위치·크기·열 수는 이 장면(bag_panel.tscn)이나 hud.tscn에서 에디터로 정한다.
 
@@ -9,24 +10,18 @@ signal mix_requested(item: CoreItem)
 signal party_requested(item: CoreItem, slot: int)
 signal party_leave_requested(item: CoreItem)
 
-const TITLE_FONT_SIZE := 20
-const TEXT_FONT_SIZE := 14
-## 사냥 기록 글자를 다시 쓰는 간격(초)
-const STATS_REFRESH_SECONDS := 0.5
+const TITLE_FONT_SIZE := 24
+const TEXT_FONT_SIZE := 18
 
 var _bag: Bag
-var _log: HuntLog
 var _wallet: Wallet
 var _workshop: Workshop
 var _confirm: ConfirmBox
 var _selected: CoreItem
-var _refresh_left := 0.0
 
 @onready var _title: Label = %Title
 @onready var _money: Label = %Money
 @onready var _close: Button = %Close
-@onready var _totals: Label = %Totals
-@onready var _rates: Label = %Rates
 @onready var _grid: GridContainer = %Grid
 @onready var _empty: Label = %Empty
 @onready var _info: CoreInfo = %CoreInfo
@@ -35,10 +30,9 @@ var _refresh_left := 0.0
 func _ready() -> void:
 	add_theme_stylebox_override("panel", UiKit.panel_box())
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
+	_title.add_theme_font_override("font", UiKit.bold_font())
 	UiKit.style_label(_money, TEXT_FONT_SIZE, Palette.CORE_SHINE)
-	UiKit.style_label(_totals, TEXT_FONT_SIZE, Palette.TEXT)
-	UiKit.style_label(_rates, TEXT_FONT_SIZE, Palette.TEXT_DIM)
-	UiKit.style_label(_empty, TEXT_FONT_SIZE, Palette.TEXT_DIM)
+	UiKit.style_caption(_empty, TEXT_FONT_SIZE)
 	UiKit.style_button(_close, TEXT_FONT_SIZE)
 	_close.text = UiText.BAG_CLOSE
 	_close.pressed.connect(close)
@@ -50,9 +44,8 @@ func _ready() -> void:
 	_info.lock_requested.connect(func(item: CoreItem) -> void: _workshop.toggle_lock(item))
 
 
-func bind(bag: Bag, hunt_log: HuntLog) -> void:
+func bind(bag: Bag) -> void:
 	_bag = bag
-	_log = hunt_log
 	_bag.changed.connect(_on_bag_changed)
 
 
@@ -67,7 +60,6 @@ func bind_collection(wallet: Wallet, workshop: Workshop, confirm: ConfirmBox, pa
 func open() -> void:
 	visible = true
 	_rebuild()
-	_refresh_stats()
 	_update_money()
 
 
@@ -101,14 +93,6 @@ func info() -> CoreInfo:
 	return _info
 
 
-func _process(delta: float) -> void:
-	if not visible or _log == null:
-		return
-	_refresh_left -= delta
-	if _refresh_left <= 0.0:
-		_refresh_stats()
-
-
 func _on_bag_changed() -> void:
 	if visible:
 		_rebuild()
@@ -119,7 +103,7 @@ func _rebuild() -> void:
 		_grid.remove_child(child)
 		child.queue_free()
 	for i in range(_bag.count() - 1, -1, -1):
-		var card := CoreCard.create(_bag.cores[i])
+		var card := CoreCard.create(_bag.cores[i], CoreCard.BAG_SIZE)
 		card.pressed.connect(select.bind(card.item))
 		_grid.add_child(card)
 	_title.text = UiText.BAG_TITLE % _bag.count()
@@ -138,19 +122,3 @@ func _on_dismantle(item: CoreItem) -> void:
 	_confirm.ask(UiText.DISMANTLE_ASK % [item.title(), Mix.dismantle_shards(item)], func() -> void:
 		_workshop.dismantle(item)
 		select(null))
-
-
-func _refresh_stats() -> void:
-	_refresh_left = STATS_REFRESH_SECONDS
-	_totals.text = UiText.HUNT_TOTALS % [_log.kills(), _log.cores, _log.shining_cores]
-	var advantage := _log.manual_advantage()
-	_rates.text = UiText.HUNT_RATES % [
-		_count_text(_log.kills_per_hour(false)),
-		_count_text(_log.kills_per_hour(true)),
-		UiText.HUNT_UNKNOWN if is_nan(advantage) else UiText.HUNT_ADVANTAGE % roundi(advantage * 100.0),
-		_count_text(_log.daily_kills_estimate()),
-	]
-
-
-static func _count_text(value: float) -> String:
-	return UiText.HUNT_UNKNOWN if value < 0.0 else str(roundi(value))

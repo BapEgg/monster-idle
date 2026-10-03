@@ -59,7 +59,7 @@ const SKILL_CAST := "%s!"
 ## 보호막이 피해를 모두 막았을 때 숫자 대신
 const SHIELD_BLOCK := "막음"
 ## 정보창의 고유 액티브 줄 뒤에 붙는다. %s = 효과 종류 이름
-const INFO_SKILL_KIND := " · 지금 효과(임시): %s"
+const INFO_SKILL_KIND := "\n지금 효과(임시): %s"
 ## 여러 이름을 한 줄로 늘어놓을 때 사이
 const LIST_SEPARATOR := ", "
 const VARIANT := "변이"
@@ -74,7 +74,14 @@ const BAG_CLOSE := "닫기"
 const BAG_EMPTY := "아직 비어 있습니다. 몹을 쓰러뜨리면 " + TERM_CORE + "가 떨어집니다."
 ## 코어 칸 둘째 줄: 접미사 · 나이
 const CORE_DETAIL := "%s · %s"
-## 사냥 기록(가방 창 위쪽). 처치 수 / 코어 수 / 빛나는 코어 수
+# ─── 디버그 화면 (개발 확인용, GameConfig.DEV_DEBUG_PANEL, 출시 전에 끈다) ─────
+const DEBUG_BUTTON := "디버그"
+const DEBUG_TITLE := "디버그"
+const DEBUG_PARTY_TITLE := "파티 전투(코어 능력치 → 임시 환산)"
+## %d = 자리, %s = 이름, %d/%d = 지금/최대 체력, %d = 공격, %.2f = 공격 간격(초)
+const DEBUG_PARTY_ROW := "%d. %s — 체력 %d/%d · 공격 %d · 공격 간격 %.2f초"
+const DEBUG_PARTY_HEAL := " · 회복 %d"
+## 사냥 기록(디버그 화면). 처치 수 / 코어 수 / 빛나는 코어 수
 const HUNT_TOTALS := "사냥 기록(이번 접속): 처치 %d · " + TERM_CORE + " %d개 (빛나는 %d개)"
 ## 시간당 처치: 자동 / 수동 / 수동 이득 / 하루 예상
 const HUNT_RATES := "시간당 처치: 자동 %s · 수동 %s (%s) · 하루 예상(자동 24시간) %s"
@@ -95,23 +102,17 @@ const MONEY := "골드 %d · " + TERM_CORE + " 조각 %d"
 const INFO_EMPTY := "칸을 누르면 정보가 보입니다"
 ## 종족 · 역할 · 등급
 const INFO_KIND := "%s · %s · %s"
-## 나이 · 성별 (+ 빛나는 · 변이)
-const INFO_BODY := "%s · %s"
 const INFO_LEVEL := "LV %d"
-const INFO_HP_MP := "HP %d · MP %d"
-## 능력치 한 칸: 이름 값
-const INFO_STAT := "%s %d"
-## 파티에 넣으면 싸우는 값(임시 환산). %d = 공격, %.2f = 공격 간격(초). 힐러는 회복이 붙는다.
-const INFO_COMBAT := "파티 전투(임시): 공격 %d · 공격 간격 %.2f초"
-const INFO_COMBAT_HEAL := " · 회복 %d"
+const INFO_HP := "HP"
+const INFO_MP := "MP"
 ## 믹스로 태어난 코어: %s = 주 코어 성별, %s = 오른 능력치들, %d = 몇 %
 const INFO_BIRTH := TERM_MIX + " 출생(%s이 주 " + TERM_CORE + "): %s +%d%%"
 ## 변이 코어: %s = 오른 능력치들, %d = 몇 %. 믹스 재료로는 못 쓴다.
 const INFO_VARIANT := VARIANT + ": %s +%d%% · " + TERM_MIX + " 재료로 못 씀"
-const INFO_ACTIVE := "고유 액티브: %s"
-const INFO_PASSIVE := "고유 패시브: %s"
-## 유산으로 받은 패시브. %s = 원래 주인 종 이름, %s = 패시브
-const INFO_LEGACY := "패시브(유산 · %s): %s"
+const INFO_ACTIVE := "고유 액티브"
+const INFO_PASSIVE := "고유 패시브"
+## 유산으로 받은 패시브. %s = 패시브, %s = 원래 주인 종 이름
+const INFO_LEGACY := "%s (유산 · %s)"
 const BTN_PARTY := "파티 편성"
 const BTN_PARTY_LEAVE := "파티에서 빼기"
 const BTN_MIX := TERM_MIX

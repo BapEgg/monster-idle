@@ -33,14 +33,18 @@ const CONTROLS_PADDING := 8.0
 @onready var target_frame: TargetFrame = $TargetFrame
 @onready var bag_button: BagButton = $TopControls/BagButton
 @onready var bag_panel: BagPanel = $BagPanel
+@onready var debug_button: TextButton = $TopControls/DebugButton
+@onready var debug_panel: DebugPanel = $DebugPanel
 @onready var mix_panel: MixPanel = $MixPanel
 @onready var confirm_box: ConfirmBox = $ConfirmBox
 @onready var _controls: Control = $Controls
+@onready var _top_controls: Control = $TopControls
 @onready var _mode: Label = $Mode
 @onready var _kills: Label = $Kills
 
 var _player: Player
 var _party: Array[Hench] = []
+var _hunt_log: HuntLog
 var _skill_slots: Array[SkillSlot] = []
 
 
@@ -55,6 +59,13 @@ func _ready() -> void:
 		slot.pressed.connect(func() -> void: skill_requested.emit(index))
 		_skill_slots.append(slot)
 	bag_button.pressed.connect(_on_bag_button)
+	debug_button.text = UiText.DEBUG_BUTTON
+	debug_button.visible = GameConfig.DEV_DEBUG_PANEL
+	debug_button.pressed.connect(func() -> void:
+		if debug_panel.visible:
+			debug_panel.hide()
+		else:
+			debug_panel.open())
 	for modal: Control in _modals():
 		modal.visibility_changed.connect(_on_modal_toggled)
 	bag_panel.mix_requested.connect(mix_panel.open)
@@ -71,6 +82,7 @@ func bind_player(player: Player) -> void:
 ## 파티(헨치 배열, main이 자리마다 바꿔 끼운다)를 스킬 칸에 이어 준다.
 func bind_party(party: Array[Hench]) -> void:
 	_party = party
+	debug_panel.bind(_hunt_log, party)
 
 
 ## 스킬 칸 하나(0부터, 실행 검사용).
@@ -88,9 +100,10 @@ func bind_collection(wallet: Wallet, workshop: Workshop, party_names: Callable) 
 	mix_panel.bind(workshop, confirm_box)
 
 
-## 가방과 사냥 기록을 가방 버튼·가방 창에 이어 준다.
+## 가방을 가방 버튼·가방 창에, 사냥 기록을 디버그 화면에 이어 준다.
 func bind_hunt(bag: Bag, hunt_log: HuntLog) -> void:
-	bag_panel.bind(bag, hunt_log)
+	bag_panel.bind(bag)
+	_hunt_log = hunt_log
 	bag_button.count = bag.count()
 	bag.changed.connect(func() -> void: bag_button.count = bag.count())
 
@@ -157,19 +170,20 @@ func _on_bag_button() -> void:
 		bag_panel.open()
 
 
-## 화면을 덮는 창들(가방 · 믹스 · 확인).
+## 화면을 덮는 창들(가방 · 믹스 · 디버그 · 확인).
 func _modals() -> Array[Control]:
-	return [bag_panel, mix_panel, confirm_box]
+	return [bag_panel, mix_panel, debug_panel, confirm_box]
 
 
-## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸)을 숨겨,
-## 창을 누른 손가락이 주인공을 움직이거나 공격 버튼을 누르지 않게 한다.
+## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸), 오른쪽 위 버튼(가방 · 디버그)을 숨겨,
+## 창을 누른 손가락이 주인공을 움직이거나 그 밑의 버튼을 누르지 않게 한다(창은 닫기 버튼으로 닫는다).
 func _on_modal_toggled() -> void:
 	var any_open := false
 	for modal in _modals():
 		any_open = any_open or modal.visible
 	joystick.visible = not any_open
 	_controls.visible = not any_open
+	_top_controls.visible = not any_open  # 가방 창이 화면을 덮으면 그 밑의 가방·디버그 버튼이 눌리지 않게
 	target_frame.modulate.a = 0.0 if any_open else 1.0  # 창 위로 겹쳐 보이지 않게
 
 
