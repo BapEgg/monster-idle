@@ -71,7 +71,8 @@ func _ready() -> void:
 	bag_panel.mix_requested.connect(mix_panel.open)
 	bag_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 	bag_panel.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
-	mix_panel.mixed.connect(func(born: CoreItem) -> void: bag_panel.select(born))
+	mix_panel.core_shown.connect(bag_panel.select)
+	mix_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 
 
 func bind_player(player: Player) -> void:
@@ -97,7 +98,7 @@ func set_kills(count: int) -> void:
 ## 지갑·코어 다루기(믹스·분해·잠금)·파티 이름을 가방 창과 믹스창에 이어 준다.
 func bind_collection(wallet: Wallet, workshop: Workshop, party_names: Callable) -> void:
 	bag_panel.bind_collection(wallet, workshop, confirm_box, party_names)
-	mix_panel.bind(workshop, confirm_box)
+	mix_panel.bind(workshop, confirm_box, party_names)
 
 
 ## 가방을 가방 버튼·가방 창에, 사냥 기록을 디버그 화면에 이어 준다.

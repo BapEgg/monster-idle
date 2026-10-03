@@ -231,10 +231,10 @@ const SHINING_SUFFIX_BONUS := 0.35
 ## HP = 체력 × 값, MP = 마나 × 값
 const HP_PER_TOUGH := 10
 const MP_PER_ABUNDANT := 5
-## 믹스로 태어난 코어는 주 코어의 성별에 따라 능력치 경향이 다르다(사용자 결정 2026-10-03, 고른 능력치·배율은 임시).
-## 순서 = CoreItem.Gender(0 암컷이 주 코어, 1 수컷이 주 코어). 야생에서 얻은 코어는 받지 않는다.
-const MIX_MAIN_GENDER_STATS := [["mighty", "tough", "lucky"], ["swift", "sturdy", "abundant"]]
-const MIX_MAIN_GENDER_BONUS := 0.1
+## 성별 = 성장 성향(기획서 4장 믹스 세부 규칙): 암컷은 체력·방어, 수컷은 공격·공격 속도가 레벨업 때 조금 더 오른다.
+## 순서 = CoreItem.Gender(0 암컷, 1 수컷). 그 능력치는 레벨당 성장(CORE_STAT_GROWTH)을 이 비율만큼 더 받는다(임시).
+const GENDER_GROWTH_STATS := [["tough", "sturdy"], ["mighty", "swift"]]
+const GENDER_GROWTH_BONUS := 0.25
 
 # ─── 코어 능력치 → 필드 전투 (모두 임시, 밸런스 단계에서 다시 정한다) ─────
 ## 파티에 넣은 코어의 헨치는 이 값으로 싸운다(사거리·회복 간격은 역할 표 ROLE_STATS를 따른다).
@@ -244,17 +244,40 @@ const CORE_COMBAT_ATTACK_PER_MIGHTY := 0.75
 const CORE_COMBAT_HEAL_PER_ABUNDANT := 0.8
 const CORE_COMBAT_SWIFT_HALF := 100.0
 
-# ─── 믹스 · 분해 (프로토타입 5) ─────────────────────
-## 결과 미리보기(기획서 4장 초안): 중급 = 공개(이름), 상급 = 힌트(실루엣), 왕 = 비밀(?)
+# ─── 믹스 · 분해 (기획서 4장 믹스 세부 규칙, 수치는 초안) ─────────────
+## 결과 미리보기: 중급 = 공개(이름), 상급 = 힌트(실루엣 + 종족), 왕 = 비밀(?)
 const MIX_REVEAL_BY_GRADE := {"mid": "open", "high": "hint", "king": "secret"}
-## 성공 확률(임시). 실패하면 두 재료가 모두 사라진다(사용자 결정 2026-10-02).
-const MIX_SUCCESS_BY_GRADE := {"mid": 0.8, "high": 0.6, "king": 0.4}
-## 골드 비용(임시). 공식이 없는 조합도 같은 값을 받아 비밀과 구별되지 않게 한다.
+## 기본 성공 확률(결과 등급별: 하급→중급 85%, 중급→상급 65%, 왕은 임시). 실패하면 두 재료가 모두 사라진다.
+const MIX_SUCCESS_BY_GRADE := {"mid": 0.85, "high": 0.65, "king": 0.4}
+## 성공 확률 = 기본 + 숙련 + 마크, 이 값을 넘지 않는다(임시)
+const MIX_SUCCESS_CAP := 0.95
+## 마크(소모품, 기획서 9장)의 성공 확률 보너스. 마크가 아직 없어서 0(내역에는 보인다)
+const MIX_MARK_BONUS := 0.0
+## 숙련도: 1~9단계, 믹스할 때마다 경험치(성공 100% · 실패 50%), 단계마다 성공 확률 +2%
+const MIX_MASTERY_MAX_LEVEL := 9
+const MIX_MASTERY_EXP_PER_MIX := 10
+const MIX_MASTERY_FAIL_EXP_RATE := 0.5
+const MIX_MASTERY_BONUS_PER_LEVEL := 0.02
+## 다음 단계까지 필요한 경험치(1→2, 2→3, … 8→9, 임시)
+const MIX_MASTERY_EXP_TO_NEXT := [30, 50, 80, 120, 170, 230, 300, 400]
+## 골드 비용(결과 등급별, 임시). 공식이 없는 조합은 믹스할 수 없다("알려진 공식이 없어요").
 const MIX_GOLD_COST_BY_GRADE := {"mid": 100, "high": 400, "king": 1000}
-const MIX_GOLD_COST_UNKNOWN := 100
-## 새로 태어난 코어의 나이·레벨(임시: 새 몸이라 어린 1레벨). 접미사는 주 코어의 것을 받는다.
+## 태어난 코어: 나이는 늘 어린, 성별은 50:50(FEMALE_CHANCE),
+## 레벨 = 재료 중 높은 레벨 × 이 값(절반, 최소 = 그 종의 출현 레벨)
 const MIX_BORN_AGE := CoreItem.Age.YOUNG
-const MIX_BORN_LEVEL := 1
+const MIX_BORN_LEVEL_RATIO := 0.5
+## 접미사: 이 확률로 주 코어의 접미사를 잇고, 아니면 9종 중 무작위
+const MIX_SUFFIX_KEEP_CHANCE := 0.5
+## 추가 스탯: 보조 코어 접미사의 능력치를 그 값의 15~20%만큼 물려받는다(고정치로 더한다)
+const MIX_INHERIT_RATE := Vector2(0.15, 0.2)
+## 이런 재료를 쓰면 한 번 더 묻는다: 빛나는 코어, 이 레벨 이상(임시)
+const MIX_CONFIRM_LEVEL := 20
+## 믹스 연출(초): 재료가 모이는 시간, 번쩍임이 사라지는 시간, 결과 카드가 튀어나오는 시간, 실패 흔들림
+const MIX_FX_GATHER_SECONDS := 0.45
+const MIX_FX_FLASH_SECONDS := 0.5
+const MIX_FX_POP_SECONDS := 0.35
+const MIX_FX_SHAKE_SECONDS := 0.4
+const MIX_FX_SHAKE_PIXELS := 14.0
 ## 분해하면 얻는 코어 조각(임시): 기본 + 빛나는 코어 · 변이 코어 덤
 const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2

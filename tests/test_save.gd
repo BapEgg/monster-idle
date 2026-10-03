@@ -48,7 +48,8 @@ func test_capture_and_restore_round_trip() -> void:
 	party_core.age = CoreItem.Age.OLD
 	party_core.party_slot = 1
 	var born := _core("dolguana", CoreItem.Gender.MALE, "lucky")
-	born.main_parent_gender = CoreItem.Gender.FEMALE
+	born.inherit_stat = "precise"
+	born.inherit_value = 6
 	born.passive_species_id = "sotmabaem"
 	born.locked = true
 	var shiny := _core("haemapo", CoreItem.Gender.MALE, "tough")
@@ -56,17 +57,27 @@ func test_capture_and_restore_round_trip() -> void:
 	shiny.variant = true
 	for item in [party_core, born, shiny]:
 		bag.add(item)
-	var data := GameSave.capture(bag, wallet, AutoControl.Mode.SEMI_AUTO, 1_800_000_000)
+	var mastery := MixMastery.new()
+	mastery.gain(true)
+	mastery.gain(true)
+	mastery.gain(true)
+	var codex := Codex.new()
+	codex.register("mireu")
+	var data := GameSave.capture(bag, wallet, AutoControl.Mode.SEMI_AUTO, 1_800_000_000, mastery, codex)
 	# 파일에 쓰고 읽은 것처럼 JSON을 거친다(숫자가 실수로 바뀐다)
 	var parsed: Dictionary = JSON.parse_string(JSON.stringify(data))
 	var bag2 := Bag.new()
 	var wallet2 := Wallet.new()
-	var dropped := GameSave.restore(parsed, bag2, wallet2, GameConfig.PARTY_HENCHES.size())
+	var mastery2 := MixMastery.new()
+	var codex2 := Codex.new()
+	var dropped := GameSave.restore(parsed, bag2, wallet2, GameConfig.PARTY_HENCHES.size(), mastery2, codex2)
 	expect_true(dropped == 0 and bag2.count() == 3, "코어 3개가 그대로 돌아온다")
 	for i in bag.count():
 		expect_true(bag2.cores[i].to_dict() == bag.cores[i].to_dict(), "%s: 종·접미사·나이·성별·레벨·빛남·변이·잠금·파티·유산·주 코어 성별이 같다" % bag.cores[i].species_id)
 	expect_true(wallet2.gold == 1234 and wallet2.shards == 7, "골드·코어 조각이 같다")
 	expect_true(GameSave.control_mode(parsed) == AutoControl.Mode.SEMI_AUTO, "사냥 방식을 기억한다")
+	expect_true(mastery2.level == mastery.level and mastery2.exp_points == mastery.exp_points, "믹스 숙련도를 기억한다 (%d단계)" % mastery2.level)
+	expect_true(codex2.has("mireu") and codex2.has("gochuryong") and codex2.has("dolguana") and codex2.has("haemapo"), "도감: 저장된 것 + 가방에 있는 종")
 	expect_true(int(parsed["version"]) == GameSave.VERSION and int(parsed["saved_at"]) == 1_800_000_000, "판·저장한 때")
 
 
@@ -84,7 +95,7 @@ func test_restore_cleans_bad_rows() -> void:
 	}
 	var bag := Bag.new()
 	var wallet := Wallet.new()
-	var dropped := GameSave.restore(data, bag, wallet, 3)
+	var dropped := GameSave.restore(data, bag, wallet, 3, MixMastery.new(), Codex.new())
 	expect_true(dropped == 2 and bag.count() == 3, "도감에 없는 종과 망가진 줄은 버린다 (버림 %d)" % dropped)
 	expect_true(bag.cores[0].party_slot == 0 and bag.cores[1].party_slot == -1 and bag.cores[2].party_slot == -1, "파티 자리는 겹치거나 없는 자리면 비운다")
 	expect_true(wallet.gold == 0, "골드가 음수면 0")

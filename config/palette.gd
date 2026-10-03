@@ -77,6 +77,14 @@ const BAG_BUTTON := Color(0, 0, 0, 0.45)
 ## 가방 칸: 고른 칸 바탕·테두리. 칸 테두리 뜻(사용자 결정 2026-10-03): 노랑 = 빛나는(CORE_SHINE), 흰색 = 고른 칸, 보라 반짝임 = 변이
 const CARD_SELECTED_BG := Color(1, 1, 1, 0.16)
 const CARD_SELECTED_BORDER := Color(1, 1, 1, 0.95)
+## 믹스창: 뒤 어둡게 / 성공 · 실패 번쩍임 / NEW 글자 / 숙련도 막대 / 고를 수 없는 재료 칸 덮개
+const MIX_DIM := Color(0, 0, 0, 0.65)
+const MIX_FLASH_SUCCESS := Color(1, 0.97, 0.8)
+const MIX_FLASH_FAIL := Color(0.85, 0.15, 0.15)
+const MIX_NEW := Color("ffd84a")
+const MIX_MASTERY_BAR := Color("b98cff")
+const MIX_GO_BG := Color(1, 0.85, 0.3, 0.16)
+const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")
 const CARD_VARIANT_BRIGHT := Color("e2c6ff")

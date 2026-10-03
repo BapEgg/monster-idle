@@ -152,7 +152,7 @@ func _load_game() -> void:
 			_fill_starter_bag()
 			_save_schedule.mark_dirty()
 		return
-	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size())
+	var dropped := GameSave.restore(data, bag, wallet, GameConfig.PARTY_HENCHES.size(), workshop.mastery, workshop.codex)
 	if dropped > 0:
 		push_warning("저장의 %s %d개를 읽지 못해 버림(도감에 없는 종)" % [UiText.TERM_CORE, dropped])
 	_player.control.mode = GameSave.control_mode(data)
@@ -160,7 +160,7 @@ func _load_game() -> void:
 
 ## 지금 상태를 바로 저장한다. 보통은 묶어서(_process) 부르고, 끌 때·앱이 뒤로 갈 때는 바로 부른다.
 func save_game() -> bool:
-	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()))
+	var data := GameSave.capture(bag, wallet, _player.control.mode, int(Time.get_unix_time_from_system()), workshop.mastery, workshop.codex)
 	if not save_store.save_data(data):
 		push_warning(save_store.last_error)
 		_save_schedule.mark_dirty()  # 다음 차례에 다시 해 본다
@@ -189,7 +189,9 @@ func _fill_starter_bag() -> void:
 		return
 	for row: Variant in root.get("cores", []):
 		if row is Dictionary:
-			bag.add(CoreItem.from_dict(row))
+			var item := CoreItem.from_dict(row)
+			workshop.codex.register(item.species_id)
+			bag.add(item)
 	wallet.add_gold(int(root.get("gold", 0)))
 
 
@@ -218,6 +220,7 @@ func drop_core(at: Vector2, item: CoreItem) -> void:
 
 
 func _on_core_collected(item: CoreItem) -> void:
+	workshop.codex.register(item.species_id)
 	bag.add(item)
 	hunt_log.add_core(item)
 	var label := HenchDb.get_species(item.species_id).name

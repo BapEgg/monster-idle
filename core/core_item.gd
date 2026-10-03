@@ -6,7 +6,7 @@ extends RefCounted
 
 ## 나이(기획서 4장): 어린(몸↑ 스킬↓ 성장 빠름) · 성체(평균) · 늙은(몸↓ 스킬↑ 성장 느림).
 enum Age { YOUNG, ADULT, OLD }
-## 성별(기획서 4장: 믹스는 암수 한 쌍, 어느 쪽이 암컷이냐에 따라 다른 종).
+## 성별(기획서 4장: 믹스는 암수 한 쌍, 성별은 성장 성향 — 암컷은 체력·방어, 수컷은 공격·속도가 더 오른다).
 enum Gender { FEMALE, MALE }
 
 var species_id := ""
@@ -24,8 +24,9 @@ var locked := false
 var party_slot := -1
 ## 지금 패시브의 주인 종. 비어 있으면 자기 종의 고유 패시브, 믹스에서 유산을 고르면 주 코어의 패시브.
 var passive_species_id := ""
-## 믹스로 태어났다면 그때 주 코어의 성별(능력치 경향이 달라진다, GameConfig.MIX_MAIN_GENDER_STATS). -1 = 야생에서 얻음.
-var main_parent_gender := -1
+## 믹스로 태어났다면 보조 코어에게서 물려받은 추가 스탯(보조 코어 접미사의 능력치)과 그 고정치. 야생에서 얻었으면 "" · 0.
+var inherit_stat := ""
+var inherit_value := 0
 
 
 func species() -> HenchSpecies:
@@ -51,7 +52,7 @@ func to_dict() -> Dictionary:
 	return {
 		"species": species_id, "suffix": suffix_id, "age": age, "gender": gender, "level": level,
 		"shining": shining, "variant": variant, "locked": locked, "party_slot": party_slot, "passive": passive_species_id,
-		"main_parent_gender": main_parent_gender,
+		"inherit_stat": inherit_stat, "inherit_value": inherit_value,
 	}
 
 
@@ -67,8 +68,14 @@ static func from_dict(row: Dictionary) -> CoreItem:
 	item.locked = bool(row.get("locked", false))
 	item.party_slot = int(row.get("party_slot", -1))
 	item.passive_species_id = str(row.get("passive", ""))
-	item.main_parent_gender = clampi(int(row.get("main_parent_gender", -1)), -1, Gender.size() - 1)
+	item.inherit_stat = str(row.get("inherit_stat", ""))
+	item.inherit_value = maxi(int(row.get("inherit_value", 0)), 0)
 	return item
+
+
+## 믹스로 태어난 코어인가(추가 스탯을 물려받았나).
+func is_mix_born() -> bool:
+	return inherit_stat != ""
 
 
 func duplicate_item() -> CoreItem:

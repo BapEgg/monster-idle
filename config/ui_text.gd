@@ -105,8 +105,8 @@ const INFO_KIND := "%s · %s · %s"
 const INFO_LEVEL := "LV %d"
 const INFO_HP := "HP"
 const INFO_MP := "MP"
-## 믹스로 태어난 코어: %s = 주 코어 성별, %s = 오른 능력치들, %d = 몇 %
-const INFO_BIRTH := TERM_MIX + " 출생(%s이 주 " + TERM_CORE + "): %s +%d%%"
+## 믹스로 태어난 코어: 보조 코어에게서 물려받은 추가 스탯. %s = 능력치 이름, %d = 더한 값
+const INFO_INHERIT := TERM_MIX + " 계승: %s +%d (보조 " + TERM_CORE + "에게서)"
 ## 변이 코어: %s = 오른 능력치들, %d = 몇 %. 믹스 재료로는 못 쓴다.
 const INFO_VARIANT := VARIANT + ": %s +%d%% · " + TERM_MIX + " 재료로 못 씀"
 const INFO_ACTIVE := "고유 액티브"
@@ -128,37 +128,70 @@ const BTN_YES := "예"
 ## 분해 확인. %s = 이름, %d = 조각 수
 const DISMANTLE_ASK := "%s\n분해하면 사라지고 " + TERM_CORE + " 조각 %d개를 얻습니다."
 const CANT_DISMANTLE := "잠겼거나 파티에 있는 것은 분해할 수 없습니다"
-## 믹스창
+## 믹스창(전체 화면, 사용자 정리 2026-10-03)
 const MIX_TITLE := TERM_MIX
 const MIX_MAIN := "주 " + TERM_CORE
 const MIX_SUB := "보조 " + TERM_CORE
-const MIX_SLOT_EMPTY := "아래에서 고르세요"
-## 성별 방향: 암컷 이름 / 수컷 이름
-## 주 코어(성별) × 보조 코어(성별). 태어날 종은 어느 쪽이 주 코어냐로 정해진다.
-const MIX_DIRECTION := "주 %s(%s)  ×  보조 %s(%s)"
-## 주 코어 성별에 따른 능력치 경향. %s = 성별, %s = 오른 능력치들, %d = 몇 %
-const MIX_GENDER_TREND := "%s이 주 " + TERM_CORE + " → 태어날 " + TERM_CORE + ":\n%s +%d%%"
+const MIX_SLOT_EMPTY := "아래에서\n고르세요"
+## 성별 기호(CoreItem.Gender 순서)
+const GENDER_SYMBOLS := ["♀", "♂"]
+## 공식 한 줄: 주 쪽 → 보조 쪽 → 결과. 한쪽은 "성별 기호 이름"
+const MIX_FORMULA := "%s  +  %s  →  %s"
+const MIX_FORMULA_SIDE := "%s %s"
+const MIX_FORMULA_EMPTY := "(%s)"
 ## 기획서에 없는 반대 방향 공식(임시 초안)일 때 결과 이름 옆에 붙는다.
 const MIX_DRAFT := "(초안 공식)"
-const MIX_RESULT := "결과"
 const MIX_HINT_NAME := "???"
 const MIX_SECRET := "?"
+## 힌트일 때 종류 줄: ??? · 종족
+const MIX_HINT_KIND := "??? · %s"
 const MIX_SWAP := "주 ↔ 보조"
-const MIX_PASSIVE_TITLE := "패시브 1칸: 무엇을 남길까요?"
-const MIX_KEEP_OWN := "자기 패시브: %s"
-const MIX_KEEP_LEGACY := "유산(주 " + TERM_CORE + "): %s"
-## 비용 / 보유 골드 / 성공 확률
-const MIX_COST := "비용 %d 골드 (보유 %d) · 성공 확률 %s"
+## 숙련도: 단계 / 다음 단계까지 경험치
+const MIX_MASTERY := TERM_MIX + " 숙련 %d단계"
+const MIX_MASTERY_EXP := "%d/%d"
+const MIX_MASTERY_MAX := "최고"
+## 결과 미리보기 줄 이름표와 값
+const MIX_PREVIEW_CAPTIONS := ["예상 레벨", "접미사", "계승 스탯", "나이", "성별"]
+const MIX_PREVIEW_LEVEL := "Lv %d"
+## 주 코어 접미사 이름 · 그 확률 / 무작위 확률
+const MIX_PREVIEW_SUFFIX := "%s %d%% · 무작위 %d%%"
+## 보조 코어 접미사 능력치 + 최소~최대
+const MIX_PREVIEW_INHERIT := "%s +%d~%d"
+## 암컷 % · 수컷 %
+const MIX_PREVIEW_GENDER := "♀ %d%% · ♂ %d%%"
+const MIX_PREVIEW_UNKNOWN := "?"
+const MIX_KEEP_OWN := "자기 패시브\n%s"
+const MIX_KEEP_LEGACY := "유산 (주 " + TERM_CORE + ")\n%s"
+## 성공 확률(합) / 내역: 기본 + 숙련 + 마크
+const MIX_CHANCE := "성공 확률 %s"
+const MIX_CHANCE_PARTS := "기본 %d%% + 숙련 %d%% + 마크 %d%%"
+## 비용 / 보유 골드
+const MIX_COST := "비용 %d 골드 · 보유 %d"
 const MIX_WARNING := "실패하면 재료 둘이 모두 사라집니다"
-const MIX_CANDIDATES := "보조 " + TERM_CORE + " 고르기"
 const MIX_GO := TERM_MIX + "하기"
-## 믹스 확인. %s = 성공 확률
-const MIX_ASK := "성공 확률 %s\n실패하면 재료 둘이 모두 사라집니다. " + TERM_MIX + "할까요?"
-## 믹스 결과. %s = 이름, %s = 성별, %s = 나이
-const MIX_SUCCESS := TERM_MIX + " 성공!\n%s(%s · %s) 탄생"
-const MIX_FAIL := TERM_MIX + " 실패…\n재료 둘이 사라졌습니다"
+const MIX_MATERIALS := "재료 고르기"
+const MIX_FILTER_ALL := "전체 종족"
+## 재료 정렬(MixPanel.Sort 순서)
+const MIX_SORTS := ["레벨 높은 순", "등급 높은 순", "빛나는 먼저"]
+## 빛나는 코어 · 높은 레벨 재료를 쓸 때 한 번 더 묻기
+const MIX_CONFIRM_SHINING := "빛나는 " + TERM_CORE + "가 들어 있어요"
+const MIX_CONFIRM_LEVEL := "높은 레벨(Lv %d) 재료가 들어 있어요"
+const MIX_CONFIRM_ASK := "%s\n실패하면 재료 둘이 모두 사라집니다. " + TERM_MIX + "할까요?"
+## 결과 카드
+const MIX_RESULT_NEW := "NEW · 도감 등록"
+const MIX_RESULT_SUCCESS := TERM_MIX + " 성공!"
+## Lv · 나이 · 성별
+const MIX_RESULT_INFO := "LV %d · %s · %s"
+const MIX_MASTERY_UP := TERM_MIX + " 숙련 %d단계로 올랐어요!"
+const MIX_FAIL_TITLE := TERM_MIX + " 실패…"
+const MIX_FAIL_INFO := "재료 둘이 사라졌습니다"
+const BTN_TO_PARTY := "파티에 넣기"
+const BTN_SHOW_INFO := "정보 보기"
+const BTN_MIX_AGAIN := "계속 " + TERM_MIX
 const PERCENT := "%d%%"
 const UNKNOWN_PERCENT := "?%"
-## 믹스할 수 없는 까닭(Mix.Problem 순서: NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, VARIANT, NO_GOLD)
-const MIX_PROBLEMS := ["", "보조 칸이 비어 있습니다", "같은 것끼리는 안 됩니다", "암수 한 쌍이어야 합니다",
-	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", VARIANT + "는 재료로 쓸 수 없습니다", "골드가 모자랍니다"]
+## 믹스할 수 없는 까닭(Mix.Problem 순서: NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, VARIANT, NO_RECIPE, NO_GOLD)
+const MIX_PROBLEMS := ["", "재료 칸이 비어 있습니다", "같은 것끼리는 안 됩니다", "암수 한 쌍이어야 합니다",
+	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", VARIANT + "는 재료로 쓸 수 없습니다", "알려진 공식이 없어요", "골드가 모자랍니다"]
+## 재료 목록에서 고를 수 없는 칸에 붙는 짧은 까닭(Mix.Problem 순서). 주 코어 자신은 "주 " + TERM_CORE
+const MIX_MATERIAL_REASONS := ["", "", "주 " + TERM_CORE, "같은 성별", "잠금", "파티", VARIANT, "", ""]

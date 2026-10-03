@@ -2,7 +2,7 @@ class_name CoreInfo
 extends VBoxContainer
 ## 코어 정보창(가방 창 왼쪽, 사용자 결정 2026-10-03). 위에서부터:
 ## 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV, HP·MP 막대 /
-## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 보정 줄(변이 효과 · 믹스 출생 경향) / 고유 액티브·패시브 / 버튼 4개.
+## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 보정 줄(변이 효과 · 믹스 계승 스탯) / 고유 액티브·패시브 / 버튼 4개.
 ## 글자: 숫자는 흰색 굵게, 이름표는 연한 회색. 접미사로 강한 능력치 한 줄만 강조색(Palette.STAT_ACCENT).
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
@@ -147,14 +147,14 @@ func refresh() -> void:
 	_badges.badges = badges
 	_level.text = UiText.INFO_LEVEL % item.level
 	var stats := CoreStats.compute(item)
-	_hp_bar.show_value(UiText.INFO_HP, stats["hp"], Palette.INFO_HP_BAR)
-	_mp_bar.show_value(UiText.INFO_MP, stats["mp"], Palette.INFO_MP_BAR)
+	_hp_bar.show_value(UiText.INFO_HP, str(stats["hp"]), Palette.INFO_HP_BAR)
+	_mp_bar.show_value(UiText.INFO_MP, str(stats["mp"]), Palette.INFO_MP_BAR)
 	for stat: String in _stat_values:
 		var accent := stat == item.suffix_id
 		(_stat_values[stat] as Label).text = str(stats.get(stat, 0))
 		(_stat_values[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT)
 		(_stat_names[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT_LABEL)
-	_show_bonus(CoreStats.main_gender_stats(item), CoreStats.variant_stats(item))
+	_show_bonus(CoreStats.variant_stats(item))
 	_active.text = species.active
 	if species.skill != "":
 		_active.text += UiText.INFO_SKILL_KIND % UiText.SKILL_KIND_NAMES.get(species.skill, species.skill)
@@ -166,11 +166,11 @@ func refresh() -> void:
 	_mix.disabled = item.locked or item.in_party() or item.variant
 
 
-## 보정 줄: 변이 효과 또는 믹스 출생(주 코어 성별 경향). 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).
-func _show_bonus(boosted: Array, mutated: Array) -> void:
-	_bonus.visible = not boosted.is_empty() or not mutated.is_empty()
-	if not boosted.is_empty():
-		_bonus.text = UiText.INFO_BIRTH % [UiText.GENDER_NAMES[item.main_parent_gender], SuffixDb.stat_list(boosted), roundi(GameConfig.MIX_MAIN_GENDER_BONUS * 100.0)]
+## 보정 줄: 변이 효과 또는 믹스 계승 스탯(보조 코어에게서). 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).
+func _show_bonus(mutated: Array) -> void:
+	_bonus.visible = item.is_mix_born() or not mutated.is_empty()
+	if item.is_mix_born():
+		_bonus.text = UiText.INFO_INHERIT % [SuffixDb.stat_name(item.inherit_stat), item.inherit_value]
 		_bonus.add_theme_color_override("font_color", Palette.STAT_BOOSTED)
 	elif not mutated.is_empty():
 		_bonus.text = UiText.INFO_VARIANT % [SuffixDb.stat_list(mutated), roundi(GameConfig.VARIANT_STAT_BONUS * 100.0)]

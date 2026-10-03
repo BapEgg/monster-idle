@@ -26,6 +26,11 @@ const SPARKLE_LAPS := 0.5
 const SPARKLE_RADIUS := 3.5
 
 var item: CoreItem
+## 고를 수 없는 까닭(믹스창 재료 목록). 비어 있지 않으면 칸을 어둡게 덮고 까닭을 가운데에 쓴다.
+var block_reason := "":
+	set(value):
+		block_reason = value
+		queue_redraw()
 ## 고른 칸인가(흰 테두리).
 var selected := false:
 	set(value):
@@ -105,6 +110,21 @@ func _draw() -> void:
 		UiKit.draw_badge(self, bottom_right, Vector2.ONE, UiText.BADGE_PARTY, Palette.BADGE_PARTY, badge_size)
 	elif item.locked:
 		UiKit.draw_badge(self, bottom_right, Vector2.ONE, UiText.BADGE_LOCK, Palette.BADGE_LOCK, badge_size)
+	if block_reason != "":
+		_draw_blocked(rect, name_size)
+
+
+## 고를 수 없는 칸: 어둡게 덮고 까닭을 가운데에.
+func _draw_blocked(rect: Rect2, font_size: int) -> void:
+	var shade := StyleBoxFlat.new()
+	shade.bg_color = Palette.CARD_BLOCKED_SHADE
+	shade.set_corner_radius_all(CORNER)
+	draw_style_box(shade, rect)
+	var font := ThemeDB.fallback_font
+	var width := font.get_string_size(block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var at := Vector2((size.x - width) * 0.5, size.y * 0.5 + font_size * 0.35)
+	draw_string_outline(font, at, block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 4, Palette.TEXT_OUTLINE)
+	draw_string(font, at, block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Palette.TEXT)
 
 
 ## 테두리 색들(바깥부터): 고른 칸 = 흰색, 빛나는 = 노랑, 변이 = 보라 반짝임. 아무것도 아니면 빈 배열(얇은 기본 테두리).

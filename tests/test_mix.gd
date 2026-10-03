@@ -1,6 +1,7 @@
 extends "res://tests/suite.gd"
-## core/mix.gd, core/core_stats.gd, core/unit_stats.gd(코어 → 전투), core/wallet.gd 테스트:
-## 믹스(주 코어 방향·공개 단계·확률·실패 소멸 규칙), 능력치(주 코어 성별 경향 포함), 파티 전투 환산, 지갑.
+## core/mix.gd, core/mix_mastery.gd, core/codex.gd, core/core_stats.gd, core/unit_stats.gd(코어 → 전투), core/wallet.gd 테스트:
+## 믹스(기획서 4장 믹스 세부 규칙: 주 코어 방향·계승 스탯·성별 성장·성공률·숙련도·결과 레벨·접미사·공식 없음),
+## 능력치, 파티 전투 환산, 지갑.
 
 
 func _core(id: String, gender: CoreItem.Gender, suffix := "mighty") -> CoreItem:
@@ -33,17 +34,22 @@ func test_reveal_by_grade() -> void:
 	expect_true(Mix.reveal_of("dolguana") == Mix.Reveal.OPEN, "중급 결과 = 공개(이름)")
 	expect_true(Mix.reveal_of("banseoksangun") == Mix.Reveal.HINT, "상급 결과 = 힌트(실루엣)")
 	expect_true(Mix.reveal_of("mireu") == Mix.Reveal.SECRET, "왕 = 비밀(?)")
-	expect_true(Mix.reveal_of("") == Mix.Reveal.SECRET, "공식 없는 조합도 비밀(?)로 보여 구별되지 않는다")
+	expect_true(Mix.reveal_of("") == Mix.Reveal.SECRET, "공식 없는 조합은 ?(믹스는 못 한다)")
 	var beon_f := _core("beongaeiri", CoreItem.Gender.FEMALE)
 	var dol_m := _core("dolguana", CoreItem.Gender.MALE)
 	expect_true(Mix.result_id(beon_f, dol_m) == "banseoksangun", "번개이리(암) + 돌구아나(수) = 반석산군")
 
 
+## 기획서 4장: 기본 성공률 하급→중급 85%, 중급→상급 65%. 확률 내역 = 기본 + 숙련 + 마크.
 func test_chance_and_cost() -> void:
-	expect_near(Mix.success_chance("dolguana"), GameConfig.MIX_SUCCESS_BY_GRADE["mid"], "중급 성공 확률 = 설정값")
-	expect_near(Mix.success_chance(""), 0.0, "공식 없는 조합은 늘 실패")
+	expect_near(Mix.success_chance("dolguana"), 0.85, "하급→중급 기본 85%")
+	expect_near(Mix.success_chance("banseoksangun"), 0.65, "중급→상급 기본 65%")
+	expect_near(Mix.success_chance(""), 0.0, "공식 없는 조합은 0")
+	var parts := Mix.success_parts("dolguana", 5)
+	expect_near(parts["mastery"], 4 * GameConfig.MIX_MASTERY_BONUS_PER_LEVEL, "숙련 5단계 = +8%")
+	expect_near(parts["total"], parts["base"] + parts["mastery"] + parts["mark"], "합 = 기본 + 숙련 + 마크")
+	expect_near(Mix.success_chance("dolguana", GameConfig.MIX_MASTERY_MAX_LEVEL), minf(0.85 + 8 * GameConfig.MIX_MASTERY_BONUS_PER_LEVEL, GameConfig.MIX_SUCCESS_CAP), "상한을 넘지 않는다")
 	expect_true(Mix.gold_cost("dolguana") == GameConfig.MIX_GOLD_COST_BY_GRADE["mid"], "중급 비용 = 설정값")
-	expect_true(Mix.gold_cost("") == GameConfig.MIX_GOLD_COST_UNKNOWN, "공식 없는 조합도 비용을 받는다")
 
 
 func test_problems() -> void:
@@ -60,32 +66,119 @@ func test_problems() -> void:
 	expect_true(Mix.problem(f, m, 9999) == Mix.Problem.IN_PARTY, "파티에 있는 코어는 재료로 못 씀")
 	m.party_slot = -1
 	expect_true(Mix.problem(f, m, 9999) == Mix.Problem.NONE, "암수 한 쌍, 골드 충분 → 믹스 가능")
+	expect_true(Mix.problem(_core("sotmabaem", CoreItem.Gender.FEMALE), _core("haemapo", CoreItem.Gender.MALE), 9999) == Mix.Problem.NO_RECIPE, "공식 없는 조합은 믹스 불가(알려진 공식이 없어요)")
+	expect_true(UiText.MIX_PROBLEMS.size() == Mix.Problem.size() and UiText.MIX_MATERIAL_REASONS.size() == Mix.Problem.size(), "까닭 문구가 까닭 수만큼 있다")
+	# 재료 목록에서 흐리게 보일 까닭(주 코어 자신 · 같은 성별 · 잠금 · 파티 · 변이)
+	var v := _core("haemapo", CoreItem.Gender.MALE)
+	v.variant = true
+	expect_true(Mix.material_problem(f, f) == Mix.Problem.SAME_CORE and Mix.material_problem(_core("haemapo", CoreItem.Gender.FEMALE), f) == Mix.Problem.SAME_GENDER and Mix.material_problem(v, f) == Mix.Problem.VARIANT and Mix.material_problem(m, f) == Mix.Problem.NONE, "재료 칸 까닭")
 
 
-## 사용자 결정(2026-10-02): 성공 확률이 있고, 실패하면 재료가 사라진다(재료를 없애는 건 부르는 쪽).
+## 기획서 4장 믹스 세부 규칙: 성공 확률이 있고 실패하면 재료가 사라진다(없애는 건 Workshop).
+## 태어난 코어: 레벨 = 높은 레벨의 절반(최소 = 출현 레벨), 접미사 = 주 코어 것 50% · 나머지 무작위,
+## 추가 스탯 = 보조 코어 접미사 능력치의 15~20%, 나이 = 어린, 성별 50:50, 유산 패시브 선택.
 func test_roll_success_rate_and_born_core() -> void:
 	var main := _core("gochuryong", CoreItem.Gender.FEMALE, "lucky")
+	main.level = 50
 	main.passive_species_id = "sotmabaem"  # 주 코어가 이미 솥마뱀 패시브를 유산으로 갖고 있다
-	var sub := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+	var sub := _core("kkangtonggeobuk", CoreItem.Gender.MALE, "sturdy")
+	sub.level = 9
+	var span := Mix.inherit_range(sub)
+	var sub_value := float(CoreStats.compute(sub)["sturdy"])
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 21
 	var born_count := 0
+	var kept_suffix := 0
+	var females := 0
+	var inherit_ok := true
 	var sample: CoreItem = null
 	for i in 5000:
 		var born := Mix.roll(rng, main, sub, true)
-		if born != null:
-			born_count += 1
-			sample = born
-	expect_near(born_count / 5000.0, GameConfig.MIX_SUCCESS_BY_GRADE["mid"], "성공 비율 ≈ 설정값", 0.02)
-	expect_true(sample.species_id == "dolguana" and sample.suffix_id == "lucky", "태어난 종 = 돌구아나, 접미사 = 주 코어의 것")
-	expect_true(sample.age == GameConfig.MIX_BORN_AGE and sample.level == GameConfig.MIX_BORN_LEVEL, "새 몸: 나이·레벨 = 설정값")
+		if born == null:
+			continue
+		born_count += 1
+		sample = born
+		kept_suffix += 1 if born.suffix_id == "lucky" else 0
+		females += 1 if born.gender == CoreItem.Gender.FEMALE else 0
+		inherit_ok = inherit_ok and born.inherit_stat == "sturdy" and born.inherit_value >= span.x and born.inherit_value <= span.y
+	expect_near(born_count / 5000.0, 0.85, "성공 비율 ≈ 85%", 0.02)
+	expect_true(sample.species_id == "dolguana" and sample.age == CoreItem.Age.YOUNG, "태어난 종 = 돌구아나, 나이 = 어린")
+	expect_true(sample.level == 25 and Mix.born_level(main, sub, "dolguana") == 25, "레벨 = 높은 레벨(50)의 절반 = 25")
+	# 접미사: 주 코어 것 50% + 무작위 9종 중 하나가 우연히 같은 경우(1/9 × 50%)
+	expect_near(float(kept_suffix) / born_count, GameConfig.MIX_SUFFIX_KEEP_CHANCE + (1.0 - GameConfig.MIX_SUFFIX_KEEP_CHANCE) / 9.0, "주 코어 접미사를 잇는 비율 ≈ 50% (+무작위로 같은 것)", 0.03)
+	expect_near(float(females) / born_count, GameConfig.FEMALE_CHANCE, "성별 50:50", 0.03)
+	expect_true(inherit_ok and span.x == maxi(roundi(sub_value * 0.15), 1) and span.y == maxi(roundi(sub_value * 0.2), 1), "추가 스탯 = 보조 코어 접미사(방어) %d의 15~20%% → %d~%d" % [sub_value, span.x, span.y])
 	expect_true(sample.passive_species_id == "sotmabaem", "유산을 고르면 주 코어의 지금 패시브를 받는다")
-	expect_true(Mix.roll(rng, main, sub, false) == null or Mix.roll(rng, main, sub, false).passive_species_id == "", "유산을 안 고르면 자기 패시브")
-	expect_true(sample.main_parent_gender == CoreItem.Gender.FEMALE, "태어난 코어는 주 코어의 성별(암컷)을 기억한다")
+	var own := Mix.roll(rng, main, sub, false)
+	expect_true(own == null or own.passive_species_id == "", "유산을 안 고르면 자기 패시브")
+	var low := _core("gochuryong", CoreItem.Gender.FEMALE)
+	var low_sub := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+	expect_true(Mix.born_level(low, low_sub, "dolguana") == HenchDb.get_species("dolguana").level_min, "낮은 재료면 최소 = 출현 레벨")
 	var never := 0
 	for i in 200:
 		never += 1 if Mix.roll(rng, _core("sotmabaem", CoreItem.Gender.MALE), _core("haemapo", CoreItem.Gender.FEMALE), true) != null else 0
-	expect_true(never == 0, "공식 없는 조합은 200번 모두 실패")
+	expect_true(never == 0, "공식 없는 조합은 태어나지 않는다")
+
+
+## 기획서 4장 믹스 세부 규칙: 숙련도 1~9단계, 성공 100% · 실패 50% 경험치, 단계마다 성공 확률 +2%.
+func test_mastery() -> void:
+	var mastery := MixMastery.new()
+	expect_true(mastery.level == 1 and mastery.success_bonus() == 0.0, "1단계 = 보너스 없음")
+	var need := mastery.exp_to_next()
+	var fails := 0
+	while mastery.level == 1:
+		mastery.gain(false)
+		fails += 1
+	expect_true(fails == ceili(float(need) / roundi(GameConfig.MIX_MASTERY_EXP_PER_MIX * GameConfig.MIX_MASTERY_FAIL_EXP_RATE)), "실패는 경험치 절반 (%d번에 2단계)" % fails)
+	expect_near(mastery.success_bonus(), GameConfig.MIX_MASTERY_BONUS_PER_LEVEL, "2단계 = +2%")
+	for i in 1000:
+		mastery.gain(true)
+	expect_true(mastery.is_max() and mastery.level == GameConfig.MIX_MASTERY_MAX_LEVEL and mastery.progress() == 1.0 and not mastery.gain(true), "9단계에서 멈춘다")
+	var copy := MixMastery.new()
+	copy.load_dict(mastery.to_dict())
+	expect_true(copy.level == mastery.level, "저장해도 단계가 남는다")
+
+
+func test_codex() -> void:
+	var codex := Codex.new()
+	expect_true(codex.register("dolguana") and not codex.register("dolguana") and codex.has("dolguana") and codex.count() == 1, "처음 얻은 종만 NEW")
+
+
+## 기획서 4장: 성별 = 성장 성향(암컷은 체력·방어, 수컷은 공격·속도가 레벨업 때 조금 더 오름)
+func test_gender_growth() -> void:
+	var f1 := _core("dolguana", CoreItem.Gender.FEMALE, "lucky")
+	var m1 := _core("dolguana", CoreItem.Gender.MALE, "lucky")
+	var a := CoreStats.compute(f1)
+	var b := CoreStats.compute(m1)
+	expect_true(a["tough"] == b["tough"] and a["mighty"] == b["mighty"], "1레벨은 성별 차이 없음")
+	f1.level = 30
+	m1.level = 30
+	a = CoreStats.compute(f1)
+	b = CoreStats.compute(m1)
+	expect_true(a["tough"] > b["tough"] and a["sturdy"] > b["sturdy"], "암컷: 체력·방어가 더 오름")
+	expect_true(b["mighty"] > a["mighty"] and b["swift"] > a["swift"], "수컷: 공격·속도가 더 오름")
+	expect_true(a["precise"] == b["precise"], "그 밖의 능력치는 같다")
+
+
+## 믹스 계승 스탯은 고정치로 더해지고 저장된다.
+func test_inherit_adds_flat() -> void:
+	var plain := _core("dolguana", CoreItem.Gender.FEMALE, "lucky")
+	var born := _core("dolguana", CoreItem.Gender.FEMALE, "lucky")
+	born.inherit_stat = "precise"
+	born.inherit_value = 7
+	expect_true(CoreStats.compute(born)["precise"] == CoreStats.compute(plain)["precise"] + 7 and born.is_mix_born() and not plain.is_mix_born(), "계승 +7")
+	var copy := CoreItem.from_dict(born.to_dict())
+	expect_true(copy.inherit_stat == "precise" and copy.inherit_value == 7, "저장해도 계승이 남는다")
+
+
+func test_needs_confirm() -> void:
+	var item := _core("gochuryong", CoreItem.Gender.FEMALE)
+	expect_true(not Mix.needs_confirm(item), "보통 재료는 바로")
+	item.shining = true
+	expect_true(Mix.needs_confirm(item), "빛나는 코어는 한 번 더 묻는다")
+	item.shining = false
+	item.level = GameConfig.MIX_CONFIRM_LEVEL
+	expect_true(Mix.needs_confirm(item), "높은 레벨도 한 번 더 묻는다")
 
 
 func test_dismantle_shards() -> void:
@@ -119,27 +212,6 @@ func test_stats() -> void:
 	expect_true(y["tough"] > o["tough"] and y["abundant"] < o["abundant"], "어린 = 몸↑ 스킬↓, 늙은 = 몸↓ 스킬↑ (기획서 4장)")
 	var mid := _core("gabotjangsu", CoreItem.Gender.MALE, "lucky")  # 근접딜러, 중급
 	expect_near(float(CoreStats.compute(mid)["mighty"]), stats["mighty"] * GameConfig.CORE_GRADE_BONUS["mid"], "중급 = 하급 × 등급 보정(약 +10%)", 1.0)
-
-
-## 사용자 결정(2026-10-03): 주 코어가 암컷이냐 수컷이냐에 따라 태어난 코어의 능력치 3개가 오른다(임시 설정값).
-func test_main_gender_trend() -> void:
-	var wild := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
-	var from_female := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
-	from_female.main_parent_gender = CoreItem.Gender.FEMALE
-	var from_male := _core("dolguana", CoreItem.Gender.FEMALE, "precise")
-	from_male.main_parent_gender = CoreItem.Gender.MALE
-	var w := CoreStats.compute(wild)
-	var f := CoreStats.compute(from_female)
-	var m := CoreStats.compute(from_male)
-	expect_true(CoreStats.main_gender_stats(wild).is_empty(), "야생에서 얻은 코어는 성별 경향이 없다")
-	for stat: String in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.FEMALE]:
-		expect_near(float(f[stat]), w[stat] * (1.0 + GameConfig.MIX_MAIN_GENDER_BONUS), "암컷이 주 코어 → %s +설정값" % stat, 1.0)
-		if stat not in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.MALE]:
-			expect_true(m[stat] == w[stat], "수컷이 주 코어면 %s는 그대로" % stat)
-	for stat: String in GameConfig.MIX_MAIN_GENDER_STATS[CoreItem.Gender.MALE]:
-		expect_true(m[stat] > w[stat], "수컷이 주 코어 → %s↑" % stat)
-	var copy := CoreItem.from_dict(from_male.to_dict())
-	expect_true(copy.main_parent_gender == CoreItem.Gender.MALE and CoreItem.from_dict({"species": "dolguana"}).main_parent_gender == -1, "저장해도 주 코어 성별이 남는다(없으면 야생)")
 
 
 ## 파티에 넣은 코어는 그 능력치로 싸운다(임시 환산). 역할 상식: 탱커가 가장 튼튼, 딜러 공격 > 탱커 > 힐러, 힐러만 회복.
@@ -226,6 +298,9 @@ func test_workshop_consumes_materials() -> void:
 			fails += 1
 			expect_true(bag.count() == before - 2, "실패: 재료만 사라짐")
 	expect_true(successes > 0 and fails > 0, "성공도 실패도 나온다 (성공 %d · 실패 %d)" % [successes, fails])
+	var exp_total := successes * GameConfig.MIX_MASTERY_EXP_PER_MIX + fails * roundi(GameConfig.MIX_MASTERY_EXP_PER_MIX * GameConfig.MIX_MASTERY_FAIL_EXP_RATE)
+	expect_true(shop.mastery.level > 1, "믹스할수록 숙련도가 오른다 (경험치 %d → %d단계)" % [exp_total, shop.mastery.level])
+	expect_true(shop.codex.has("dolguana"), "태어난 종은 도감에 등록된다")
 
 
 func test_workshop_blocks_locked_and_party() -> void:
