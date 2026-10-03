@@ -283,6 +283,48 @@ const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2
 const DISMANTLE_SHARDS_VARIANT_BONUS := 4
 
+# ─── 섬의 왕 보스전 (프로토타입 6, 연습용 임시 보스 — 왕별 전투 규칙은 기획서에서 미정) ─────
+## 연습 상대(data/henches.json의 id): 용섬의 왕 미르. 연습이라 보상이 없다.
+const BOSS_SPECIES := "mireu"
+## 보스 능력치(임시): 체력, 공격력, 공격 간격(초), 사거리(땅 위 px)
+const BOSS_STATS := {"hp": 2500.0, "attack": 18.0, "attack_interval": 1.6, "attack_range": 95.0}
+const BOSS_SPEED := 110.0
+## 주인공에게서 이만큼 떨어진 곳에 나타나고(화면 px), 이 시간(초) 동안 이름을 보이며 서 있다가 싸움을 건다.
+const BOSS_SPAWN_OFFSET := Vector2(300, 0)
+const BOSS_INTRO_SECONDS := 2.0
+## 첫 장판까지 기다리는 시간(초)
+const BOSS_FIRST_PATTERN_SECONDS := 3.0
+## 체력 구간(체력 바 눈금): 남은 체력 비율이 until보다 크면 그 구간. 구간마다 쓰는 장판(차례대로 돌아가며)과 장판 사이 간격(초).
+const BOSS_PHASES := [
+	{"until": 0.7, "patterns": ["breath"], "interval": 6.0},
+	{"until": 0.35, "patterns": ["breath", "lightning"], "interval": 5.0},
+	{"until": 0.0, "patterns": ["whirl", "breath", "lightning"], "interval": 4.0},
+]
+## 장판(임시): windup = 경고가 차오르는 시간(초), damage = 맞은 쪽 최대 체력의 몇 배.
+## breath = 보스 앞 부채꼴(radius 길이 · angle 도), lightning = 파티 한 명 한 명 발밑 원(radius), whirl = 보스 둘레 고리(inner 안쪽은 안전 ~ radius 바깥까지).
+const BOSS_PATTERNS := {
+	"breath": {"windup": 1.4, "damage": 0.35, "radius": 340.0, "angle": 70.0},
+	"lightning": {"windup": 1.6, "damage": 0.25, "radius": 85.0},
+	"whirl": {"windup": 1.8, "damage": 0.45, "inner": 120.0, "radius": 460.0},
+}
+## 자동(풀오토 주인공 · 헨치)은 장판이 이만큼 차오른 뒤에야 피한다. 수동은 보자마자 피할 수 있다(기획서 7장: 보스 패턴 직접 회피 = 수동 이득).
+const BOSS_AUTO_DODGE_PROGRESS := 0.55
+## 피할 때 장판 밖으로 이만큼 더 나간다(땅 위 px)
+const DODGE_MARGIN := 24.0
+## 장판이 겹쳐 가까운 출구가 다른 장판 안이면, 둘레를 이 간격(땅 위 px) · 걸음 수 · 방향 수로 훑어 가장 가까운 안전한 곳을 찾는다
+const DODGE_SEARCH_STEP := 50.0
+const DODGE_SEARCH_STEPS := 8
+const DODGE_SEARCH_DIRECTIONS := 16
+## 지휘(기획서 7장: 역할 그룹 지휘 — 전원 · 근접조 · 원거리조, 끌어서 대상 지정)
+## 끌어다 놓은 자리에서 버티는 시간(초). 그동안은 사거리 안의 적만 친다.
+const COMMAND_HOLD_SECONDS := 8.0
+## 지휘 버튼을 이만큼(화면 px) 넘게 끌어야 "그 자리로". 덜 끌고 떼면 "모여"(다시 주인공을 따라감).
+const COMMAND_DRAG_MIN := 30.0
+## 여러 마리를 한 자리로 보낼 때 서로 비켜 설 거리(화면 px)
+const COMMAND_SPREAD := 34.0
+## 끌어다 놓은 자리에 잠깐 퍼지는 고리 반지름(px)
+const COMMAND_MARK_RADIUS := 40.0
+
 # ─── 저장 (나중에 Firebase로 갈아 끼운다, 코드 규칙 9) ──────
 ## 기기 안 저장 파일. user:// = Godot가 게임마다 따로 주는 사용자 데이터 폴더
 ## (에디터 메뉴 "프로젝트 → 사용자 데이터 폴더 열기"로 열린다. 이 파일을 지우면 처음부터 시작).

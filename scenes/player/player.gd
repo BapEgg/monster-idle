@@ -54,7 +54,8 @@ func _think(delta: float) -> void:
 	control.update(delta, touching or input != Vector2.ZERO)
 	_drop_lost_target(control.is_manual())
 	if not control.is_manual():
-		_hunt()
+		if not _auto_dodge():  # 자동일 때만 보스 장판을 알아서 피한다(조금 늦게). 직접 움직이면 바로 피할 수 있다.
+			_hunt()
 		return
 	var attack_held := Input.is_action_pressed("attack")
 	if attack_held:

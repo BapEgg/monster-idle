@@ -4,6 +4,8 @@ extends Unit
 ## 내 파티(PARTY): 주인공을 따라다니다가, 주인공이 노리는 적이나 파티를 공격하는 적과 싸운다.
 ##   모든 헨치가 기본 공격을 한다. 힐러는 그와 함께(대기 시간이 따로) 다친 동료를 회복한다.
 ##   고유 액티브(스킬)는 풀오토면 알아서, 아니면 스킬 칸을 눌렀을 때 쓴다(대상이 멀면 다가가서).
+##   보스 장판은 늘 알아서 피하되 조금 늦게 피한다(GameConfig.BOSS_AUTO_DODGE_PROGRESS).
+##   지휘(보스전): 끌어다 놓은 자리로 가서 정해진 시간 버티며 사거리 안의 적만 치거나, 정해 준 상대를 친다.
 ## 야생(WILD): 자기 자리 주변을 돌아다니다가, 맞으면 위협 점수가 가장 높은 상대에게 반격한다("!").
 ##   선공(빨간 이름표)은 시야로 파티를 지켜보다가(머리 위 전구가 차오름) 다 알아채면 먼저 덤빈다("!").
 ##   너무 멀리 쫓아가면 포기하고 돌아간다(파란 표시). 아직 알아채지 못했을 때 수동으로 넣은 첫 타는 기습이다.
@@ -50,6 +52,9 @@ var skill: HenchSkill
 ## 지금까지 스킬을 쓴 횟수(실행 검사·기록용)
 var skill_casts := 0
 var _skill_request_left := 0.0  # 스킬 칸을 눌러 부탁받은 뒤 남은 시간. 0 = 부탁 없음
+var _hold_point := Vector2.INF  # 지휘로 버티는 자리(없으면 INF)
+var _hold_left := 0.0
+var _focus: Unit  # 지휘로 정해 준 상대
 ## 따라다닐 때 주인공 기준 자리(화면 px).
 var slot := Vector2.ZERO
 var _following := false
@@ -112,6 +117,10 @@ func _physics_process(delta: float) -> void:
 	if skill != null:
 		skill.tick(delta)
 	_skill_request_left = maxf(_skill_request_left - delta, 0.0)
+	if is_holding():
+		_hold_left -= delta
+		if _hold_left <= 0.0:
+			_hold_point = Vector2.INF
 	super(delta)
 
 
@@ -124,6 +133,11 @@ func is_manually_controlled() -> bool:
 
 func _think_party() -> void:
 	if not is_instance_valid(leader) or not leader.is_alive():
+		return
+	if _auto_dodge():
+		return  # 보스 장판에서 빠져나가는 중
+	if is_holding():
+		_hold_position()
 		return
 	if _use_skill():
 		return  # 스킬을 썼거나, 쓰려고 다가가는 중
@@ -144,6 +158,8 @@ func _think_party() -> void:
 ## 싸울 상대: 파티를 공격 중인 야생 헨치와 주인공이 노리는 대상 중 나에게 가장 가까운 것.
 ## 주인공에게서 너무 먼 적은 쫓지 않는다.
 func _pick_enemy() -> Unit:
+	if is_instance_valid(_focus) and _focus.is_alive():
+		return _focus
 	var candidates: Array[Unit] = []
 	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.WILD)):
 		var wild := node as Hench
@@ -184,6 +200,48 @@ func _heal_someone() -> bool:
 	return true
 
 
+# ─── 지휘 (보스전, 기획서 7장: 역할 그룹 지휘) ─────────────
+
+## 그 자리로 가서 GameConfig.COMMAND_HOLD_SECONDS 동안 버틴다(사거리 안의 적만 친다).
+func command_move(point: Vector2) -> void:
+	_hold_point = point
+	_hold_left = GameConfig.COMMAND_HOLD_SECONDS
+	_focus = null
+	_following = false
+
+
+## 그 상대를 친다(버티기는 푼다).
+func command_attack(target: Unit) -> void:
+	_focus = target
+	_hold_point = Vector2.INF
+
+
+## 모여: 버티기·정한 상대를 풀고 다시 주인공을 따라간다.
+func command_regroup() -> void:
+	_focus = null
+	_hold_point = Vector2.INF
+
+
+## 지휘받은 자리에서 버티는 중인가.
+func is_holding() -> bool:
+	return _hold_point != Vector2.INF
+
+
+## 버티기: 그 자리로 가서 서 있고, 사거리 안의 적만 친다(회복 · 스킬도 사거리 안에서만).
+func _hold_position() -> void:
+	walk_to(_hold_point, 8.0)
+	if _use_skill(false):
+		return
+	if stats.heal > 0.0:
+		var patient := _most_hurt_ally(GameConfig.HEAL_THRESHOLD, stats.attack_range)
+		if patient != null:
+			try_heal(patient)
+	var enemy := _pick_enemy()
+	if enemy != null and in_reach(enemy, stats.attack_range):
+		face(enemy.position)
+		try_attack(enemy)
+
+
 # ─── 스킬 (내 파티) ──────────────────────────────
 
 ## 스킬 칸을 눌렀을 때. 쓸 수 있으면 바로(대상이 멀면 다가가서) 쓴다. 대기 중이거나 쓰러져 있으면 false.
@@ -202,7 +260,7 @@ func is_skill_requested() -> bool:
 ## 풀오토면 알아서, 아니면 부탁받았을 때 스킬을 쓴다. 썼거나 쓰려고 다가가는 중이면 true.
 ## 알아서 쓸 때: 공격은 싸울 상대가 사거리 안에 있을 때, 도발은 둘레에 싸우는 적이 있을 때,
 ## 회복은 체력이 기준(HEAL_THRESHOLD) 아래인 동료가 있을 때. 눌러서 쓸 때는 조건이 느슨하다.
-func _use_skill() -> bool:
+func _use_skill(may_move := true) -> bool:
 	if skill == null or not skill.is_ready():
 		return false
 	var asked := _skill_request_left > 0.0
@@ -213,7 +271,7 @@ func _use_skill() -> bool:
 	match skill.kind:
 		"heal":
 			var patient := _most_hurt_ally(1.0 if asked else GameConfig.HEAL_THRESHOLD, INF)
-			return patient != null and _cast_or_approach(patient, reach, asked)
+			return patient != null and _cast_or_approach(patient, reach, asked and may_move)
 		"heal_all":
 			if asked or _most_hurt_ally(GameConfig.HEAL_THRESHOLD, radius) != null:
 				_cast_skill(self)
@@ -227,7 +285,7 @@ func _use_skill() -> bool:
 	var enemy := _pick_enemy()
 	if enemy == null and asked:
 		enemy = _skill_target()
-	return enemy != null and _cast_or_approach(enemy, reach, asked)
+	return enemy != null and _cast_or_approach(enemy, reach, asked and may_move)
 
 
 ## 사거리 안이면 쓰고, 부탁받았는데 멀면 다가간다.

@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/confirm_box.tscn" id="9_confirm"]
 [ext_resource type="Script" path="res://scenes/ui/text_button.gd" id="10_text_button"]
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_panel.tscn" id="11_debug"]
+[ext_resource type="Script" path="res://scenes/ui/command_button.gd" id="12_command"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -22,6 +23,9 @@ size = Vector2(96, 34)
 size = Vector2(52, 52)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_bag"]
+size = Vector2(84, 38)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_command"]
 size = Vector2(84, 38)
 
 [node name="HUD" type="CanvasLayer"]
@@ -125,6 +129,26 @@ position = Vector2(-244, -99)
 shape = SubResource("RectangleShape2D_slot")
 script = ExtResource("4_slot")
 
+[node name="CommandAll" type="TouchScreenButton" parent="Controls"]
+visible = false
+position = Vector2(-428, -224)
+shape = SubResource("RectangleShape2D_command")
+script = ExtResource("12_command")
+
+[node name="CommandMelee" type="TouchScreenButton" parent="Controls"]
+visible = false
+position = Vector2(-338, -224)
+shape = SubResource("RectangleShape2D_command")
+script = ExtResource("12_command")
+group = 1
+
+[node name="CommandRanged" type="TouchScreenButton" parent="Controls"]
+visible = false
+position = Vector2(-248, -224)
+shape = SubResource("RectangleShape2D_command")
+script = ExtResource("12_command")
+group = 2
+
 [node name="TopControls" type="Control" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
@@ -139,6 +163,11 @@ script = ExtResource("6_bag_button")
 
 [node name="DebugButton" type="TouchScreenButton" parent="TopControls"]
 position = Vector2(-98, 156)
+shape = SubResource("RectangleShape2D_bag")
+script = ExtResource("10_text_button")
+
+[node name="BossButton" type="TouchScreenButton" parent="TopControls"]
+position = Vector2(-98, 204)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 

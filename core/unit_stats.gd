@@ -31,6 +31,11 @@ static func for_player() -> UnitStats:
 	return from_table(GameConfig.PLAYER_STATS, GameConfig.PLAYER_SPEED)
 
 
+## 섬의 왕(보스전, 연습용 임시 능력치).
+static func for_boss() -> UnitStats:
+	return from_table(GameConfig.BOSS_STATS, GameConfig.BOSS_SPEED)
+
+
 ## 역할(tank·melee·ranged·healer)별 능력치. 야생이면 체력·공격을 깎는다.
 static func for_hench(role: String, wild: bool) -> UnitStats:
 	var row: Dictionary = GameConfig.ROLE_STATS.get(role, GameConfig.ROLE_STATS["tank"])  # 섬의 왕(boss)은 아직 필드 능력치가 없다

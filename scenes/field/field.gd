@@ -101,6 +101,71 @@ func show_burst(at: Vector2, radius: float, color: Color) -> void:
 	ground_effects.add_child(burst)
 
 
+## 보스 장판을 바닥 위(유닛 아래)에 깐다.
+func add_danger(zone: BossZone) -> void:
+	ground_effects.add_child(zone)
+
+
+## 그 자리가 (min_progress 이상 차오른) 아직 안 터진 장판 안이면 가장 가까운 안전한 곳, 아니면 Vector2.INF.
+## 안전한 곳 = 어느 장판에도 들지 않고 걸어갈 수 있는 곳. 먼저 각 장판의 출구(DangerShape.escape_point)를 보고,
+## 장판이 겹쳐 출구가 다른 장판 안이면 둘레를 훑는다(GameConfig.DODGE_SEARCH_*). 그래도 없으면 첫 장판의 출구.
+func escape_point(at: Vector2, min_progress: float) -> Vector2:
+	var zones: Array[BossZone] = []
+	var inside: Array[BossZone] = []
+	for node in ground_effects.get_children():
+		var zone := node as BossZone
+		if zone != null and zone.is_pending():
+			zones.append(zone)
+			if zone.progress() >= min_progress and zone.shape.contains(at):
+				inside.append(zone)
+	if inside.is_empty():
+		return Vector2.INF
+	var fallback := inside[0].shape.escape_point(at, GameConfig.DODGE_MARGIN)
+	var candidates: Array[Vector2] = []
+	for zone in inside:
+		candidates.append(zone.shape.escape_point(at, GameConfig.DODGE_MARGIN))
+	var best := Vector2.INF
+	var best_distance := INF
+	for point in candidates:
+		if _is_safe(point, zones) and Iso.ground_distance(at, point) < best_distance:
+			best = point
+			best_distance = Iso.ground_distance(at, point)
+	if best != Vector2.INF:
+		return best
+	for step in range(1, GameConfig.DODGE_SEARCH_STEPS + 1):
+		for i in GameConfig.DODGE_SEARCH_DIRECTIONS:
+			var ground := Vector2.from_angle(TAU * i / GameConfig.DODGE_SEARCH_DIRECTIONS) * GameConfig.DODGE_SEARCH_STEP * step
+			var point := at + Iso.from_ground(ground)
+			if _is_safe(point, zones):
+				return point  # 가까운 걸음부터 보므로 처음 찾은 곳이 (거의) 가장 가깝다
+	return fallback
+
+
+func _is_safe(point: Vector2, zones: Array[BossZone]) -> bool:
+	if not is_walkable(point):
+		return false
+	for zone in zones:
+		if zone.shape.contains(point):
+			return false
+	return true
+
+
+## 아직 안 터진 장판이 있나.
+func has_danger() -> bool:
+	for node in ground_effects.get_children():
+		var zone := node as BossZone
+		if zone != null and zone.is_pending():
+			return true
+	return false
+
+
+## 깔린 장판을 모두 치운다(보스전이 끝났을 때).
+func clear_dangers() -> void:
+	for node in ground_effects.get_children():
+		if node is BossZone:
+			node.queue_free()
+
+
 ## 원거리 공격: 투사체를 날려 닿으면 피해를 준다.
 func shoot(from: Unit, to: Unit, damage: float) -> void:
 	var bullet := Projectile.new()

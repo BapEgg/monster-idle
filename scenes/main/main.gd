@@ -5,6 +5,7 @@ extends Node2D
 ## 가방 창에서 코어를 파티에 넣거나 믹스·분해·잠금한다(프로토타입 5, 실제 처리는 Workshop).
 ## 켤 때 저장을 불러오고(가방 · 골드 · 파티 · 사냥 방식), 바뀐 것은 묶어서 저장한다(SaveSchedule, 기획서 9장).
 ## 끌 때와 앱이 뒤로 갈 때(휴대폰 홈 버튼 · PC 창에서 다른 곳을 누름)는 기다리지 않고 바로 저장한다.
+## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
 
 ## 지금까지 처치한 야생 헨치 수.
 var kills := 0
@@ -13,6 +14,8 @@ var bag := Bag.new()
 var wallet := Wallet.new()
 var workshop := Workshop.new(bag, wallet)
 var hunt_log := HuntLog.new()
+## 보스전 중인 섬의 왕(보스전 밖이면 null).
+var boss: Boss
 ## 세이브 저장소. 비워 두면 기기 파일(GameConfig.SAVE_PATH). 실행 검사는 장면을 띄우기 전에 따로 쓰는 파일을 넣는다.
 var save_store: SaveStore
 
@@ -61,6 +64,9 @@ func _ready() -> void:
 	workshop.acted.connect(_save_schedule.mark_dirty.bind(true))
 	_spawner.killed.connect(_on_kill)
 	_spawner.setup(_field, _player)
+	_hud.boss_requested.connect(_on_boss_button)
+	_hud.command_dragged.connect(_on_command_dragged)
+	_hud.command_tapped.connect(_on_command_tapped)
 
 
 ## 파티 자리마다: 그 자리에 넣어 둔 코어가 있으면 그 코어의 헨치, 없으면 처음 헨치(GameConfig.PARTY_HENCHES).
@@ -230,9 +236,105 @@ func _on_core_collected(item: CoreItem) -> void:
 
 
 ## 주인공이 쓰러지면 잠시 뒤 파티 전체가 시작 지점에서 다시 일어난다(기획서: 패배해도 페널티 없이 후퇴).
+## 보스전 중이면 보스전은 패배로 끝난다.
 func _on_player_died(_unit: Unit) -> void:
+	if boss != null:
+		end_boss(UiText.BOSS_LOSE)
 	await get_tree().create_timer(GameConfig.PLAYER_REVIVE_SECONDS, false, true).timeout
 	var spawn := _field.spawn_position()
 	_player.revive_at(spawn)
 	for hench in party:
 		hench.revive_at(spawn + hench.slot)
+
+
+# ─── 보스전 (프로토타입 6, 연습용) ──────────────────────
+
+## 섬의 왕 버튼: 보스전 밖이면 도전할지, 안이면 그만둘지 묻는다.
+func _on_boss_button() -> void:
+	if boss == null:
+		_hud.confirm_box.ask(UiText.BOSS_ASK % HenchDb.get_species(GameConfig.BOSS_SPECIES).name, start_boss)
+	else:
+		_hud.confirm_box.ask(UiText.BOSS_GIVE_UP_ASK, func() -> void: end_boss(UiText.BOSS_GAVE_UP))
+
+
+## 보스전을 연다: 야생 출현을 멈추고 필드의 야생을 치운 뒤, 주인공 곁에 섬의 왕을 세워 싸움을 건다.
+func start_boss() -> void:
+	if boss != null or not _player.is_alive():
+		return
+	_spawner.pause()
+	for node in get_tree().get_nodes_in_group(Unit.group_name(Unit.Team.WILD)):
+		node.remove_from_group(Unit.group_name(Unit.Team.WILD))
+		node.queue_free()
+	boss = Boss.create_boss(HenchDb.get_species(GameConfig.BOSS_SPECIES))
+	boss.field = _field
+	boss.home = _boss_spawn_point()
+	boss.position = boss.home
+	boss.died.connect(_on_boss_died)
+	_field.objects.add_child(boss)
+	boss.reset_physics_interpolation()
+	boss.engage(_player)
+	_player.set_target(boss)
+	for hench in party:
+		hench.command_regroup()
+	_hud.set_boss_mode(true)
+
+
+## 보스전을 끝낸다(이김 · 짐 · 그만둠): 장판과 보스를 치우고, 지휘를 풀고, 야생 출현을 다시 연다.
+func end_boss(message: String) -> void:
+	if boss == null:
+		return
+	var old := boss
+	boss = null
+	_field.clear_dangers()
+	if is_instance_valid(old) and old.is_alive():
+		old.remove_from_group(Unit.group_name(Unit.Team.WILD))
+		old.queue_free()
+	for hench in party:
+		hench.command_regroup()
+	_hud.set_boss_mode(false)
+	_spawner.resume()
+	_hud.confirm_box.tell(message)
+
+
+func _on_boss_died(unit: Unit) -> void:
+	end_boss(UiText.BOSS_WIN % unit.display_name)
+
+
+## 주인공에게서 GameConfig.BOSS_SPAWN_OFFSET만큼 떨어진 걸을 수 있는 곳(막혔으면 방향을 돌려 가며 찾는다).
+func _boss_spawn_point() -> Vector2:
+	for i in 8:
+		var at := _player.position + GameConfig.BOSS_SPAWN_OFFSET.rotated(TAU * i / 8.0)
+		if _field.is_walkable(at):
+			return at
+	return _player.position
+
+
+## 지휘 버튼을 필드로 끌어다 놓음: 몹 위면 그 몹을 치고, 아니면 그 자리로 가서 버틴다(나란히 조금씩 벌려 선다).
+func _on_command_dragged(group: CommandButton.Group, screen_point: Vector2) -> void:
+	var members := _command_members(group)
+	var on_wild := _picker.wild_at(screen_point)
+	var point := get_viewport().get_canvas_transform().affine_inverse() * screen_point
+	for i in members.size():
+		if on_wild != null:
+			members[i].command_attack(on_wild)
+		else:
+			members[i].command_move(point + Vector2(GameConfig.COMMAND_SPREAD * (i - (members.size() - 1) * 0.5), 0.0))
+	_field.show_burst(point, GameConfig.COMMAND_MARK_RADIUS, Palette.COMMAND_LINE)
+
+
+## 끌지 않고 뗌: "모여"(버티기를 풀고 주인공을 따라간다).
+func _on_command_tapped(group: CommandButton.Group) -> void:
+	for hench in _command_members(group):
+		hench.command_regroup()
+
+
+## 그 무리의 살아 있는 헨치. 근접조 = 사거리가 GameConfig.MELEE_RANGE_MAX 이하(탱커 · 근접딜러), 원거리조 = 나머지.
+func _command_members(group: CommandButton.Group) -> Array[Hench]:
+	var members: Array[Hench] = []
+	for hench in party:
+		if not is_instance_valid(hench) or not hench.is_alive():
+			continue
+		var melee := hench.stats.attack_range <= GameConfig.MELEE_RANGE_MAX
+		if group == CommandButton.Group.ALL or (group == CommandButton.Group.MELEE) == melee:
+			members.append(hench)
+	return members

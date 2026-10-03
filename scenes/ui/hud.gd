@@ -17,6 +17,11 @@ signal party_requested(item: CoreItem, slot: int)
 signal party_leave_requested(item: CoreItem)
 ## 스킬 칸을 눌렀을 때(0부터 센 칸 번호). main이 그 자리의 헨치에게 스킬을 쓰게 한다.
 signal skill_requested(slot: int)
+## 섬의 왕 버튼(보스전 밖 = 도전, 안 = 포기). main이 확인 창을 띄운다.
+signal boss_requested
+## 지휘 버튼을 필드로 끌어다 놓았을 때(화면 좌표) / 끌지 않고 뗐을 때("모여")
+signal command_dragged(group: CommandButton.Group, screen_point: Vector2)
+signal command_tapped(group: CommandButton.Group)
 
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
@@ -35,6 +40,8 @@ const CONTROLS_PADDING := 8.0
 @onready var bag_panel: BagPanel = $BagPanel
 @onready var debug_button: TextButton = $TopControls/DebugButton
 @onready var debug_panel: DebugPanel = $DebugPanel
+@onready var boss_button: TextButton = $TopControls/BossButton
+@onready var _commands: Array[CommandButton] = [$Controls/CommandAll, $Controls/CommandMelee, $Controls/CommandRanged]
 @onready var mix_panel: MixPanel = $MixPanel
 @onready var confirm_box: ConfirmBox = $ConfirmBox
 @onready var _controls: Control = $Controls
@@ -61,6 +68,11 @@ func _ready() -> void:
 	bag_button.pressed.connect(_on_bag_button)
 	debug_button.text = UiText.DEBUG_BUTTON
 	debug_button.visible = GameConfig.DEV_DEBUG_PANEL
+	boss_button.pressed.connect(func() -> void: boss_requested.emit())
+	for command in _commands:
+		command.dragged_to.connect(func(group: CommandButton.Group, at: Vector2) -> void: command_dragged.emit(group, at))
+		command.tapped.connect(func(group: CommandButton.Group) -> void: command_tapped.emit(group))
+	set_boss_mode(false)
 	debug_button.pressed.connect(func() -> void:
 		if debug_panel.visible:
 			debug_panel.hide()
@@ -84,6 +96,18 @@ func bind_player(player: Player) -> void:
 func bind_party(party: Array[Hench]) -> void:
 	_party = party
 	debug_panel.bind(_hunt_log, party)
+
+
+## 보스전 화면으로(on) 또는 보통 화면으로: 섬의 왕 버튼 글자(도전 ↔ 포기), 지휘 버튼 보이기.
+func set_boss_mode(on: bool) -> void:
+	boss_button.text = UiText.BOSS_GIVE_UP if on else UiText.BOSS_BUTTON
+	for command in _commands:
+		command.visible = on
+
+
+## 지휘 버튼 하나(0 = 전원, 1 = 근접조, 2 = 원거리조; 실행 검사용).
+func command_button(index: int) -> CommandButton:
+	return _commands[index]
 
 
 ## 스킬 칸 하나(0부터, 실행 검사용).
@@ -117,13 +141,13 @@ func is_over_controls(point: Vector2) -> bool:
 			return true
 	for node in find_children("*", "TouchScreenButton", true, false):
 		var button := node as TouchScreenButton
-		if button.is_visible_in_tree() and _covers(button, point):
+		if button.is_visible_in_tree() and covers(button, point):
 			return true
 	return false
 
 
 ## 버튼 모양(shape) 안인가(둘레 CONTROLS_PADDING까지).
-static func _covers(button: TouchScreenButton, point: Vector2) -> bool:
+static func covers(button: TouchScreenButton, point: Vector2) -> bool:
 	var local := button.get_global_transform().affine_inverse() * point
 	if button.shape is CircleShape2D:
 		return local.length() <= (button.shape as CircleShape2D).radius + CONTROLS_PADDING

@@ -47,6 +47,7 @@ var _lunge_left := 0.0
 var _flash_left := 0.0
 var _shield_left := 0.0
 var _stun_left := 0.0
+var _dodge_to := Vector2.INF  # 장판을 피해 가는(간) 자리. 장판이 다 터질 때까지 그 자리에 머문다
 
 
 static func group_name(of_team: Team) -> StringName:
@@ -206,6 +207,23 @@ func face(point: Vector2) -> void:
 		facing = d.normalized()
 
 
+## 보스 장판 자동 회피: 장판이 GameConfig.BOSS_AUTO_DODGE_PROGRESS만큼 차오른 뒤 가장 가까운 안전한 곳으로 걸어 나가고,
+## 깔린 장판이 다 터질 때까지 그 자리에 머문다(빠져나오자마자 대상에게 걸어가다 다시 들어가지 않게).
+## 피하는 중이면 true(그동안 다른 일은 하지 않는다). 수동으로 움직이는 주인공은 이걸 쓰지 않는다(직접 피하면 더 빨리 피한다).
+func _auto_dodge() -> bool:
+	if field == null:
+		return false
+	var safe := field.escape_point(position, GameConfig.BOSS_AUTO_DODGE_PROGRESS)
+	if safe != Vector2.INF:
+		_dodge_to = safe
+	elif not field.has_danger():
+		_dodge_to = Vector2.INF
+	if _dodge_to == Vector2.INF:
+		return false
+	walk_to(_dodge_to, 4.0)
+	return true
+
+
 ## 그 무리(Team)에서 살아 있는 것 중 가장 가까운 것. 없으면 null.
 func nearest_alive(of_team: Team) -> Unit:
 	var best: Unit = null
@@ -302,6 +320,7 @@ func add_shield(amount: float, seconds: float) -> void:
 func revive_at(point: Vector2) -> void:
 	hp = stats.max_hp
 	_stun_left = 0.0
+	_dodge_to = Vector2.INF
 	modulate.a = 1.0
 	place_at(point)
 
@@ -335,6 +354,11 @@ func mark() -> Mark:
 ## 감지 게이지(0~1). Mark.DETECTING일 때 전구가 이만큼 차오른다.
 func detect_ratio() -> float:
 	return 0.0
+
+
+## 체력 바 눈금(비율들). 섬의 왕만 패턴 구간 경계를 돌려준다.
+func hp_bar_marks() -> Array[float]:
+	return []
 
 
 func shows_hp_bar() -> bool:

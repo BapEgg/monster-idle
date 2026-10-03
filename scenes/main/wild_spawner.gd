@@ -1,8 +1,12 @@
 class_name WildSpawner
 extends Node
 ## 야생 헨치를 필드에 풀어 놓고, 쓰러지면 잠시 뒤 주인공에게서 떨어진 다른 곳에 새로 내보낸다.
+## 보스전 동안은 멈춘다(pause) — 다시 풀면(resume) 모자란 만큼 새로 내보낸다.
 
 signal killed(hench: Hench)
+
+## 멈춤(보스전 중): 새로 내보내지 않는다.
+var paused := false
 
 var _field: Field
 var _player: Player
@@ -34,7 +38,20 @@ func _spawn_one() -> void:
 	hench.reset_physics_interpolation()
 
 
+func pause() -> void:
+	paused = true
+
+
+## 다시 풀고, 필드에 모자란 만큼(GameConfig.WILD_COUNT까지) 새로 내보낸다.
+func resume() -> void:
+	paused = false
+	var alive := get_tree().get_nodes_in_group(Unit.group_name(Unit.Team.WILD)).size()
+	for i in maxi(GameConfig.WILD_COUNT - alive, 0):
+		_spawn_one()
+
+
 func _on_died(unit: Unit) -> void:
 	killed.emit(unit)
 	await get_tree().create_timer(GameConfig.WILD_RESPAWN_SECONDS, false, true).timeout
-	_spawn_one()
+	if not paused:
+		_spawn_one()

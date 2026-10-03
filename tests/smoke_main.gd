@@ -1,12 +1,13 @@
 extends SceneTree
 ## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 오토 버튼·공격 버튼,
-## 몹을 눌러 대상 지정, 선공 감지·기습, 자동 사냥, 가방·믹스, 저장하고 다시 켜기가 되는지 확인한다.
+## 몹을 눌러 대상 지정, 선공 감지·기습, 자동 사냥, 가방·믹스, 보스전(장판·지휘), 저장하고 다시 켜기가 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
 ## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png",
 ## 믹스 결과 카드를 "<이름>_mix_result.png", 변이 코어 정보창을 "<이름>_variant.png",
-## 스킬(기절 별 · 보호막 · 스킬 칸 대기 시간)을 "<이름>_skills.png", 디버그 화면을 "<이름>_debug.png"로 저장한다.
+## 스킬(기절 별 · 보호막 · 스킬 칸 대기 시간)을 "<이름>_skills.png", 디버그 화면을 "<이름>_debug.png",
+## 보스전 장판을 "<이름>_boss.png", 지휘(원거리조 버티기)를 "<이름>_boss_command.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -435,6 +436,131 @@ func _run(main: Node) -> void:
 		casts += hench.skill_casts
 	_expect(casts >= 2, "풀오토: 헨치가 스킬을 알아서 씀 (%d번)" % casts)
 
+	# 9-2) 보스전(프로토타입 6, 연습): 섬의 왕 버튼 → 확인 → 야생을 치우고 섬의 왕. 장판 피하기 · 지휘 버튼 · 구간 · 해방.
+	await _switch_mode(hud, player, AutoControl.Mode.MANUAL)
+	player.hp = player.stats.max_hp
+	await _tap(hud.boss_button.global_position)
+	_expect(hud.confirm_box.visible, "섬의 왕 버튼 → 도전할지 묻는 창")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	var boss: Boss = main.get("boss")
+	var wilds_now := get_nodes_in_group(&"wild")
+	_expect(boss != null and wilds_now.size() == 1 and wilds_now[0] == boss, "예 → 야생을 치우고 섬의 왕 %s만 남음" % (boss.display_name if boss != null else "?"))
+	_expect(player.target == boss and hud.target_frame.unit == boss and boss.hp_bar_marks().size() == 2, "대상 창 = 섬의 왕, 체력 바에 구간 눈금 2개")
+	_expect(hud.command_button(0).visible and hud.command_button(2).visible and hud.boss_button.text == UiText.BOSS_GIVE_UP, "보스전 중: 지휘 버튼 보임, 섬의 왕 버튼 → 포기")
+	# 정해 둔 장판을 하나씩 시험하는 동안은 보스가 스스로 움직이거나 장판을 깔지 않게 멈춰 둔다(깔린 장판은 따로 돈다).
+	boss.process_mode = Node.PROCESS_MODE_DISABLED
+	var lightning: Dictionary = GameConfig.BOSS_PATTERNS["lightning"]
+	var lightning_windup: float = lightning["windup"]
+	await _seconds(1.0)
+	boss.start_pattern("lightning")
+	await _seconds(lightning_windup + 0.2)
+	var henches_alive := 0
+	var henches_hit := 0
+	for hench: Hench in main.get("party"):
+		if hench.is_alive():
+			henches_alive += 1
+			henches_hit += 1 if boss.last_hits.has(hench) else 0
+	_expect(boss.last_hits.has(player), "낙뢰: 가만히 선 주인공(수동)은 맞음 (체력 %d/%d)" % [roundi(player.hp), roundi(player.stats.max_hp)])
+	_expect(henches_alive > 0 and henches_hit < henches_alive, "낙뢰: 헨치는 알아서 피함 (%d마리 중 %d마리 맞음)" % [henches_alive, henches_hit])
+	player.hp = player.stats.max_hp
+	boss.start_pattern("lightning")
+	var dodge := _safe_direction(main, player, GameConfig.PLAYER_SPEED * 0.6)
+	var stood_at := player.position
+	Input.action_press(dodge)
+	await _seconds(0.6)
+	Input.action_release(dodge)
+	await _seconds(lightning_windup - 0.4)
+	_expect(player.position.distance_to(stood_at) > 50.0 and not boss.last_hits.has(player), "낙뢰: 수동으로 비켜서면 안 맞음 (체력 %d/%d)" % [roundi(player.hp), roundi(player.stats.max_hp)])
+	# 지휘: 원거리조 버튼을 필드로 끌어다 놓으면 그 자리로 가서 버팀, 근접조를 섬의 왕 위에 놓으면 섬의 왕을 침, 전원을 짧게 누르면 모여
+	var ranged: Array[Hench] = []
+	var melee: Array[Hench] = []
+	for hench: Hench in main.get("party"):
+		if hench.is_alive():
+			if hench.stats.attack_range > GameConfig.MELEE_RANGE_MAX:
+				ranged.append(hench)
+			else:
+				melee.append(hench)
+	var field: Field = main.get_node("Field")
+	var hold_at := player.position
+	for offset: Vector2 in [Vector2(-180, 60), Vector2(180, 60), Vector2(-180, -60), Vector2(180, -60)]:
+		if field.is_walkable(player.position + offset) and boss.position.distance_to(player.position + offset) > 150.0:
+			hold_at = player.position + offset
+			break
+	await _drag_button(hud.command_button(2), main.get_viewport().get_canvas_transform() * hold_at)
+	await _seconds(1.5)
+	var held := ranged.size() > 0
+	for hench in ranged:
+		held = held and hench.is_holding() and Iso.ground_distance(hench.position, hold_at) < 60.0
+	var others_free := true
+	for hench in melee:
+		others_free = others_free and not hench.is_holding()
+	_expect(held and others_free, "원거리조를 끌어다 놓음 → %d마리가 그 자리에서 버팀(근접조는 그대로)" % ranged.size())
+	await _save_shot("boss_command")
+	await _drag_button(hud.command_button(1), _screen_of(boss))
+	var focused := melee.size() > 0
+	for hench in melee:
+		focused = focused and hench.get("_focus") == boss
+	_expect(focused, "근접조를 섬의 왕 위에 놓음 → 섬의 왕을 침")
+	await _tap(hud.command_button(0).global_position)
+	var regrouped := true
+	for hench: Hench in main.get("party"):
+		regrouped = regrouped and not hench.is_holding() and hench.get("_focus") == null
+	_expect(regrouped, "전원을 짧게 누름 → 모여(버티기 풀림)")
+	# 용오름(보스 둘레 고리, 곁은 안전) + 낙뢰가 한꺼번에 깔린 장면
+	player.hp = player.stats.max_hp
+	boss.start_pattern("whirl")
+	boss.start_pattern("lightning")
+	await _seconds(lightning_windup * 0.6)
+	await _save_shot("boss")
+	await _seconds(float(GameConfig.BOSS_PATTERNS["whirl"]["windup"]))
+	# 보스가 스스로: 체력이 구간 아래로 내려가면 "분노!", 정해진 차례로 장판을 깐다
+	boss.process_mode = Node.PROCESS_MODE_INHERIT
+	boss.hp = boss.stats.max_hp * 0.6
+	await _physics_frames(3)
+	_expect(boss.phase == 1, "체력 60% → 2구간(분노)")
+	var cast_alone := false
+	for i in 9 * Engine.physics_ticks_per_second:
+		await physics_frame
+		if boss.is_casting():
+			cast_alone = true
+			break
+	_expect(cast_alone, "보스가 차례가 되면 스스로 장판을 깖")
+	while boss.is_casting():
+		await physics_frame
+	# 풀오토: 주인공도 장판을 알아서 피함(조금 늦게)
+	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
+	player.hp = player.stats.max_hp
+	boss.start_pattern("lightning")
+	await _seconds(lightning_windup + 0.2)
+	_expect(not boss.last_hits.has(player), "풀오토: 주인공도 장판을 알아서 피함")
+	# 해방: 체력을 1로 깎아 두면 파티가 마저 친다 → 알림 · 야생이 돌아오고 지휘 버튼이 사라짐
+	boss.hp = 1.0
+	for i in 8 * Engine.physics_ticks_per_second:
+		await physics_frame
+		if main.get("boss") == null:
+			break
+	_expect(main.get("boss") == null and hud.confirm_box.visible, "섬의 왕을 쓰러뜨리면 해방 알림")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	var zones_left := 0
+	for node in field.ground_effects.get_children():
+		zones_left += 1 if node is BossZone and not node.is_queued_for_deletion() else 0
+	var wild_count := get_nodes_in_group(&"wild").size()
+	_expect(wild_count == GameConfig.WILD_COUNT and not hud.command_button(0).visible and hud.boss_button.text == UiText.BOSS_BUTTON and zones_left == 0, "보스전 끝 → 야생 %d마리 다시, 지휘 버튼 숨김, 장판 없음" % wild_count)
+	# 포기: 다시 도전했다가 섬의 왕 버튼(포기) → 예
+	await _tap(hud.boss_button.global_position)
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	_expect(main.get("boss") != null, "다시 도전")
+	await _tap(hud.boss_button.global_position)
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	_expect(main.get("boss") == null and hud.confirm_box.visible, "포기 → 보스전 끝 알림")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(3)
+	_expect(get_nodes_in_group(&"wild").size() == GameConfig.WILD_COUNT, "포기한 뒤 야생이 다시 나옴")
+
 	# 10) 저장 → 다시 켜기: 가방(코어 하나하나) · 골드 · 코어 조각 · 파티 · 사냥 방식이 그대로
 	var keep := _find_core(bag, "jinjuryong", CoreItem.Gender.FEMALE)
 	main.call("assign_party", keep, 2)
@@ -520,6 +646,34 @@ func _tap(at: Vector2) -> void:
 
 
 ## 오토 버튼을 눌러 원하는 사냥 방식으로 바꾼다(누를 때마다 다음 방식).
+## 지휘 버튼을 눌러 그 자리(화면 좌표)까지 끌고 가서 뗀다.
+func _drag_button(button: TouchScreenButton, to: Vector2) -> void:
+	var from := button.global_position
+	_touch(true, from)
+	await _physics_frames(2)
+	for i in range(1, 6):
+		_drag(from.lerp(to, i / 5.0))
+		await _physics_frames(1)
+	_touch(false, to)
+	await _physics_frames(3)
+
+
+## 주인공이 그 거리(화면 가로 px, 세로는 MOVE_VERTICAL_RATIO만큼)를 걸어가면 걸을 수 있고 어느 장판에도 들지 않는 방향의 이동 액션.
+func _safe_direction(main: Node, player: Player, distance: float) -> String:
+	var field: Field = main.get_node("Field")
+	var actions := ["move_left", "move_right", "move_up", "move_down"]
+	var steps := [Vector2(-distance, 0), Vector2(distance, 0), Vector2(0, -distance * GameConfig.MOVE_VERTICAL_RATIO), Vector2(0, distance * GameConfig.MOVE_VERTICAL_RATIO)]
+	for i in actions.size():
+		var end := player.position + (steps[i] as Vector2)
+		var safe := field.is_walkable(end)
+		for node in field.ground_effects.get_children():
+			if node is BossZone and (node as BossZone).is_pending() and (node as BossZone).shape.contains(end):
+				safe = false
+		if safe:
+			return actions[i]
+	return "move_left"
+
+
 func _switch_mode(hud: Hud, player: Player, mode: AutoControl.Mode) -> void:
 	for i in AutoControl.Mode.size():
 		if player.control.mode == mode:

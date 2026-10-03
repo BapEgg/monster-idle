@@ -48,6 +48,24 @@ const AGE_NAMES := ["어린", "성체", "늙은"]
 ## 성별(CoreItem.Gender 순서). 짧은 글자는 가방 칸 배지
 const GENDER_NAMES := ["암컷", "수컷"]
 const GENDER_SHORT := ["암", "수"]
+# ─── 섬의 왕 보스전 (프로토타입 6, 연습용 임시 보스) ─────
+const BOSS_BUTTON := "섬의 왕"
+const BOSS_GIVE_UP := "포기"
+## %s = 왕 이름
+const BOSS_ASK := "섬의 왕 %s에게 도전할까요?\n(연습 · 보상 없음)"
+const BOSS_GIVE_UP_ASK := "보스전을 그만둘까요?"
+const BOSS_TITLE := "섬의 왕 %s"
+const BOSS_WIN := "섬의 왕 %s 해방!\n(연습이라 보상은 없습니다)"
+const BOSS_LOSE := "패배…\n(연습이라 잃는 것은 없습니다)"
+const BOSS_GAVE_UP := "보스전을 그만두었습니다"
+## 장판 이름(보스 머리 위에 뜬다)
+const BOSS_PATTERN_NAMES := {"breath": "용의 숨결", "lightning": "낙뢰", "whirl": "용오름"}
+const BOSS_PATTERN_CAST := "%s!"
+## 다음 체력 구간에 들어설 때
+const BOSS_PHASE := "분노!"
+## 지휘 버튼(CommandButton.Group 순서)
+const COMMAND_NAMES := ["전원", "근접조", "원거리조"]
+
 # ─── 스킬 (스킬 기초) ─────────────────────────────
 ## 스킬 효과 종류 이름(임시 분류, 정보창에 보인다)
 const SKILL_KIND_NAMES := {

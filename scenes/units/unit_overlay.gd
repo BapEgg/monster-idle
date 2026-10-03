@@ -46,7 +46,7 @@ func _draw() -> void:
 		return
 	var y := -unit.overlay_height()
 	if unit.shows_hp_bar():
-		HpBar.draw(self, Rect2(Vector2(-BAR_SIZE.x * 0.5, y - BAR_SIZE.y), BAR_SIZE), _hp_ratio(), _trail, unit.hp_bar_color())
+		HpBar.draw(self, Rect2(Vector2(-BAR_SIZE.x * 0.5, y - BAR_SIZE.y), BAR_SIZE), _hp_ratio(), _trail, unit.hp_bar_color(), unit.hp_bar_marks())
 		y -= BAR_SIZE.y
 		if unit.shield > 0.0:
 			var ratio := clampf(unit.shield / unit.stats.max_hp, 0.0, 1.0)

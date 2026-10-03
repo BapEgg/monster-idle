@@ -51,6 +51,11 @@ static func to_ground(screen_offset: Vector2) -> Vector2:
 	return Vector2(screen_offset.x, screen_offset.y * GameConfig.TILE_SIZE.x / GameConfig.TILE_SIZE.y)
 
 
+## 땅 위 좌표 차이 → 화면 좌표 차이(to_ground의 반대). 땅 위 원이 화면에서 납작한 타원이 된다.
+static func from_ground(ground_offset: Vector2) -> Vector2:
+	return Vector2(ground_offset.x, ground_offset.y * GameConfig.TILE_SIZE.y / GameConfig.TILE_SIZE.x)
+
+
 ## 땅 위에서 잰 거리(px).
 ## 사거리·도착 판정은 이걸로 한다(그래서 사거리는 화면에서 원이 아니라 납작한 타원이 된다).
 static func ground_distance(a: Vector2, b: Vector2) -> float:
