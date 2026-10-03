@@ -58,6 +58,25 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="Affinity" type="HBoxContainer" parent="Body/Top/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="AffinityStrong" type="Button" parent="Body/Top/Texts/Affinity"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+focus_mode = 0
+flat = true
+
+[node name="AffinityWeak" type="Button" parent="Body/Top/Texts/Affinity"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 34)
+layout_mode = 2
+focus_mode = 0
+flat = true
+
 [node name="Preview" type="GridContainer" parent="Body"]
 unique_name_in_owner = true
 visible = false

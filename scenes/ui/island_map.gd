@@ -96,6 +96,9 @@ func _show_island(island: IslandDb.Island) -> void:
 	_island_name.text = island.name
 	var king := IslandDb.king(island.id)
 	_king.text = UiText.MAP_KING % (king.name if king != null else "-")
+	var weakness := TribeDb.get_tribe(Affinity.beaten_by(king.tribe)) if king != null else null
+	if weakness != null:
+		_king.text += UiText.MAP_KING_WEAKNESS % weakness.name  # 종족 상성: 데려가면 유리한 종족
 	_status.text = "" if unlocked else UiText.MAP_LOCKED_ISLAND
 	_status.visible = not unlocked
 	for child in _regions.get_children():

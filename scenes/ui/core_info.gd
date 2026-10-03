@@ -21,6 +21,8 @@ signal lock_requested(item: CoreItem)
 signal feed_requested(item: CoreItem)
 ## 스킬 카드를 눌렀을 때: sheet = SkillSheet 내용, caster = 시전자 색(종족 색)
 signal skill_detail_requested(sheet: Dictionary, caster: Color)
+## 상성 줄을 누름: 그 종족을 고른 채로 상성표를 연다
+signal affinity_requested(tribe_id: String)
 
 const TITLE_FONT_SIZE := 26
 const TEXT_FONT_SIZE := 17
@@ -55,6 +57,7 @@ var party_names := Callable()
 var workshop: Workshop
 
 var _stat_names := {}  # 능력치 id → 이름 Label
+var _affinity_tribe := ""  # 상성 줄을 누르면 열 종족
 var _caster_color := Color.WHITE  # 스킬 상세 창 미리보기의 시전자 색(종족 색)
 var _stat_values := {}  # 능력치 id → 숫자 Label
 
@@ -73,6 +76,9 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _extra_chip: SkillChip = %ExtraChip
 @onready var _title: Label = %Title
 @onready var _kind: Label = %Kind
+@onready var _affinity: HBoxContainer = %Affinity
+@onready var _affinity_strong: Button = %AffinityStrong
+@onready var _affinity_weak: Button = %AffinityWeak
 @onready var _badges: BadgeStrip = %Badges
 @onready var _level: Label = %Level
 @onready var _hp_bar: ValueBar = %HpBar
@@ -99,6 +105,12 @@ func _ready() -> void:
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
 	_title.add_theme_font_override("font", UiKit.bold_font())
 	UiKit.style_caption(_kind, TEXT_FONT_SIZE)
+	for pair: Array in [[_affinity_strong, Palette.AFFINITY_STRONG], [_affinity_weak, Palette.AFFINITY_WEAK]]:
+		var button: Button = pair[0]
+		UiKit.style_button(button, SMALL_FONT_SIZE)
+		for state: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+			button.add_theme_color_override(state, pair[1])
+		button.pressed.connect(func() -> void: affinity_requested.emit(_affinity_tribe))
 	UiKit.style_number(_level, LEVEL_FONT_SIZE)
 	for chip: SkillChip in [_active_chip, _passive_chip, _extra_chip]:
 		chip.pressed.connect(func() -> void:
@@ -190,8 +202,26 @@ func show_preview(title: String, kind: String, portrait: Texture2D, silhouette: 
 		_preview.add_child(caption)
 		_preview.add_child(value)
 	_chips.visible = species != null
+	_affinity.visible = species != null
 	if species != null:
 		_show_chips(species, species, null, null)
+		_show_affinity(species.tribe)
+
+
+## 상성 줄: "▲ ○○족에게 강함 · ▼ ○○족에게 약함"(사용자 결정 2026-10-03, 추천 A). 누르면 상성표.
+func _show_affinity(tribe_id: String) -> void:
+	_affinity_tribe = tribe_id
+	var strong := TribeDb.get_tribe(Affinity.beats(tribe_id))
+	var weak := TribeDb.get_tribe(Affinity.beaten_by(tribe_id))
+	_affinity.visible = strong != null and weak != null
+	if _affinity.visible:
+		_affinity_strong.text = UiText.AFFINITY_STRONG % strong.name
+		_affinity_weak.text = UiText.AFFINITY_WEAK % weak.name
+
+
+## 상성 줄 글자(실행 검사용): [강함, 약함].
+func affinity_texts() -> PackedStringArray:
+	return PackedStringArray([_affinity_strong.text, _affinity_weak.text]) if _affinity.visible else PackedStringArray()
 
 
 ## 미리보기 줄의 값 글자들(실행 검사용).
@@ -237,6 +267,7 @@ func refresh() -> void:
 	_title.text = item.title()
 	_title.add_theme_color_override("font_color", Palette.CORE_SHINE if item.shining else Palette.TEXT)
 	_kind.text = UiText.INFO_KIND % [tribe.name, UiText.ROLE_NAMES.get(species.role, species.role), UiText.GRADE_NAMES.get(species.grade, species.grade)]
+	_show_affinity(species.tribe)
 	var badges := [
 		[UiText.AGE_NAMES[item.age], Palette.BADGE_AGE],
 		[UiText.GENDER_BADGE % [UiText.GENDER_SYMBOLS[item.gender], UiText.GENDER_NAMES[item.gender]], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE],

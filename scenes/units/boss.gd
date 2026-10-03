@@ -124,7 +124,7 @@ func _on_zone_detonated(zone: BossZone, damage_ratio: float, cast_id: int) -> vo
 		for node in get_tree().get_nodes_in_group(Unit.group_name(Team.PARTY)):
 			var unit := node as Unit
 			if unit.is_alive() and zone.shape.contains(unit.position) and not hits.has(unit):
-				unit.take_damage(unit.stats.max_hp * damage_ratio, self, false)
+				unit.take_damage(unit.stats.max_hp * damage_ratio, self, true)
 				hits.append(unit)
 				if cast_id == _cast_id:
 					last_hits.append(unit)

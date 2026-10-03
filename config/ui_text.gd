@@ -227,6 +227,8 @@ const CHIP_GLYPHS := {"active": "액", "passive": "패", "ultimate": "궁", "var
 const CHIP_VARIANT_TITLE := "능력치 +%d%%"
 ## 여러 이름을 한 줄로 늘어놓을 때 사이
 const LIST_SEPARATOR := ", "
+## 한 줄 안에서 조각 사이(대상 창 상성 줄)
+const LIST_SEPARATOR_DOT := " · "
 const VARIANT := "변이"
 const SHINING := "빛나는"
 ## 코어를 주웠을 때 주인공 머리 위. %s = 종 이름
@@ -241,6 +243,24 @@ const BAG_CLOSE := "닫기"
 const BAG_EMPTY := "아직 비어 있습니다. 몹을 쓰러뜨리면 " + TERM_CORE + "가 떨어집니다."
 ## 코어 칸 둘째 줄: 접미사 · 나이
 const CORE_DETAIL := "%s · %s"
+# ─── 종족 상성 (사용자 결정 2026-10-03, 추천 A) ─────────
+const AFFINITY_TITLE := "종족 상성표"
+const AFFINITY_BUTTON := "상성표"
+## 상성표 아래 설명. %d = 강한 상대에게 + %, 약한 상대에게 − %
+const AFFINITY_LEGEND := "화살표 방향으로 강하다. 강한 상대에게 주는 피해 +%d%%, 약한 상대에게 주는 피해 −%d%%. 주인공은 종족이 없어 상성이 없다."
+## %s = 종족 이름(코어 정보창 · 대상 창)
+const AFFINITY_STRONG := "▲ %s에게 강함"
+const AFFINITY_WEAK := "▼ %s에게 약함"
+## 상성표 오른쪽: 주제 · 강함/약함 줄(%s = 종족 이름, %s = 까닭)
+const AFFINITY_THEME := "주제: %s"
+const AFFINITY_STRONG_LINE := "▲ %s에게 강함\n%s"
+const AFFINITY_WEAK_LINE := "▼ %s에게 약함\n%s"
+## 대상 창 · 섬 지도의 섬의 왕: 약점(%s = 이 종족에게 강한 종족)
+const AFFINITY_WEAKNESS := "약점 %s"
+## 대상 창: 대상이 강한 종족(%s, 데려가면 불리)
+const AFFINITY_TARGET_STRONG := "%s에게 강함"
+const MAP_KING_WEAKNESS := " · 약점 %s"
+
 # ─── 장비 · 캐릭터 탭 (기획서 3장, 사용자 요청 2026-10-03) ─────────
 const GEAR_GRADES := ["일반", "마법", "희귀", "전설", "세트"]
 const GEAR_QUALITIES := ["하급", "중급", "상급", "최상급"]

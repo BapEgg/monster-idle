@@ -273,6 +273,13 @@ const MODE_DOWN := Color("ff7a6b")
 const TEXT := Color(1, 1, 1)
 const TEXT_OUTLINE := Color(0, 0, 0, 0.6)
 
+# ─── 종족 상성 ──────────────────────────────────
+## 강한 상대(▲) · 약한 상대(▼) · 상성표의 보통 화살표 · 둘레 고리
+const AFFINITY_STRONG := Color("7dff8a")
+const AFFINITY_WEAK := Color("ff7a6b")
+const AFFINITY_ARROW := Color(1, 1, 1, 0.3)
+const AFFINITY_RING := Color(1, 1, 1, 0.07)
+
 # ─── 장비 (등급 색은 디아블로식: 일반 회색 · 마법 파랑 · 희귀 노랑 · 전설 주황 · 세트 초록) ─────
 const GEAR_GRADE_COLORS := [Color("b9bec8"), Color("5b8cff"), Color("ffd84a"), Color("ff8c2e"), Color("4fd27a")]
 const GEAR_CARD_BG := Color("232838")

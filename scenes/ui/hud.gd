@@ -57,6 +57,7 @@ const CONTROLS_PADDING := 8.0
 @onready var _commands: Array[CommandButton] = [$Controls/CommandAll, $Controls/CommandMelee, $Controls/CommandRanged]
 @onready var mix_panel: MixPanel = $MixPanel
 @onready var skill_window: SkillWindow = $SkillWindow
+@onready var affinity_chart: AffinityChart = $AffinityChart
 @onready var confirm_box: ConfirmBox = $ConfirmBox
 @onready var minimap: Minimap = $Minimap
 @onready var island_map: IslandMap = $IslandMap
@@ -123,6 +124,8 @@ func _ready() -> void:
 	mix_panel.core_shown.connect(bag_panel.select)
 	bag_panel.info().skill_detail_requested.connect(skill_window.open)
 	mix_panel.info().skill_detail_requested.connect(skill_window.open)
+	bag_panel.affinity_requested.connect(affinity_chart.open)
+	mix_panel.info().affinity_requested.connect(affinity_chart.open)
 
 
 func bind_player(player: Player) -> void:
@@ -275,9 +278,9 @@ func _on_bag_button() -> void:
 		bag_panel.open()
 
 
-## 화면을 덮는 창들(가방 · 믹스 · 직업 · 섬 지도 · 디버그 · 스킬 상세 · 확인).
+## 화면을 덮는 창들(가방 · 믹스 · 직업 · 섬 지도 · 디버그 · 스킬 상세 · 상성표 · 확인).
 func _modals() -> Array[Control]:
-	return [bag_panel, mix_panel, job_panel, island_map, debug_panel, skill_window, confirm_box]
+	return [bag_panel, mix_panel, job_panel, island_map, debug_panel, skill_window, affinity_chart, confirm_box]
 
 
 ## 섬 · 지역을 미니맵 · 섬 지도 창에 이어 준다(player = 미니맵 점 · 사냥 경로).

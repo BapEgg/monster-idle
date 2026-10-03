@@ -1,5 +1,5 @@
 {
-  "about": "종족 8개(기획서 4장): 이름·주제·색과 아이콘·초상화 이미지 경로. 그림을 바꾸려면 경로의 PNG를 같은 이름으로 덮어쓰거나 여기 경로를 바꾼다. 지금 PNG는 tools/make_placeholder_art.gd로 만든 임시 그림이다. 색은 종족마다 뚜렷이 다르게(빨강·초록·보라·주황·은회색·청록·연두·파랑, 사용자 결정 2026-10-03).",
+  "about": "종족 8개(기획서 4장): 이름·주제·색과 아이콘·초상화 이미지 경로. 그림을 바꾸려면 경로의 PNG를 같은 이름으로 덮어쓰거나 여기 경로를 바꾼다. 지금 PNG는 tools/make_placeholder_art.gd로 만든 임시 그림이다. 색은 종족마다 뚜렷이 다르게(빨강·초록·보라·주황·은회색·청록·연두·파랑, 사용자 결정 2026-10-03). beats = 상성(이 종족이 강한 종족, beats_why = 까닭). 8종족이 한 바퀴로 이어진다: 정령 → 마 → 용 → 비행 → 곤충 → 식물 → 기계 → 야수 → 정령(사용자 결정 2026-10-03, 추천 A). 피해 배율은 GameConfig.AFFINITY_*.",
   "tribes": [
     {
       "id": "dragon",
@@ -7,7 +7,9 @@
       "theme": "동경",
       "color": "#e8433c",
       "icon": "res://art/tribes/dragon/icon.png",
-      "portrait": "res://art/tribes/dragon/portrait.png"
+      "portrait": "res://art/tribes/dragon/portrait.png",
+      "beats": "flying",
+      "beats_why": "하늘의 지배자"
     },
     {
       "id": "plant",
@@ -15,7 +17,9 @@
       "theme": "숲과 나무",
       "color": "#2f9e44",
       "icon": "res://art/tribes/plant/icon.png",
-      "portrait": "res://art/tribes/plant/portrait.png"
+      "portrait": "res://art/tribes/plant/portrait.png",
+      "beats": "machine",
+      "beats_why": "덩굴과 뿌리가 기계를 조이고 녹슬게 한다"
     },
     {
       "id": "demon",
@@ -23,7 +27,9 @@
       "theme": "두려움",
       "color": "#8b4fd6",
       "icon": "res://art/tribes/demon/icon.png",
-      "portrait": "res://art/tribes/demon/portrait.png"
+      "portrait": "res://art/tribes/demon/portrait.png",
+      "beats": "dragon",
+      "beats_why": "두려움이 동경을 삼킨다(검은 결정의 타락)"
     },
     {
       "id": "beast",
@@ -31,7 +37,9 @@
       "theme": "들판의 짐승",
       "color": "#f08c28",
       "icon": "res://art/tribes/beast/icon.png",
-      "portrait": "res://art/tribes/beast/portrait.png"
+      "portrait": "res://art/tribes/beast/portrait.png",
+      "beats": "spirit",
+      "beats_why": "야성의 본능은 홀림 · 환영에 흔들리지 않는다"
     },
     {
       "id": "machine",
@@ -39,7 +47,9 @@
       "theme": "사람이 만든 도구",
       "color": "#9aa7b5",
       "icon": "res://art/tribes/machine/icon.png",
-      "portrait": "res://art/tribes/machine/portrait.png"
+      "portrait": "res://art/tribes/machine/portrait.png",
+      "beats": "beast",
+      "beats_why": "덫과 사냥 도구가 짐승을 잡는다"
     },
     {
       "id": "spirit",
@@ -47,7 +57,9 @@
       "theme": "믿음",
       "color": "#2fd0d8",
       "icon": "res://art/tribes/spirit/icon.png",
-      "portrait": "res://art/tribes/spirit/portrait.png"
+      "portrait": "res://art/tribes/spirit/portrait.png",
+      "beats": "demon",
+      "beats_why": "믿음이 두려움을 이긴다(흰 결정의 정화)"
     },
     {
       "id": "insect",
@@ -55,7 +67,9 @@
       "theme": "작은 생명들",
       "color": "#b8d82c",
       "icon": "res://art/tribes/insect/icon.png",
-      "portrait": "res://art/tribes/insect/portrait.png"
+      "portrait": "res://art/tribes/insect/portrait.png",
+      "beats": "plant",
+      "beats_why": "벌레가 잎을 갉아 먹는다"
     },
     {
       "id": "flying",
@@ -63,7 +77,9 @@
       "theme": "하늘의 새",
       "color": "#3f74e8",
       "icon": "res://art/tribes/flying/icon.png",
-      "portrait": "res://art/tribes/flying/portrait.png"
+      "portrait": "res://art/tribes/flying/portrait.png",
+      "beats": "insect",
+      "beats_why": "새가 벌레를 잡는다"
     }
   ]
 }

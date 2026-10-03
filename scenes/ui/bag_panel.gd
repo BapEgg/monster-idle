@@ -12,6 +12,8 @@ extends PanelContainer
 signal mix_requested(item: CoreItem)
 signal party_requested(item: CoreItem, slot: int)
 signal party_leave_requested(item: CoreItem)
+## "상성표" 버튼 · 정보창 상성 줄: 그 종족을 고른 채로 상성표를 연다
+signal affinity_requested(tribe_id: String)
 
 const TITLE_FONT_SIZE := 24
 const TEXT_FONT_SIZE := 18
@@ -27,6 +29,7 @@ var _shard_snapshot := {}  # 조각 칸을 마지막으로 만든 때의 지갑 
 
 @onready var _title: Label = %Title
 @onready var _close: Button = %Close
+@onready var _affinity_button: Button = %AffinityButton
 @onready var _count: Label = %Count
 @onready var _divider: VSeparator = %Divider
 @onready var _grid: GridContainer = %Grid
@@ -53,6 +56,11 @@ func _ready() -> void:
 	UiKit.style_button(_close, TEXT_FONT_SIZE)
 	_close.text = UiText.BAG_CLOSE
 	_close.pressed.connect(close)
+	UiKit.style_button(_affinity_button, TEXT_FONT_SIZE)
+	_affinity_button.text = UiText.AFFINITY_BUTTON
+	_affinity_button.pressed.connect(func() -> void:
+		affinity_requested.emit(_info.item.species().tribe if _info.item != null else ""))
+	_info.affinity_requested.connect(affinity_requested.emit)
 	_empty.text = UiText.BAG_EMPTY
 	_info.mix_requested.connect(func(item: CoreItem) -> void: mix_requested.emit(item))
 	_info.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))

@@ -18,6 +18,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/job_panel.tscn" id="16_job_panel"]
 [ext_resource type="Script" path="res://scenes/ui/minimap.gd" id="17_minimap"]
 [ext_resource type="PackedScene" path="res://scenes/ui/island_map.tscn" id="18_island_map"]
+[ext_resource type="PackedScene" path="res://scenes/ui/affinity_chart.tscn" id="19_affinity"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -259,6 +260,9 @@ visible = false
 visible = false
 
 [node name="SkillWindow" parent="." instance=ExtResource("15_skill_window")]
+visible = false
+
+[node name="AffinityChart" parent="." instance=ExtResource("19_affinity")]
 visible = false
 
 [node name="ConfirmBox" parent="." instance=ExtResource("9_confirm")]

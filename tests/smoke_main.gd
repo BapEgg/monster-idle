@@ -137,6 +137,8 @@ func _run(main: Node) -> void:
 	await process_frame  # 대상 창은 화면 프레임(_process)에서 바뀐다
 	_expect(at.x < get_root().get_visible_rect().size.x * 0.5 and player.target == wild and not _joystick_down, "화면 왼쪽의 몹을 누르면 조이스틱 대신 대상 지정")
 	_expect(hud.target_frame.visible and hud.target_frame.unit == wild, "화면 위 대상 창에 그 몹이 보임")
+	var frame_line := "용족" + UiText.LIST_SEPARATOR_DOT + UiText.AFFINITY_WEAKNESS % "마족" + UiText.LIST_SEPARATOR_DOT + UiText.AFFINITY_TARGET_STRONG % "비행족"
+	_expect(hud.target_frame.affinity_text() == frame_line, "대상 창 아래 종족 상성: %s" % hud.target_frame.affinity_text())
 	_expect(wild.targeted and wild.shows_hp_bar(), "대상은 발밑 고리, 다치지 않아도 머리 위 체력 바")
 	await _save_shot("target")
 	at = _screen_of(other)
@@ -220,6 +222,20 @@ func _run(main: Node) -> void:
 	_expect(is_equal_approx(crit_hit, hit * GameConfig.CRIT_DAMAGE) and _has_number(main, UiText.CRIT_NUMBER % roundi(crit_hit)), "치명타: 피해 %d%%(%.0f → %.0f), 숫자 \"치명!\"" % [roundi(GameConfig.CRIT_DAMAGE * 100.0), hit, crit_hit])
 	Unit.crit_override = 0
 	_remove(wild)
+	# 종족 상성(사용자 결정 2026-10-03, 추천 A): 용족 헨치가 비행족을 때리면 ×1.25(강함), 마족을 때리면 ×0.8(약함), 주인공은 중립
+	var dragon_hench := (main.call("members") as Array)[0] as Hench
+	var flyer := _spawn_wild(main, _species_of_tribe("flying"), Vector2(170, -70), Vector2.LEFT)
+	var fiend := _spawn_wild(main, _species_of_tribe("demon"), Vector2(-170, -70), Vector2.RIGHT)
+	await _physics_frames(1)
+	var flyer_hp := flyer.hp
+	flyer.take_damage(10.0, dragon_hench)
+	var fiend_hp := fiend.hp
+	fiend.take_damage(10.0, dragon_hench)
+	var neutral_hp := fiend.hp
+	fiend.take_damage(10.0, player)
+	_expect(dragon_hench.tribe() == "dragon" and is_equal_approx(flyer_hp - flyer.hp, 12.5) and is_equal_approx(fiend_hp - neutral_hp, 8.0) and is_equal_approx(neutral_hp - fiend.hp, 10.0), "종족 상성: 용족 → 비행족 %.1f · 용족 → 마족 %.1f · 주인공 → 마족 %.1f (10 기준)" % [flyer_hp - flyer.hp, fiend_hp - neutral_hp, neutral_hp - fiend.hp])
+	_remove(flyer)
+	_remove(fiend)
 	_set_party_paused(main, false)
 
 	# 7-2) 스킬(헨치 고유 액티브): 스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 주인공 직업 액티브(Lv 1 전사는 방패 밀치기 하나), 궁극기 칸.
@@ -363,6 +379,23 @@ func _run(main: Node) -> void:
 	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
 	_expect(info.stat_value_label(gochu.suffix_id).get_theme_color("font_color") == Palette.STAT_ACCENT and info.stat_value_label(other_stat).get_theme_color("font_color") == Palette.TEXT, "정보창 능력치 표: 접미사로 강한 능력치만 강조색")
 	_expect(info.stat_value_label("crit_chance").text == UnitStats.from_core(gochu).crit_text("crit_chance") and info.stat_value_label("crit_damage").text == UnitStats.from_core(gochu).crit_text("crit_damage"), "정보창 능력치 표 끝에 치명 확률 %s · 치명 피해 %s" % [info.stat_value_label("crit_chance").text, info.stat_value_label("crit_damage").text])
+	# 종족 상성표(사용자 결정 2026-10-03, 추천 A): 정보창 상성 줄 · 가방 "상성표" 버튼 → 상성 원 + 고른 종족의 강한 상대 · 약한 상대
+	_expect(info.affinity_texts() == PackedStringArray([UiText.AFFINITY_STRONG % "비행족", UiText.AFFINITY_WEAK % "마족"]), "정보창 상성 줄(고추룡 = 용족): %s" % " · ".join(info.affinity_texts()))
+	var chart := hud.affinity_chart
+	await _tap(_center_of(hud.bag_panel, "AffinityButton"))
+	_expect(chart.visible and chart.selected() == "dragon" and chart.detail_texts()[0] == "용족" and chart.detail_texts()[2].begins_with(UiText.AFFINITY_STRONG % "비행족") and chart.detail_texts()[3].begins_with(UiText.AFFINITY_WEAK % "마족"), "가방 \"상성표\" → 상성표(지금 코어의 종족 = 용족: 비행족에게 강함 · 마족에게 약함)")
+	var wheel := chart.wheel()
+	_expect(wheel.order() == Affinity.cycle("dragon") and wheel.order()[0] == "dragon", "상성 원: 맨 위 용족부터 시계 방향으로 강한 상대를 따라감")
+	await _tap(wheel.get_global_transform() * wheel.center_of("spirit"))
+	_expect(chart.selected() == "spirit" and chart.detail_texts()[2].begins_with(UiText.AFFINITY_STRONG % "마족") and chart.detail_texts()[3].begins_with(UiText.AFFINITY_WEAK % "야수족"), "원에서 정령족을 누름 → 마족에게 강함(믿음이 두려움을 이긴다) · 야수족에게 약함")
+	await _save_shot("affinity")
+	await _seconds(0.2)
+	await _tap(Vector2(12, 12))  # 어두운 덮개
+	_expect(not chart.visible and hud.bag_panel.visible, "덮개를 누름 → 상성표만 닫힘")
+	await _tap(_center_of(info, "AffinityWeak"))
+	_expect(chart.visible and chart.selected() == "dragon", "정보창 상성 줄을 누름 → 그 코어의 종족으로 상성표")
+	await _tap(_center_of(chart, "Close"))
+	_expect(not chart.visible, "닫기 → 상성표 닫힘")
 	await _tap(_center_of(info, "Party"))
 	await _physics_frames(2)
 	party = main.get("party")
@@ -371,6 +404,7 @@ func _run(main: Node) -> void:
 	main.call("leave_party", starters[1])
 	main.call("leave_party", starters[2])
 	await _physics_frames(2)
+	await process_frame  # 스킬 칸은 HUD의 화면 프레임(_process)에서 바뀐다(물리 프레임만 기다리면 아직 안 바뀌었을 수 있음)
 	_expect((main.call("members") as Array).is_empty() and hud.skill_slot(0).skill == null and hud.skill_slot(2).skill == null and is_instance_valid(player) and player.is_alive(), "파티를 다 빼도 됨(헨치 0마리 · 스킬 칸 1~3 빔)")
 	for i in GameConfig.PARTY_SIZE:
 		main.call("assign_party", starters[i], i)
@@ -440,8 +474,11 @@ func _run(main: Node) -> void:
 	_expect(mixer.can_mix() and (mixer.find_child("Problem", true, false) as Label).text == UiText.MIX_FLASK_HINT, "재료가 다 차면 \"%s\"" % UiText.MIX_FLASK_HINT)
 	var flask_at := _center_of(mixer, "ResultSlot")
 	_hover(flask_at)
-	await _seconds(0.5)
-	var wobble := absf(mixer.flask_angle())
+	var wobble := 0.0  # 흔들림은 좌우로 오가므로 한 순간만 재면 0을 지날 수 있다 → 0.5초 동안 가장 큰 각도
+	var wobble_until := Time.get_ticks_msec() + 500
+	while Time.get_ticks_msec() < wobble_until:
+		await process_frame
+		wobble = maxf(wobble, absf(mixer.flask_angle()))
 	_hover(Vector2(4, 4))
 	await _seconds(0.1)
 	_expect(wobble > 0.001, "플라스크에 마우스를 대면 흔들림 (%.1f도)" % rad_to_deg(wobble))
@@ -1019,6 +1056,7 @@ func _run(main: Node) -> void:
 	var map := hud.island_map
 	await _tap(hud.map_button.global_position)
 	await _physics_frames(2)
+	_expect((map.find_child("King", true, false) as Label).text.ends_with(UiText.MAP_KING_WEAKNESS % "마족"), "섬 지도: 섬의 왕 줄에 약점(%s)" % (map.find_child("King", true, false) as Label).text)
 	_expect(map.visible and map.selected_island() == "dragon" and map.region_button("intro").text == UiText.MAP_HERE_TAG and map.region_button("intro").disabled and map.region_button("special").text == UiText.MAP_GO and not map.region_button("special").disabled and map.region_button("heart").text == UiText.MAP_NEED_LEVEL % 35 and map.region_button("heart").disabled, "지도 버튼 → 섬 지도: 입문 = 지금 여기, 특수 = 이동, 심장부 = Lv 35부터(Lv %d)" % progress.level)
 	await _tap(map.island_point("plant"))
 	await _physics_frames(2)
@@ -1158,6 +1196,14 @@ func _spawn_wild(main: Node, id: String, offset: Vector2, look: Vector2) -> Henc
 func _remove(unit: Unit) -> void:
 	unit.remove_from_group(Unit.group_name(unit.team))
 	unit.queue_free()
+
+
+## 그 종족의 첫 종(섬의 왕 빼고).
+func _species_of_tribe(tribe_id: String) -> String:
+	for species: HenchSpecies in HenchDb.all().values():
+		if species.tribe == tribe_id and species.grade != "king":
+			return species.id
+	return ""
 
 
 ## 필드에 그 글자의 떠오르는 숫자가 떠 있나.

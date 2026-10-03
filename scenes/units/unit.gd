@@ -347,14 +347,17 @@ func try_heal(target: Unit) -> bool:
 
 ## from은 이미 사라졌으면 null일 수 있다. 기습이면 피해가 세지고 숫자가 "기습!"으로 뜬다.
 ## 보호막이 있으면 보호막이 먼저 받는다(다 막으면 숫자 대신 "막음").
-## 피해를 받는다. from = 때린 쪽(치명타 · 기습을 본다). can_crit = false면 치명타를 굴리지 않는다(섬의 왕 장판처럼 체력 비율 피해).
-func take_damage(amount: float, from: Unit, can_crit := true) -> void:
+## 피해를 받는다. from = 때린 쪽(치명타 · 기습 · 종족 상성을 본다).
+## ratio = true면 체력 비율 피해(섬의 왕 장판)라 치명타 · 상성을 보지 않는다.
+func take_damage(amount: float, from: Unit, ratio := false) -> void:
 	if not is_alive():
 		return
 	var ambush := is_instance_valid(from) and _is_ambushed_by(from)
 	var bonus := from.ambush_bonus if ambush else 0.0
-	var crit := can_crit and is_instance_valid(from) and roll_crit(from.stats.crit_chance)
+	var crit := not ratio and is_instance_valid(from) and roll_crit(from.stats.crit_chance)
 	var hit := Combat.crit_hit(Combat.hit_damage(amount, ambush, bonus), crit, from.stats.crit_damage if crit else 1.0)
+	if not ratio and is_instance_valid(from):
+		hit *= Affinity.damage_scale(from.tribe(), tribe())
 	var after := Combat.absorb(shield, hit * damage_taken_factor())
 	var blocked := shield - after.y
 	amount = after.x
@@ -438,6 +441,11 @@ func name_color() -> Color:
 ## 화면 위 대상 창에 보일 제목.
 func title() -> String:
 	return display_name
+
+
+## 종족(상성을 본다). 주인공처럼 종족이 없으면 ""(중립).
+func tribe() -> String:
+	return ""
 
 
 ## 지금 머리 위에 띄울 표시.

@@ -583,6 +583,10 @@ func title() -> String:
 	return display_name
 
 
+func tribe() -> String:
+	return species.tribe if species != null else ""
+
+
 func name_color() -> Color:
 	if team == Team.PARTY:
 		return Palette.NAME_ALLY
