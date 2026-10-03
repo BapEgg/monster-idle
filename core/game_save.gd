@@ -7,7 +7,8 @@ extends RefCounted
 
 ## 저장 내용의 판. 모양이 바뀌면 올리고, restore에서 옛 판을 고쳐 읽는다.
 ## 2: 믹스 숙련도 · 도감 · 코어의 믹스 계승(inherit_*) 추가, 주 코어 성별(main_parent_gender) 뺌 — 1판은 없는 칸을 기본값으로 읽는다.
-const VERSION := 2
+## 3: 믹스 숙련도에 믹스한 횟수(mixes) 추가 — 2판은 0으로 읽는다.
+const VERSION := 3
 
 
 ## 지금 상태 → 저장할 내용. now = 저장한 때(유닉스 초, 나중에 오프라인 보상 계산에 쓴다).

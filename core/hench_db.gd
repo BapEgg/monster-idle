@@ -28,6 +28,16 @@ static func recipe_result(main_id: String, sub_id: String) -> String:
 	return _recipe_index.get(main_id + "|" + sub_id, "")
 
 
+## 모든 공식: [{ "main": 주 코어 종, "sub": 보조 코어 종, "result": 태어날 종, "draft": 초안인가 }] (믹스창 레시피 창).
+static func recipes() -> Array[Dictionary]:
+	_build_recipe_index()
+	var list: Array[Dictionary] = []
+	for key: String in _recipe_index:
+		var pair := key.split("|")
+		list.append({"main": pair[0], "sub": pair[1], "result": _recipe_index[key], "draft": _draft_keys.has(key)})
+	return list
+
+
 ## 그 공식이 기획서에 없는 초안(임시)인가.
 static func is_draft_recipe(main_id: String, sub_id: String) -> bool:
 	_build_recipe_index()

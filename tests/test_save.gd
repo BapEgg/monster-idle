@@ -76,7 +76,7 @@ func test_capture_and_restore_round_trip() -> void:
 		expect_true(bag2.cores[i].to_dict() == bag.cores[i].to_dict(), "%s: 종·접미사·나이·성별·레벨·빛남·변이·잠금·파티·유산·주 코어 성별이 같다" % bag.cores[i].species_id)
 	expect_true(wallet2.gold == 1234 and wallet2.shards == 7, "골드·코어 조각이 같다")
 	expect_true(GameSave.control_mode(parsed) == AutoControl.Mode.SEMI_AUTO, "사냥 방식을 기억한다")
-	expect_true(mastery2.level == mastery.level and mastery2.exp_points == mastery.exp_points, "믹스 숙련도를 기억한다 (%d단계)" % mastery2.level)
+	expect_true(mastery2.level == mastery.level and mastery2.exp_points == mastery.exp_points and mastery2.mixes == 3, "믹스 숙련도 · 믹스한 횟수를 기억한다 (%d단계, %d번)" % [mastery2.level, mastery2.mixes])
 	expect_true(codex2.has("mireu") and codex2.has("gochuryong") and codex2.has("dolguana") and codex2.has("haemapo"), "도감: 저장된 것 + 가방에 있는 종")
 	expect_true(int(parsed["version"]) == GameSave.VERSION and int(parsed["saved_at"]) == 1_800_000_000, "판·저장한 때")
 

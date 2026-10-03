@@ -108,6 +108,28 @@ static func material_problem(item: CoreItem, other: CoreItem) -> Problem:
 	return Problem.NONE
 
 
+## 가방에서 그 공식(주 main_id + 보조 sub_id)에 쓸 수 있는 한 쌍을 찾는다(레벨 높은 것부터). 없으면 [].
+## 쓸 수 있는 = 잠금 · 파티 · 변이가 아니고 암수가 맞는 코어(레시피 창에서 눌러 바로 채운다).
+static func find_pair(cores: Array[CoreItem], main_id: String, sub_id: String) -> Array[CoreItem]:
+	var mains: Array[CoreItem] = []
+	var subs: Array[CoreItem] = []
+	for item in cores:
+		if material_problem(item, null) != Problem.NONE:
+			continue
+		if item.species_id == main_id:
+			mains.append(item)
+		if item.species_id == sub_id:
+			subs.append(item)
+	var by_level := func(a: CoreItem, b: CoreItem) -> bool: return a.level > b.level
+	mains.sort_custom(by_level)
+	subs.sort_custom(by_level)
+	for main in mains:
+		for sub in subs:
+			if sub != main and sub.gender != main.gender:
+				return [main, sub]
+	return []
+
+
 ## 믹스를 굴린다. 성공이면 새 코어, 실패면 null. 재료를 없애고 골드를 내는 것은 부르는 쪽(Workshop)이 한다.
 ## keep_legacy면 패시브를 주 코어의 패시브로(유산).
 static func roll(rng: RandomNumberGenerator, main: CoreItem, secondary: CoreItem, keep_legacy: bool, mastery_level := 1) -> CoreItem:

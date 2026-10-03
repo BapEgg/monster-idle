@@ -289,6 +289,10 @@ const MIX_FX_FLASH_SECONDS := 0.5
 const MIX_FX_POP_SECONDS := 0.35
 const MIX_FX_SHAKE_SECONDS := 0.4
 const MIX_FX_SHAKE_PIXELS := 14.0
+## 실패 경고를 크게 보여 주는 믹스 횟수(사용자 결정 2026-10-03: 처음 3번만 크게, 그 뒤로는 버튼 아래 작은 글씨)
+const MIX_WARNING_BIG_TIMES := 3
+## 성공 확률을 눌렀을 때 내역 말풍선이 떠 있는 시간(초)
+const MIX_TIP_SECONDS := 3.0
 ## 분해하면 얻는 코어 조각(임시): 기본 + 빛나는 코어 · 변이 코어 덤
 const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2

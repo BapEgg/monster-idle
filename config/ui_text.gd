@@ -47,7 +47,6 @@ const ROLE_SHORT := {"tank": "탱", "melee": "근", "ranged": "원", "healer": "
 const AGE_NAMES := ["어린", "성체", "늙은"]
 ## 성별(CoreItem.Gender 순서). 짧은 글자는 가방 칸 배지
 const GENDER_NAMES := ["암컷", "수컷"]
-const GENDER_SHORT := ["암", "수"]
 # ─── 섬의 왕 보스전 (프로토타입 6, 연습용 임시 보스) ─────
 const BOSS_BUTTON := "섬의 왕"
 const BOSS_GIVE_UP := "포기"
@@ -152,32 +151,24 @@ const BTN_YES := "예"
 ## 분해 확인. %s = 이름, %d = 조각 수
 const DISMANTLE_ASK := "%s\n분해하면 사라지고 " + TERM_CORE + " 조각 %d개를 얻습니다."
 const CANT_DISMANTLE := "잠겼거나 파티에 있는 것은 분해할 수 없습니다"
-## 믹스창(전체 화면, 사용자 정리 2026-10-03)
+## 믹스창(전체 화면 3단: 재료 · 연성 장치 · 정보창, 사용자 결정 2026-10-03)
 const MIX_TITLE := TERM_MIX
 const MIX_MAIN := "주 " + TERM_CORE
 const MIX_SUB := "보조 " + TERM_CORE
-const MIX_SLOT_EMPTY := "아래에서\n고르세요"
 ## 성별 기호(CoreItem.Gender 순서)
 const GENDER_SYMBOLS := ["♀", "♂"]
 ## 정보창 성별 배지: 기호 + 이름(♀ 암컷)
 const GENDER_BADGE := "%s %s"
-## 공식 한 줄: 주 쪽 → 보조 쪽 → 결과. 한쪽은 "성별 기호 이름"
-const MIX_FORMULA := "%s  +  %s  →  %s"
-const MIX_FORMULA_SIDE := "%s %s"
-const MIX_FORMULA_EMPTY := "(%s)"
 ## 기획서에 없는 반대 방향 공식(임시 초안)일 때 결과 이름 옆에 붙는다.
 const MIX_DRAFT := "(초안 공식)"
 const MIX_HINT_NAME := "???"
 const MIX_SECRET := "?"
 ## 힌트일 때 종류 줄: ??? · 종족
 const MIX_HINT_KIND := "??? · %s"
-const MIX_SWAP := "주 ↔ 보조"
-## 주·보조를 바꾸면 나올 결과(공개 공식이면 이름, 아니면 ?)
-const MIX_SWAP_RESULT := "바꾸면 → %s"
-## 주·보조 칸 아래 한 줄: Lv · 접미사 · 성별 기호
-const MIX_SLOT_DETAIL := "Lv %d · %s · %s"
-## 숙련도: 단계 / 다음 단계까지 경험치
-const MIX_MASTERY := TERM_MIX + " 숙련 %d단계"
+## 주 · 보조 칸 사이 버튼과, 바꾸면 나올 결과(공개 공식이면 이름, 아니면 ?)
+const MIX_SWAP := "⇄"
+const MIX_SWAP_RESULT := "바꾸면 →\n%s"
+## 숙련 경험치: 지금 / 다음 단계까지(마지막 단계면 "최고")
 const MIX_MASTERY_EXP := "%d/%d"
 const MIX_MASTERY_MAX := "최고"
 ## 결과 미리보기 줄 이름표와 값
@@ -194,13 +185,36 @@ const MIX_KEEP_OWN := "자기 패시브\n%s"
 const MIX_KEEP_LEGACY := "유산 (주 " + TERM_CORE + ")\n%s"
 ## 유산 패시브 카드에서 고른 쪽 앞에 붙는 체크
 const MIX_CHOSEN := "✓ %s"
-## 성공 확률(합) / 내역: 기본 + 숙련 + 마크
+## 성공 확률(합). 내역은 눌러서 보는 말풍선(MIX_CHANCE_TIP)
 const MIX_CHANCE := "성공 확률 %s"
-const MIX_CHANCE_PARTS := "기본 %d%% + 숙련 %d%% + 마크 %d%%"
 ## 비용 / 보유 골드
 const MIX_COST := "비용 %d 골드 · 보유 %d"
 const MIX_WARNING := "실패하면 재료 둘이 모두 사라집니다"
-const MIX_GO := TERM_MIX + "하기"
+## 연성 장치의 큰 버튼(사용자 결정 2026-10-03)
+const MIX_GO := "연성하기"
+## 성공 확률을 누르면 뜨는 내역 말풍선
+const MIX_CHANCE_TIP := "성공 확률 내역\n기본 %d%% + 숙련 %d%% + 마크 %d%%"
+## 연성하기 아래 작은 버튼: 숙련 단계(누르면 숙련 창) · 레시피 창
+const MIX_MASTERY_BUTTON := "숙련 %d단계 ⓘ"
+const MIX_RECIPE_BUTTON := "레시피"
+## 숙련 창: 지금 단계 · 경험치 / 표 머리 / 보너스 / 마지막 단계 / 한 번에 얻는 경험치
+const MIX_MASTERY_TITLE := TERM_MIX + " 숙련"
+const MIX_MASTERY_NOW := "지금 %d단계 · 경험치 %s"
+const MIX_MASTERY_HEADERS := ["단계", "성공 확률 보너스", "다음 단계까지 경험치"]
+const MIX_MASTERY_STEP := "%d단계"
+const MIX_MASTERY_BONUS := "+%d%%"
+const MIX_MASTERY_NOTE := TERM_MIX + " 한 번에 경험치: 성공 %d · 실패 %d"
+## 레시피 창: 한 줄 = 주 + 보조 → 결과 · 등급, 재료가 있는 공식은 눌러서 칸을 채운다
+const MIX_RECIPE_TITLE := "레시피"
+const MIX_RECIPE_ROW := "%s + %s → %s · %s"
+const MIX_RECIPE_DRAFT := " (초안)"
+const MIX_RECIPE_READY := "  ✓ 재료 있음"
+const MIX_RECIPE_NOTE := "공개 · 힌트 공식만 보입니다. 재료가 있는 공식을 누르면 칸을 채웁니다"
+## 결과 칸 미리보기(정보창): 비밀 · 공식 없음일 때 종류 줄
+const MIX_SECRET_KIND := "비밀 공식"
+const MIX_EMPTY_KIND := "재료 둘을 고르면 결과가 보입니다"
+## 성공 카드의 패시브 고르기
+const MIX_PASSIVE_PICK := "패시브 고르기"
 const MIX_MATERIALS := "재료 고르기"
 const MIX_FILTER_ALL := "전체 종족"
 ## 재료 정렬(MixPanel.Sort 순서)
@@ -211,14 +225,9 @@ const MIX_CONFIRM_LEVEL := "높은 레벨(Lv %d) 재료가 들어 있어요"
 const MIX_CONFIRM_ASK := "%s\n실패하면 재료 둘이 모두 사라집니다. " + TERM_MIX + "할까요?"
 ## 결과 카드
 const MIX_RESULT_NEW := "NEW · 도감 등록"
-const MIX_RESULT_SUCCESS := TERM_MIX + " 성공!"
 ## Lv · 나이 · 성별
 const MIX_RESULT_INFO := "LV %d · %s · %s"
 const MIX_MASTERY_UP := TERM_MIX + " 숙련 %d단계로 올랐어요!"
-## 고른 패시브: 이름 (자기 패시브 / 유산 · 어느 종에게서)
-const MIX_RESULT_PASSIVE := "패시브: %s (%s)"
-const MIX_RESULT_PASSIVE_OWN := "자기 패시브"
-const MIX_RESULT_PASSIVE_LEGACY := "%s의 유산"
 ## 얻은 숙련 경험치(지금 / 다음 단계까지)
 const MIX_RESULT_EXP := TERM_MIX + " 숙련 경험치 +%d (%s)"
 const MIX_FAIL_TITLE := TERM_MIX + " 실패…"

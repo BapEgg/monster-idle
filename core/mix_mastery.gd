@@ -6,6 +6,8 @@ extends RefCounted
 var level := 1
 ## 지금 단계에서 모은 경험치
 var exp_points := 0
+## 지금까지 믹스한 횟수(성공 · 실패 모두). 믹스창의 실패 경고를 처음 몇 번만 크게 보이는 데 쓴다.
+var mixes := 0
 
 
 ## 믹스 한 번에 얻는 경험치(성공 100% · 실패 50%). 마지막 단계면 0.
@@ -20,6 +22,7 @@ func exp_for(success: bool) -> int:
 
 ## 믹스 한 번의 경험치를 더한다. 단계가 올랐으면 true.
 func gain(success: bool) -> bool:
+	mixes += 1
 	if is_max():
 		return false
 	exp_points += exp_for(success)
@@ -55,9 +58,10 @@ func success_bonus() -> float:
 
 
 func to_dict() -> Dictionary:
-	return {"level": level, "exp": exp_points}
+	return {"level": level, "exp": exp_points, "mixes": mixes}
 
 
 func load_dict(row: Dictionary) -> void:
 	level = clampi(int(row.get("level", 1)), 1, GameConfig.MIX_MASTERY_MAX_LEVEL)
 	exp_points = 0 if is_max() else clampi(int(row.get("exp", 0)), 0, exp_to_next() - 1)
+	mixes = maxi(int(row.get("mixes", 0)), 0)

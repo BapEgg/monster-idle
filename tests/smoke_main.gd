@@ -313,27 +313,52 @@ func _run(main: Node) -> void:
 	await _tap(hud.bag_panel.card_for(gochu).get_global_rect().get_center())
 	await _tap(_center_of(info, "MixButton"))
 	var mixer := hud.mix_panel
+	var mix_info := mixer.info()
 	_expect(mixer.visible and mixer.main_core == gochu and mixer.get_global_rect().size == root.get_visible_rect().size, "믹스 → 믹스창(화면 전체), 주 칸 = 고른 코어")
+	_expect(mix_info.item == gochu and not (mix_info.find_child("Buttons", true, false) as Control).visible, "오른쪽 정보창 = 가방 정보창 재사용(주 코어 상세, 버튼은 숨김)")
+	_expect(not (mixer.find_child("Title", true, false) as Label).text.contains("→"), "위쪽 공식 문구 없음")
 	# 재료 목록: 주 코어 자신 · 같은 성별 · 잠금 · 변이는 흐리게 + 까닭
 	var kkang := _find_core(bag, "kkangtonggeobuk", CoreItem.Gender.MALE)
 	var jinju := _find_core(bag, "jinjuryong", CoreItem.Gender.FEMALE)
 	var mutant0 := _find_core(bag, "haemapo", CoreItem.Gender.MALE)
 	_expect(mixer.material_card(gochu).block_reason == UiText.MIX_MATERIAL_REASONS[Mix.Problem.SAME_CORE] and mixer.material_card(jinju).block_reason != "" and mixer.material_card(mutant0).block_reason == UiText.VARIANT and mixer.material_card(kkang).block_reason == "", "재료 목록: 고를 수 없는 코어는 흐리게 + 까닭(주 코어 · 잠금/같은 성별 · 변이)")
+	await _tap(mixer.material_card(jinju).get_global_rect().get_center())
+	_expect(mix_info.item == jinju and mixer.sub_core == null, "흐린 재료를 누르면 상세만 보이고 칸에는 안 들어감")
 	await _tap(mixer.material_card(kkang).get_global_rect().get_center())
-	var result_name := mixer.find_child("ResultName", true, false) as Label
-	var chance := mixer.find_child("Chance", true, false) as Label
-	_expect(mixer.sub_core == kkang and result_name.text == "돌구아나", "보조 칸 = 깡통거북, 결과 미리보기 = 돌구아나(공개)")
-	_expect(mixer.formula_text() == UiText.MIX_FORMULA % ["♀ 고추룡", "♂ 깡통거북", "돌구아나"], "공식 한 줄: %s" % mixer.formula_text())
-	_expect(chance.text == UiText.MIX_CHANCE % (UiText.PERCENT % 85), "성공 확률 85%(하급→중급 기본, 숙련 1단계)")
-	var main_detail := mixer.find_child("MainDetail", true, false) as Label
-	_expect(main_detail.text == UiText.MIX_SLOT_DETAIL % [gochu.level, SuffixDb.display_name(gochu.suffix_id), "♀"], "주 칸 아래: %s" % main_detail.text)
+	_expect(mixer.sub_core == kkang and mix_info.item == kkang and mixer.result_name_text() == "돌구아나", "재료를 누름 → 보조 칸 + 오른쪽에 그 코어 상세, 결과 칸 = 돌구아나(공개)")
+	_expect(mixer.chance_text() == UiText.MIX_CHANCE % (UiText.PERCENT % 85), "성공 확률 숫자 하나: 85%(하급→중급 기본, 숙련 1단계)")
 	var swapped_name := "기관코끼리" if Mix.reveal_of("gigwankokkiri") == Mix.Reveal.OPEN else UiText.MIX_SECRET
-	_expect(mixer.swap_result_text() == UiText.MIX_SWAP_RESULT % swapped_name, "주↔보조 옆: %s" % mixer.swap_result_text())
-	_expect(mixer.material_side() > CoreCard.SIZE.x and mixer.material_card(kkang).selected, "재료 칸을 남은 자리에 맞게 키움(%d px), 고른 칸 표시" % mixer.material_side())
-	var keep_own := mixer.find_child("KeepOwn", true, false) as Button
-	_expect(keep_own.button_pressed and keep_own.text.begins_with(UiText.MIX_CHOSEN % ""), "유산 패시브: 고른 쪽(자기 패시브)에 체크")
+	_expect(mixer.swap_result_text() == UiText.MIX_SWAP_RESULT % swapped_name, "⇄ 옆: %s" % mixer.swap_result_text())
+	_expect(mixer.material_side() >= 92.0 and mixer.material_card(kkang).selected, "재료 칸 %d px, 고른 칸 표시" % mixer.material_side())
+	var workshop: Workshop = main.get("workshop")
+	_expect((mixer.find_child("WarningBig", true, false) as Control).visible and not (mixer.find_child("WarningSmall", true, false) as Control).visible, "처음에는 실패 경고가 크게")
+	await _tap(_center_of(mixer, "Chance"))
+	_expect(mixer.is_showing_chance_tip() and mixer.chance_tip_text() == UiText.MIX_CHANCE_TIP % [85, 0, 0], "성공 확률을 누름 → 내역 말풍선(기본 + 숙련 + 마크)")
+	await _tap(_center_of(mixer, "ResultSlot"))
+	var preview := mix_info.preview_values()
+	_expect(mix_info.previewing and preview.size() == UiText.MIX_PREVIEW_CAPTIONS.size() and preview[0] == UiText.MIX_PREVIEW_LEVEL % 18, "결과 칸을 누름 → 정보창에 미리보기(%s)" % " · ".join(preview))
 	await _save_shot("mix")
 	await _seconds(0.2)
+	# 숙련 ⓘ → 숙련 창(단계별 성공 확률 보너스 표 + 지금 경험치)
+	await _tap(_center_of(mixer, "MasteryButton"))
+	_expect(mixer.is_showing_mastery() and mixer.mastery_row_texts(1) == PackedStringArray([UiText.MIX_MASTERY_STEP % 1, UiText.MIX_MASTERY_BONUS % 0, "30"]) and mixer.mastery_row_texts(9)[1] == UiText.MIX_MASTERY_BONUS % 16, "숙련 ⓘ → 숙련 창(1단계 +0% … 9단계 +16%)")
+	await _save_shot("mix_mastery")
+	await _seconds(0.2)
+	await _tap(_center_of(mixer, "MasteryClose"))
+	# 레시피 → 재료가 있는 공식을 누르면 칸이 채워진다
+	await _tap(_center_of(mixer, "RecipeButton"))
+	var recipe_button: Button = null
+	for row: Button in mixer.find_child("RecipeList", true, false).get_children():
+		if row.text.begins_with("고추룡 + 깡통거북"):
+			recipe_button = row
+	_expect(mixer.is_showing_recipes() and mixer.recipe_rows() > 0 and recipe_button != null and not recipe_button.disabled, "레시피 창: 공식 %d개, 고추룡 + 깡통거북은 재료 있음" % mixer.recipe_rows())
+	await _save_shot("mix_recipes")
+	await _seconds(0.2)
+	await _tap(recipe_button.get_global_rect().get_center())
+	_expect(not mixer.is_showing_recipes() and mixer.main_core.species_id == "gochuryong" and mixer.sub_core.species_id == "kkangtonggeobuk", "공식을 누름 → 주 고추룡 · 보조 깡통거북이 채워짐")
+	mixer.main_core = gochu  # 아래 검사가 쓰는 그 코어로 맞춘다
+	mixer.sub_core = kkang
+	mixer.refresh()
 	# 종족 필터: 용족만
 	var tribe_filter := mixer.find_child("TribeFilter", true, false) as OptionButton
 	tribe_filter.select(1 + HenchSpecies.TRIBES.find("dragon"))
@@ -344,25 +369,28 @@ func _run(main: Node) -> void:
 	_expect(only_dragon and mixer.material_card(kkang) == null, "종족 필터(용족) → 용족 코어만")
 	tribe_filter.select(0)
 	tribe_filter.item_selected.emit(0)
-	# 주 ↔ 보조: 주 깡통거북 + 보조 고추룡 → 기관코끼리(초안 공식, 시작 가방에 없는 종이라 성공하면 NEW)
+	# ⇄: 주 깡통거북 + 보조 고추룡 → 기관코끼리(초안 공식, 시작 가방에 없는 종이라 성공하면 NEW)
 	await _tap(_center_of(mixer, "Swap"))
-	_expect(mixer.main_core == kkang and result_name.text == "기관코끼리 " + UiText.MIX_DRAFT, "주 ↔ 보조 → 다른 공식: 기관코끼리(초안 공식)")
+	_expect(mixer.main_core == kkang and mixer.result_name_text() == "기관코끼리 " + UiText.MIX_DRAFT, "⇄ → 다른 공식: 기관코끼리(초안 공식)")
 	count_before = bag.count()
 	var gold_before := wallet.gold
-	var workshop: Workshop = main.get("workshop")
 	await _tap(_center_of(mixer, "Go"))
-	_expect(not hud.confirm_box.visible, "보통 재료는 확인 창 없이 바로 믹스")
+	_expect(not hud.confirm_box.visible, "보통 재료는 확인 창 없이 바로 연성")
+	var flying := (mixer.find_child("FxLayer", true, false) as Control).get_child_count()
+	_expect(flying == (2 if mixer.last_born != null else 0), "성공이면 두 재료가 결과 플라스크로 모이는 연출(%d개)" % flying)
 	await _seconds(GameConfig.MIX_FX_GATHER_SECONDS + GameConfig.MIX_FX_POP_SECONDS + 0.2)
 	var born := mixer.last_born
-	_expect(mixer.is_showing_result() and not bag.has(gochu) and not bag.has(kkang) and bag.count() == count_before - (1 if born != null else 2), "믹스 → 재료 둘이 사라지고 결과 카드(%s)" % ("성공" if born != null else "실패"))
+	_expect(mixer.is_showing_result() and not bag.has(gochu) and not bag.has(kkang) and bag.count() == count_before - (1 if born != null else 2), "연성 → 재료 둘이 사라지고 결과 카드(%s)" % ("성공" if born != null else "실패"))
 	_expect(wallet.gold == gold_before - Mix.gold_cost("gigwankokkiri") and workshop.mastery.exp_points > 0, "골드가 비용만큼 나가고 숙련 경험치가 오름")
-	await _save_shot("mix_result")
-	await _seconds(0.2)
 	var card_texts := mixer.result_card_texts()
 	_expect(workshop.last_mix_exp > 0 and card_texts[4].contains("+%d" % workshop.last_mix_exp), "결과 카드: 얻은 숙련 경험치 (%s)" % card_texts[4].replace("\n", " / "))
 	if born != null:
 		_expect(born.species_id == "gigwankokkiri" and mixer.find_child("NewBadge", true, false).visible and born.inherit_stat == "mighty", "성공: NEW · 도감 등록, 계승 스탯 = 보조(고추룡) 접미사의 공격")
-		_expect(card_texts[1].contains(UiText.ROLE_NAMES[born.species().role]) and card_texts[3].contains(born.species().passive), "성공 카드: 종족·역할·등급(%s), 고른 패시브(%s)" % [card_texts[1], card_texts[3]])
+		_expect(card_texts[1].contains(UiText.ROLE_NAMES[born.species().role]) and card_texts[3].begins_with(UiText.MIX_CHOSEN % "") and born.passive_owner_id() == born.species_id, "성공 카드: 종족·역할·등급(%s), 패시브는 먼저 자기 것(체크)" % card_texts[1])
+		await _tap(mixer.passive_choice(1).get_global_rect().get_center())
+		_expect(born.passive_owner_id() == "kkangtonggeobuk" and mixer.result_card_texts()[3].contains(HenchDb.get_species("kkangtonggeobuk").passive), "성공 카드에서 유산을 고름 → 주 코어(깡통거북)의 패시브")
+		await _save_shot("mix_result")
+		await _seconds(0.2)
 		# 실패 카드도 같은 모양인지 본다(연출 확인용으로 실패 카드를 한 번 띄운다)
 		mixer.last_born = null
 		mixer.call("_show_result_card")
@@ -381,9 +409,17 @@ func _run(main: Node) -> void:
 	else:
 		var lost_cards := mixer.find_child("CardLost", true, false) as HBoxContainer
 		_expect(lost_cards.visible and lost_cards.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()], "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치")
+		await _save_shot("mix_fail")
+		await _seconds(0.2)
 		await _tap(_center_of(mixer, "Again"))
 		_expect(mixer.visible and not mixer.is_showing_result(), "실패 → 계속 믹스 → 믹스창으로")
 		await _tap(_center_of(mixer, "Close"))
+	# 실패 경고: 믹스를 3번 한 뒤로는 버튼 아래 작은 글씨
+	var mixes_before := workshop.mastery.mixes
+	workshop.mastery.mixes = GameConfig.MIX_WARNING_BIG_TIMES
+	mixer.refresh()
+	_expect(not (mixer.find_child("WarningBig", true, false) as Control).visible and (mixer.find_child("WarningSmall", true, false) as Control).visible, "믹스 %d번 뒤로는 실패 경고가 작게" % GameConfig.MIX_WARNING_BIG_TIMES)
+	workshop.mastery.mixes = mixes_before
 	# 빛나는 코어(솥마뱀)를 재료로 쓰면 한 번 더 묻는다: 주 솥마뱀 + 보조 곰보곰 = 돌구아나
 	var shiny := _find_core(bag, "sotmabaem", CoreItem.Gender.FEMALE)
 	await _tap(hud.bag_panel.card_for(shiny).get_global_rect().get_center())

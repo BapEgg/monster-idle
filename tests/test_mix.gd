@@ -137,7 +137,7 @@ func test_mastery() -> void:
 	expect_true(mastery.is_max() and mastery.level == GameConfig.MIX_MASTERY_MAX_LEVEL and mastery.progress() == 1.0 and not mastery.gain(true) and mastery.exp_for(true) == 0, "9단계에서 멈춘다(더 얻는 경험치 0)")
 	var copy := MixMastery.new()
 	copy.load_dict(mastery.to_dict())
-	expect_true(copy.level == mastery.level, "저장해도 단계가 남는다")
+	expect_true(copy.level == mastery.level and copy.mixes == mastery.mixes and mastery.mixes == fails + 1000 + 1, "저장해도 단계 · 믹스한 횟수(%d번)가 남는다" % copy.mixes)
 
 
 func test_codex() -> void:
@@ -320,3 +320,57 @@ func test_workshop_blocks_locked_and_party() -> void:
 	m.party_slot = 1
 	expect_true(shop.dismantle(m) == 0 and bag.has(m), "파티 코어는 분해되지 않는다")
 	expect_true(shop.dismantle(f) == GameConfig.DISMANTLE_SHARDS and not bag.has(f) and wallet.shards == GameConfig.DISMANTLE_SHARDS, "분해 → 가방에서 빠지고 코어 조각")
+
+
+## 레시피 창: 모든 공식 목록이 공식 찾기(recipe_result)와 같다.
+func test_recipe_list() -> void:
+	var list := HenchDb.recipes()
+	var same := not list.is_empty()
+	var drafts := 0
+	for row in list:
+		same = same and HenchDb.recipe_result(row["main"], row["sub"]) == row["result"] and HenchDb.is_draft_recipe(row["main"], row["sub"]) == row["draft"]
+		drafts += 1 if row["draft"] else 0
+	expect_true(same and drafts > 0 and drafts < list.size(), "공식 %d개(초안 %d개)가 공식 찾기와 같다" % [list.size(), drafts])
+
+
+## 레시피 창에서 누르면 가방에서 쓸 수 있는 한 쌍(레벨 높은 것부터, 암수 맞게)을 찾는다.
+func test_find_pair() -> void:
+	var low_f := _core("gochuryong", CoreItem.Gender.FEMALE)
+	var high_f := _core("gochuryong", CoreItem.Gender.FEMALE)
+	high_f.level = 20
+	var same_m := _core("gochuryong", CoreItem.Gender.MALE)
+	var locked_m := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+	locked_m.locked = true
+	var cores: Array[CoreItem] = [low_f, high_f, same_m, locked_m]
+	expect_true(Mix.find_pair(cores, "gochuryong", "kkangtonggeobuk").is_empty(), "보조 깡통거북이 잠겨 있으면 없음")
+	var free_m := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+	cores.append(free_m)
+	var pair := Mix.find_pair(cores, "gochuryong", "kkangtonggeobuk")
+	expect_true(pair.size() == 2 and pair[0] == high_f and pair[1] == free_m, "레벨 높은 주 코어 + 잠기지 않은 보조 코어")
+	var female_sub := _core("kkangtonggeobuk", CoreItem.Gender.FEMALE)
+	var only_f: Array[CoreItem] = [high_f, female_sub]
+	expect_true(Mix.find_pair(only_f, "gochuryong", "kkangtonggeobuk").is_empty(), "암수가 안 맞으면 없음")
+
+
+## 성공 카드에서 패시브를 고른다(믹스할 때는 고르지 않는다).
+func test_choose_passive_after_mix() -> void:
+	var bag := Bag.new()
+	var wallet := Wallet.new()
+	wallet.add_gold(100000)
+	var shop := Workshop.new(bag, wallet)
+	shop.rng.seed = 3
+	var born: CoreItem = null
+	var main: CoreItem = null
+	for i in 20:
+		main = _core("gochuryong", CoreItem.Gender.FEMALE)
+		var sub := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+		bag.add(main)
+		bag.add(sub)
+		born = shop.mix(main, sub, false)
+		if born != null:
+			break
+	expect_true(born != null and born.passive_owner_id() == born.species_id, "태어난 코어는 먼저 자기 패시브")
+	shop.choose_passive(born, main.passive_owner_id())
+	expect_true(born.passive_owner_id() == "gochuryong", "유산을 고르면 주 코어(고추룡)의 패시브")
+	shop.choose_passive(born, "")
+	expect_true(born.passive_owner_id() == born.species_id, "다시 자기 패시브로 바꿀 수 있다")

@@ -101,6 +101,18 @@ const MIX_GO_BG := Color(1, 0.85, 0.3, 0.16)
 ## 결과 카드에서 하나만 강조하는 버튼(파티에 넣기): 파티 배지와 같은 청록
 const MIX_ACCENT_BG := Color("2a9d8f")
 const MIX_ACCENT_BORDER := Color("7fe0d2")
+## 연성 장치(믹스창 가운데 플라스크 도형): 유리 선 · 반사광 · 유리관 · 거품
+const FLASK_GLASS := Color(0.78, 0.92, 1.0, 0.75)
+const FLASK_SHINE := Color(1, 1, 1, 0.35)
+const FLASK_TUBE := Color(0.78, 0.92, 1.0, 0.4)
+const FLASK_BUBBLE := Color(1, 1, 1, 0.8)
+## 실패 경고(처음 몇 번만 크게): 바탕 · 테두리
+const MIX_WARNING_BG := Color(0.55, 0.12, 0.12, 0.35)
+const MIX_WARNING_BORDER := Color("ff8a7a")
+## 확률 내역 말풍선 바탕 · 숙련 표에서 지금 단계 줄 · 레시피 창에서 재료가 있는 공식
+const MIX_TIP_BG := Color(0.18, 0.2, 0.26, 0.98)
+const MIX_TABLE_NOW := Color(1, 1, 1, 0.12)
+const MIX_RECIPE_READY := Color("8ee28e")
 const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")

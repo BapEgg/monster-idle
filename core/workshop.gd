@@ -52,6 +52,15 @@ func mix(main: CoreItem, secondary: CoreItem, keep_legacy: bool) -> CoreItem:
 	return born
 
 
+## 태어난 코어의 패시브를 고른다(믹스창 성공 카드): legacy_owner = 유산으로 받을 종 id, "" = 자기 패시브.
+func choose_passive(born: CoreItem, legacy_owner: String) -> void:
+	if not bag.has(born) or born.passive_species_id == legacy_owner:
+		return
+	born.passive_species_id = legacy_owner
+	bag.changed.emit()
+	acted.emit()
+
+
 ## 지금 이 두 코어의 성공 확률 내역(Mix.success_parts, 숙련도 반영).
 func mix_chance(main: CoreItem, secondary: CoreItem) -> Dictionary:
 	return Mix.success_parts(Mix.result_id(main, secondary), mastery.level)

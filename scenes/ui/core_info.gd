@@ -6,6 +6,8 @@ extends VBoxContainer
 ## 글자: 숫자는 흰색 굵게, 이름표는 연한 회색. 접미사로 강한 능력치 한 줄만 강조색(Palette.STAT_ACCENT).
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
+## 믹스창도 이 정보창을 쓴다(사용자 결정 2026-10-03): 버튼은 숨기고(show_actions = false), 재료를 누르면 그 코어,
+## 결과 칸을 누르면 미리보기(show_preview: 예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률)를 보여 준다.
 ## 휴대폰 가로 화면 기준 글자 크기다. 자리·크기는 core_info.tscn을 에디터에서 열어 바꾼다.
 
 signal party_requested(item: CoreItem, slot: int)
@@ -24,8 +26,16 @@ const BUTTON_FONT_SIZE := 18
 const PORTRAIT_BORDER := 2
 const STAT_NUMBER_WIDTH := 44
 
-## 보고 있는 코어(없으면 null)
+## 보고 있는 코어(없으면 null). 미리보기 중이면 null.
 var item: CoreItem
+## 버튼 4개(파티 편성 · 믹스 · 분해 · 잠금)를 보일까. 믹스창에서는 숨긴다.
+var show_actions := true:
+	set(value):
+		show_actions = value
+		if is_node_ready():
+			_buttons.visible = value
+## 믹스 결과 미리보기를 보여 주는 중인가.
+var previewing := false
 ## 파티 자리마다 지금 헨치 이름을 돌려주는 함수(main.party_names)
 var party_names := Callable()
 
@@ -36,6 +46,10 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _body: VBoxContainer = %Body
 @onready var _portrait_frame: PanelContainer = %PortraitFrame
 @onready var _portrait: TextureRect = %Portrait
+@onready var _preview: GridContainer = %Preview
+@onready var _badge_row: HBoxContainer = %BadgeRow
+@onready var _buttons: HBoxContainer = %Buttons
+@onready var _skills: GridContainer = %Skills
 @onready var _title: Label = %Title
 @onready var _kind: Label = %Kind
 @onready var _badges: BadgeStrip = %Badges
@@ -80,6 +94,7 @@ func _ready() -> void:
 	_mix.text = UiText.BTN_MIX
 	_dismantle.text = UiText.BTN_DISMANTLE
 	_build_stat_table()
+	_buttons.visible = show_actions
 	_party.pressed.connect(_on_party)
 	_mix.pressed.connect(func() -> void: mix_requested.emit(item))
 	_dismantle.pressed.connect(func() -> void: dismantle_requested.emit(item))
@@ -111,9 +126,71 @@ func _build_stat_table() -> void:
 ## 그 코어를 보여 준다(null = 빈 안내).
 func show_core(of_item: CoreItem) -> void:
 	item = of_item
+	previewing = false
 	_party_pick.visible = false
 	_notice.text = ""
+	_set_core_parts_visible(true)
 	refresh()
+
+
+## 믹스 결과 미리보기: 초상화(공개 = 그림, 힌트 = 실루엣, 비밀 = 없음) + 이름 + 종류 줄 + rows([이름표, 값] 줄들).
+## 공개일 때만 고유 액티브·패시브도 보인다. 코어 능력치 · 배지 · 버튼은 숨긴다.
+func show_preview(title: String, kind: String, portrait: Texture2D, silhouette: bool, rows: Array, species: HenchSpecies) -> void:
+	item = null
+	previewing = true
+	_party_pick.visible = false
+	_empty.visible = false
+	_body.visible = true
+	_set_core_parts_visible(false)
+	_portrait.texture = portrait
+	_portrait.modulate = Palette.SILHOUETTE if silhouette else Color.WHITE
+	var frame := StyleBoxFlat.new()
+	frame.bg_color = Palette.PORTRAIT_BG
+	frame.border_color = Palette.CARD_BORDER
+	frame.set_border_width_all(PORTRAIT_BORDER)
+	frame.set_corner_radius_all(UiKit.PANEL_CORNER)
+	_portrait_frame.add_theme_stylebox_override("panel", frame)
+	_title.text = title
+	_title.add_theme_color_override("font_color", Palette.TEXT)
+	_kind.text = kind
+	for child in _preview.get_children():
+		_preview.remove_child(child)
+		child.queue_free()
+	for row: Array in rows:
+		var caption := Label.new()
+		UiKit.style_caption(caption, STAT_FONT_SIZE)
+		caption.text = row[0]
+		var value := Label.new()
+		UiKit.style_number(value, STAT_NUMBER_FONT_SIZE)
+		value.text = row[1]
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_preview.add_child(caption)
+		_preview.add_child(value)
+	var skills_known := species != null
+	_skills.visible = skills_known
+	if skills_known:
+		_active.text = species.active
+		_passive.text = species.passive
+
+
+## 미리보기 줄의 값 글자들(실행 검사용).
+func preview_values() -> PackedStringArray:
+	var values := PackedStringArray()
+	for i in range(1, _preview.get_child_count(), 2):
+		values.append((_preview.get_child(i) as Label).text)
+	return values
+
+
+## 코어 보기(true)와 미리보기(false)에서 보이는 칸이 다르다.
+func _set_core_parts_visible(on: bool) -> void:
+	for part: Control in [_badge_row, _hp_bar, _mp_bar, _stats, _bonus, _notice]:
+		part.visible = on
+	_buttons.visible = on and show_actions
+	_preview.visible = not on
+	_skills.visible = true
+	if on:
+		_portrait.modulate = Color.WHITE
 
 
 ## 능력치 한 칸의 숫자 Label(실행 검사용).
@@ -122,6 +199,8 @@ func stat_value_label(stat: String) -> Label:
 
 
 func refresh() -> void:
+	if previewing:
+		return
 	_empty.visible = item == null
 	_body.visible = item != null
 	if item == null:
