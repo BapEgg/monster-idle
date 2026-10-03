@@ -16,7 +16,10 @@ var role := ""
 ## 선공: 파티를 알아채면 먼저 덤빈다(빨간 이름표). 아니면 맞아야 반격한다(흰 이름표).
 var aggressive := false
 var design := ""
+## 고유 액티브 설명(도감 글). 화면에 보이는 스킬 이름은 괄호 앞 부분(HenchSkill.skill_title).
 var active := ""
+## 고유 액티브의 효과 종류(GameConfig.SKILL_KINDS의 열쇠, 임시 분류). 왕은 미정이라 "".
+var skill := ""
 var passive := ""
 var level_min := 1
 var level_max := 1
@@ -40,6 +43,7 @@ static func from_dict(row: Dictionary) -> HenchSpecies:
 	s.aggressive = bool(row.get("aggressive", false))
 	s.design = str(row.get("design", ""))
 	s.active = str(row.get("active", ""))
+	s.skill = str(row.get("skill", ""))
 	s.passive = str(row.get("passive", ""))
 	var level: Array = row.get("level", [1, 1])
 	s.level_min = int(level[0])
@@ -66,6 +70,8 @@ func problems() -> PackedStringArray:
 		result.append("%s: 모르는 역할 '%s'" % [id, role])
 	if grade not in GRADES:
 		result.append("%s: 모르는 등급 '%s'" % [id, grade])
+	if skill != "" and not GameConfig.SKILL_KINDS.has(skill):
+		result.append("%s: 모르는 스킬 종류 '%s'" % [id, skill])
 	if level_min > level_max:
 		result.append("%s: 레벨 범위가 거꾸로 됨" % id)
 	for pair in recipes + draft_recipes:

@@ -3,6 +3,7 @@ extends Unit
 ## 헨치. 그림은 색 원 + 역할 글자 + 이름표로 대체한다.
 ## 내 파티(PARTY): 주인공을 따라다니다가, 주인공이 노리는 적이나 파티를 공격하는 적과 싸운다.
 ##   모든 헨치가 기본 공격을 한다. 힐러는 그와 함께(대기 시간이 따로) 다친 동료를 회복한다.
+##   고유 액티브(스킬)는 풀오토면 알아서, 아니면 스킬 칸을 눌렀을 때 쓴다(대상이 멀면 다가가서).
 ## 야생(WILD): 자기 자리 주변을 돌아다니다가, 맞으면 위협 점수가 가장 높은 상대에게 반격한다("!").
 ##   선공(빨간 이름표)은 시야로 파티를 지켜보다가(머리 위 전구가 차오름) 다 알아채면 먼저 덤빈다("!").
 ##   너무 멀리 쫓아가면 포기하고 돌아간다(파란 표시). 아직 알아채지 못했을 때 수동으로 넣은 첫 타는 기습이다.
@@ -44,6 +45,11 @@ var variant := false:
 
 # 내 파티일 때
 var leader: Player
+## 고유 액티브(파티일 때만 쓴다). 스킬이 없는 종(왕 · 미정)은 null.
+var skill: HenchSkill
+## 지금까지 스킬을 쓴 횟수(실행 검사·기록용)
+var skill_casts := 0
+var _skill_request_left := 0.0  # 스킬 칸을 눌러 부탁받은 뒤 남은 시간. 0 = 부탁 없음
 ## 따라다닐 때 주인공 기준 자리(화면 px).
 var slot := Vector2.ZERO
 var _following := false
@@ -72,6 +78,8 @@ static func create(of_species: HenchSpecies, of_team: Team) -> Hench:
 	hench.team = of_team
 	hench.display_name = of_species.name
 	hench.stats = UnitStats.for_hench(of_species.role, of_team == Team.WILD)
+	if of_team == Team.PARTY:
+		hench.skill = HenchSkill.for_species(of_species)
 	return hench
 
 
@@ -100,6 +108,13 @@ func _process(delta: float) -> void:
 	super(delta)
 
 
+func _physics_process(delta: float) -> void:
+	if skill != null:
+		skill.tick(delta)
+	_skill_request_left = maxf(_skill_request_left - delta, 0.0)
+	super(delta)
+
+
 ## 내 헨치: 주인공이 수동 조작 중이면 나도 그렇다고 본다(기습 보너스를 함께 받는다).
 func is_manually_controlled() -> bool:
 	return team == Team.PARTY and is_instance_valid(leader) and leader.control.is_manual()
@@ -110,6 +125,8 @@ func is_manually_controlled() -> bool:
 func _think_party() -> void:
 	if not is_instance_valid(leader) or not leader.is_alive():
 		return
+	if _use_skill():
+		return  # 스킬을 썼거나, 쓰려고 다가가는 중
 	# 회복은 역할 특성이라 기본 공격과 따로 한다. 다친 동료가 멀면 그쪽으로 걸어가는 게 먼저다.
 	var going_to_patient := stats.heal > 0.0 and _heal_someone()
 	var enemy := _pick_enemy()
@@ -167,6 +184,162 @@ func _heal_someone() -> bool:
 	return true
 
 
+# ─── 스킬 (내 파티) ──────────────────────────────
+
+## 스킬 칸을 눌렀을 때. 쓸 수 있으면 바로(대상이 멀면 다가가서) 쓴다. 대기 중이거나 쓰러져 있으면 false.
+func request_skill() -> bool:
+	if skill == null or not skill.is_ready() or not is_alive():
+		return false
+	_skill_request_left = GameConfig.SKILL_REQUEST_SECONDS
+	return true
+
+
+## 스킬 칸을 눌러 쓰려고 기다리는 중인가(스킬 칸 테두리가 하얗게).
+func is_skill_requested() -> bool:
+	return _skill_request_left > 0.0
+
+
+## 풀오토면 알아서, 아니면 부탁받았을 때 스킬을 쓴다. 썼거나 쓰려고 다가가는 중이면 true.
+## 알아서 쓸 때: 공격은 싸울 상대가 사거리 안에 있을 때, 도발은 둘레에 싸우는 적이 있을 때,
+## 회복은 체력이 기준(HEAL_THRESHOLD) 아래인 동료가 있을 때. 눌러서 쓸 때는 조건이 느슨하다.
+func _use_skill() -> bool:
+	if skill == null or not skill.is_ready():
+		return false
+	var asked := _skill_request_left > 0.0
+	if not asked and not leader.control.auto_skills():
+		return false
+	var reach := stats.attack_range
+	var radius := skill.value("radius")
+	match skill.kind:
+		"heal":
+			var patient := _most_hurt_ally(1.0 if asked else GameConfig.HEAL_THRESHOLD, INF)
+			return patient != null and _cast_or_approach(patient, reach, asked)
+		"heal_all":
+			if asked or _most_hurt_ally(GameConfig.HEAL_THRESHOLD, radius) != null:
+				_cast_skill(self)
+				return true
+			return false
+		"taunt":
+			if asked or not _wilds_within(position, radius, true).is_empty():
+				_cast_skill(self)
+				return true
+			return false
+	var enemy := _pick_enemy()
+	if enemy == null and asked:
+		enemy = _skill_target()
+	return enemy != null and _cast_or_approach(enemy, reach, asked)
+
+
+## 사거리 안이면 쓰고, 부탁받았는데 멀면 다가간다.
+func _cast_or_approach(target: Unit, reach: float, asked: bool) -> bool:
+	if in_reach(target, reach):
+		_cast_skill(target)
+		return true
+	if asked:
+		_following = false
+		walk_to(target.position, reach * 0.9)
+		return true
+	return false
+
+
+## 눌러서 쓰는데 싸우는 상대가 없을 때: 주인공의 대상, 없으면 주인공 곁(PARTY_LEASH)의 가장 가까운 야생.
+func _skill_target() -> Unit:
+	if is_instance_valid(leader.target) and leader.target.is_alive() and leader.target.team == Team.WILD:
+		return leader.target
+	var best: Unit = null
+	var best_distance := INF
+	for wild in _wilds_within(leader.position, GameConfig.PARTY_LEASH):
+		var d := Iso.ground_distance(position, wild.position)
+		if d < best_distance:
+			best = wild
+			best_distance = d
+	return best
+
+
+func _cast_skill(target: Unit) -> void:
+	skill.use()
+	skill_casts += 1
+	_skill_request_left = 0.0
+	if target != self:
+		face(target.position)
+	var color: Color = Palette.SKILL_COLORS[skill.kind]
+	field.show_number(position + Vector2(0, -overlay_height() - 26.0), UiText.SKILL_CAST % skill.title, color)
+	var power := skill.value("power")
+	var radius := skill.value("radius")
+	match skill.kind:
+		"strike":
+			_skill_hit(target, stats.attack * power)
+		"flurry":
+			# 몇 번에 나눠 때린다. 트윈은 이 헨치에 묶여 있어서, 헨치가 사라지면 함께 멈춘다.
+			var tween := create_tween()
+			for i in int(skill.value("hits", 1.0)):
+				tween.tween_callback(_skill_hit.bind(target, stats.attack * power))
+				tween.tween_interval(skill.value("hit_gap"))
+		"blast", "stun":
+			field.show_burst(target.position, radius, color)
+			for wild in _wilds_within(target.position, radius):
+				wild.take_damage(stats.attack * power, self)
+				if skill.kind == "stun":
+					wild.stun(skill.value("stun"))
+		"taunt":
+			field.show_burst(position, radius, color)
+			for wild in _wilds_within(position, radius):
+				wild.taunt(self)
+			add_shield(stats.max_hp * skill.value("shield"), skill.value("shield_seconds"))
+		"heal":
+			target.receive_heal(_heal_power() * power)
+		"heal_all":
+			field.show_burst(position, radius, color)
+			for ally in _allies_within(position, radius):
+				ally.receive_heal(_heal_power() * power)
+
+
+## 스킬 한 대: 사거리가 길면 투사체, 짧으면 몸으로 부딪친다. 그 사이 쓰러진 상대는 건너뛴다.
+func _skill_hit(target: Unit, damage: float) -> void:
+	if not is_instance_valid(target) or not target.is_alive():
+		return
+	if stats.attack_range > GameConfig.MELEE_RANGE_MAX:
+		field.shoot(self, target, damage)
+	else:
+		_lunge_left = LUNGE_SECONDS
+		target.take_damage(damage, self)
+
+
+## 회복 스킬의 바탕 값: 회복력(힐러), 없으면 공격력.
+func _heal_power() -> float:
+	return stats.heal if stats.heal > 0.0 else stats.attack
+
+
+## 체력 비율이 threshold보다 낮은 동료 중 가장 낮은 것(radius = 나에게서 땅 위 거리). 없으면 null.
+func _most_hurt_ally(threshold: float, radius: float) -> Unit:
+	var allies := _allies_within(position, radius)
+	var ratios: Array[float] = []
+	for ally in allies:
+		ratios.append(ally.hp / ally.stats.max_hp)
+	var index := Combat.heal_target_index(ratios, threshold)
+	return allies[index] if index >= 0 else null
+
+
+## 살아 있는 동료(주인공 포함) 중 center에서 radius 안.
+func _allies_within(center: Vector2, radius: float) -> Array[Unit]:
+	var result: Array[Unit] = []
+	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.PARTY)):
+		var ally := node as Unit
+		if ally.is_alive() and Iso.ground_distance(center, ally.position) <= radius:
+			result.append(ally)
+	return result
+
+
+## 살아 있는 야생 중 center에서 radius 안. fighting_only면 파티와 싸우는 중인 것만.
+func _wilds_within(center: Vector2, radius: float, fighting_only := false) -> Array[Hench]:
+	var result: Array[Hench] = []
+	for node in get_tree().get_nodes_in_group(Unit.group_name(Team.WILD)):
+		var wild := node as Hench
+		if wild.is_alive() and (wild.is_fighting() or not fighting_only) and Iso.ground_distance(center, wild.position) <= radius:
+			result.append(wild)
+	return result
+
+
 ## 주인공 곁의 내 자리로 간다. 자리에서 조금 벗어난 정도면 가만히 있는다(덜 부산하게).
 func _follow_leader() -> void:
 	var spot := leader.position + slot
@@ -183,6 +356,11 @@ func _follow_leader() -> void:
 ## 파티와 싸우는 중인가.
 func is_fighting() -> bool:
 	return team == Team.WILD and is_instance_valid(_fight_target) and _fight_target.is_alive()
+
+
+## 야생: 지금 노리는 상대(위협 점수가 가장 높은 상대). 싸우지 않으면 null.
+func fight_target() -> Unit:
+	return _fight_target if is_fighting() else null
 
 
 ## 아직 파티를 알아채지 못했나(싸우는 중도, 추격을 포기하고 돌아가는 중도 아님).
@@ -256,6 +434,20 @@ func _strongest_threat() -> Unit:
 		_returning = true
 	_fight_target = best
 	return best
+
+
+## 도발당함(스킬): 지금 가장 높은 위협 점수보다 높게 by를 노린다. 싸우지 않던 몹도 끌려온다("!").
+func taunt(by: Unit) -> void:
+	if team != Team.WILD or not is_alive():
+		return
+	if _threat.is_empty():
+		_show_mark(Mark.ALERT, GameConfig.ALERT_MARK_SECONDS)
+	var top := 0.0
+	for value: float in _threat.values():
+		top = maxf(top, value)
+	_threat[by] = top + GameConfig.TAUNT_THREAT
+	_returning = false
+	detect_gauge = 0.0
 
 
 func _give_up() -> void:
@@ -358,6 +550,8 @@ func name_color() -> Color:
 
 
 func mark() -> Mark:
+	if is_stunned():
+		return Mark.STUNNED
 	if _mark_left > 0.0:
 		return _mark
 	if detect_gauge > 0.0:

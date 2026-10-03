@@ -129,6 +129,8 @@ func refresh() -> void:
 		_combat.text += UiText.INFO_COMBAT_HEAL % roundi(combat.heal)
 	_show_bonus(boosted, mutated)
 	_active.text = UiText.INFO_ACTIVE % species.active
+	if species.skill != "":
+		_active.text += UiText.INFO_SKILL_KIND % UiText.SKILL_KIND_NAMES.get(species.skill, species.skill)
 	var holder := HenchDb.get_species(item.passive_owner_id())
 	_passive.text = (UiText.INFO_LEGACY % [holder.name, holder.passive]) if holder != species else (UiText.INFO_PASSIVE % species.passive)
 	_party.text = UiText.BTN_PARTY_LEAVE if item.in_party() else UiText.BTN_PARTY

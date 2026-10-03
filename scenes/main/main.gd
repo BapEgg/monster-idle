@@ -52,6 +52,10 @@ func _ready() -> void:
 	_loot_rng.seed = GameConfig.FIELD_SEED + 2
 	_fx_rng.randomize()
 	_spawn_party()
+	_hud.bind_party(party)
+	_hud.skill_requested.connect(func(slot: int) -> void:
+		if slot >= 0 and slot < party.size():
+			party[slot].request_skill())
 	bag.changed.connect(_save_schedule.mark_dirty)
 	wallet.changed.connect(_save_schedule.mark_dirty)
 	workshop.acted.connect(_save_schedule.mark_dirty.bind(true))

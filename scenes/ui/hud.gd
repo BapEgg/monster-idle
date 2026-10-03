@@ -2,6 +2,7 @@ class_name Hud
 extends CanvasLayer
 ## 화면 위 UI: 가상 조이스틱, 사냥 상태, 처치 수, 가방 버튼·가방 창, 대상 창(위 가운데),
 ## 오른쪽 아래의 공격 버튼(늘 보임) · 오토 버튼 · 스킬 칸(메이플키우기 배치를 따름, 사용자 결정 2026-10-02).
+## 스킬 칸 1~3 = 파티 헨치 1~3의 고유 액티브(누르면 씀), 4~6 = 나중에 주인공 직업 스킬.
 ## 위치·크기는 이 장면(hud.tscn)을 에디터에서 열어 끌어서 정한다. 코드는 자리를 건드리지 않는다.
 ## 오른쪽 아래 버튼들은 화면 오른쪽 아래 모서리에 붙은 Controls 아래에 있어서, 휴대폰이 길어져도 모서리에서 같은 거리에 남는다.
 ## 조이스틱은 Godot 4.7 기본 노드(VirtualJoystick, 동적 모드)를 쓴다.
@@ -14,11 +15,15 @@ signal control_mode_selected(mode: AutoControl.Mode)
 ## 가방 창에서 코어를 파티에 넣거나 뺄 때. main이 필드의 헨치를 바꾼다.
 signal party_requested(item: CoreItem, slot: int)
 signal party_leave_requested(item: CoreItem)
+## 스킬 칸을 눌렀을 때(0부터 센 칸 번호). main이 그 자리의 헨치에게 스킬을 쓰게 한다.
+signal skill_requested(slot: int)
 
 const MODE_FONT_SIZE := 22
 const KILLS_FONT_SIZE := 18
 const OUTLINE_SIZE := 6
 const JOYSTICK_RING_WIDTH := 3
+## 스킬 칸 수(hud.tscn의 Controls/SkillSlot1~6)
+const SKILL_SLOT_COUNT := 6
 ## 오른쪽 아래 버튼들 둘레의 여유(px). 이 안을 누르면 몹을 대상으로 지정하지 않는다(버튼을 누른 것으로 본다).
 const CONTROLS_PADDING := 8.0
 
@@ -35,6 +40,8 @@ const CONTROLS_PADDING := 8.0
 @onready var _kills: Label = $Kills
 
 var _player: Player
+var _party: Array[Hench] = []
+var _skill_slots: Array[SkillSlot] = []
 
 
 func _ready() -> void:
@@ -42,6 +49,11 @@ func _ready() -> void:
 	_style_label(_kills, KILLS_FONT_SIZE)
 	_setup_joystick()
 	auto_button.pressed.connect(_on_auto_button)
+	for i in SKILL_SLOT_COUNT:
+		var slot := _controls.get_node("SkillSlot%d" % (i + 1)) as SkillSlot
+		var index := i
+		slot.pressed.connect(func() -> void: skill_requested.emit(index))
+		_skill_slots.append(slot)
 	bag_button.pressed.connect(_on_bag_button)
 	for modal: Control in _modals():
 		modal.visibility_changed.connect(_on_modal_toggled)
@@ -54,6 +66,16 @@ func _ready() -> void:
 func bind_player(player: Player) -> void:
 	_player = player
 	auto_button.mode = player.control.mode
+
+
+## 파티(헨치 배열, main이 자리마다 바꿔 끼운다)를 스킬 칸에 이어 준다.
+func bind_party(party: Array[Hench]) -> void:
+	_party = party
+
+
+## 스킬 칸 하나(0부터, 실행 검사용).
+func skill_slot(index: int) -> SkillSlot:
+	return _skill_slots[index]
 
 
 func set_kills(count: int) -> void:
@@ -101,6 +123,7 @@ func _process(_delta: float) -> void:
 	if _player == null:
 		return
 	target_frame.unit = _player.target if is_instance_valid(_player.target) else null
+	_show_skills()
 	var control := _player.control
 	if not _player.is_alive():
 		_show_mode(UiText.MODE_DOWN, Palette.MODE_DOWN)
@@ -114,6 +137,16 @@ func _process(_delta: float) -> void:
 		_show_mode(UiText.MODE_MANUAL, Palette.MODE_MANUAL)
 	else:
 		_show_mode(UiText.MODE_RETURNING % ceili(control.seconds_until_auto()), Palette.MODE_MANUAL)
+
+
+## 스킬 칸 1~3에 파티 헨치의 스킬(대기 시간 · 기다리는 중)을 보여 준다. 4~6은 빈 칸.
+func _show_skills() -> void:
+	for i in _skill_slots.size():
+		var hench: Hench = _party[i] if i < _party.size() and is_instance_valid(_party[i]) else null
+		if hench == null or hench.skill == null:
+			_skill_slots[i].show_skill(null, Color.TRANSPARENT, false)
+		else:
+			_skill_slots[i].show_skill(hench.skill, hench.species.color, hench.is_skill_requested())
 
 
 func _on_bag_button() -> void:

@@ -17,6 +17,8 @@ script = ExtResource("2_field")
 [node name="Ground" type="Node2D" parent="Field"]
 script = ExtResource("3_ground")
 
+[node name="GroundEffects" type="Node2D" parent="Field"]
+
 [node name="Objects" type="Node2D" parent="Field"]
 y_sort_enabled = true
 

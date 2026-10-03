@@ -5,7 +5,8 @@ extends SceneTree
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
 ## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png",
-## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png", 변이 코어 정보창을 "<이름>_variant.png"로 저장한다.
+## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png", 변이 코어 정보창을 "<이름>_variant.png",
+## 스킬(기절 별 · 보호막 · 스킬 칸 대기 시간)을 "<이름>_skills.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -212,6 +213,47 @@ func _run(main: Node) -> void:
 	_remove(wild)
 	_set_party_paused(main, false)
 
+	# 7-2) 스킬(헨치 고유 액티브): 스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 빈 칸(주인공 직업 스킬 자리).
+	#      수동·세미오토에서는 칸을 눌러야 쓰고, 풀오토는 알아서 쓴다.
+	var squad: Array = main.get("party")
+	var slots_ok := true
+	for i in 3:
+		slots_ok = slots_ok and hud.skill_slot(i).skill != null and hud.skill_slot(i).skill == (squad[i] as Hench).skill
+	_expect(slots_ok and hud.skill_slot(3).skill == null and hud.skill_slot(5).skill == null, "스킬 칸 1~3 = 파티 헨치 스킬, 4~6 = 빈 칸")
+	await _switch_mode(hud, player, AutoControl.Mode.MANUAL)
+	var tank := squad[0] as Hench
+	var shooter := squad[1] as Hench
+	wild = _spawn_wild(main, "sotmabaem", Vector2(60, 10), Vector2.RIGHT)
+	await _seconds(1.5)
+	_expect(tank.skill_casts == 0 and shooter.skill_casts == 0 and tank.skill.is_ready(), "수동: 스킬을 알아서 쓰지 않음")
+	await _tap(hud.skill_slot(0).global_position)
+	await _physics_frames(3)
+	_expect(tank.skill_casts == 1 and tank.shield > 0.0, "%s 칸을 누름 → %s(도발 + 보호막 %d)" % [tank.species.name, tank.skill.title, roundi(tank.shield)])
+	_expect(wild.fight_target() == tank, "도발: 곁의 야생이 탱커를 노림")
+	await _tap(hud.skill_slot(1).global_position)
+	await _physics_frames(3)
+	_expect(shooter.skill_casts == 1 and not shooter.skill.is_ready() and hud.skill_slot(1).skill.left > 0.0, "%s 칸을 누름 → %s, 칸에 대기 시간" % [shooter.species.name, shooter.skill.title])
+	_remove(wild)
+	# 기절: 돌구아나(꼬리 내려찍기 = 기절) 코어를 1번 자리에 넣고, 멀리 있는 몹에게 눌러 쓰면 다가가서 쓴다
+	var stunner := _find_core(main.get("bag"), "dolguana", CoreItem.Gender.MALE)
+	main.call("assign_party", stunner, 0)
+	await _physics_frames(2)
+	var dol := (main.get("party") as Array)[0] as Hench
+	wild = _spawn_wild(main, "haemapo", Vector2(-160, 60), Vector2.LEFT)
+	await _physics_frames(2)
+	await _tap(hud.skill_slot(0).global_position)
+	for i in 180:
+		await physics_frame
+		if dol.skill_casts > 0:
+			break
+	_expect(dol.skill_casts == 1 and wild.is_stunned() and wild.mark() == Unit.Mark.STUNNED, "멀리 있는 몹 → 다가가서 %s, 맞은 몹은 기절(별)" % dol.skill.title)
+	await _physics_frames(10)
+	await _save_shot("skills")
+	await _seconds(0.2)
+	_remove(wild)
+	main.call("leave_party", stunner)
+	await _switch_mode(hud, player, AutoControl.Mode.FULL_AUTO)
+
 	# 8) 코어 드랍 · 가방(프로토타입 4): 떨어진 코어는 튀어 올랐다 땅에 머물고, 주인공에게 빨려 들어가 가방에 들어간다
 	var bag: Bag = main.get("bag")
 	var before := bag.count()
@@ -347,9 +389,12 @@ func _run(main: Node) -> void:
 	await _seconds(GameConfig.CORE_POP_SECONDS + GameConfig.CORE_REST_SECONDS + 1.0)
 	var picked := hunt_log.cores - cores_before_hunt
 	_expect(picked >= 1 and bag.count() - bag_before_hunt == picked, "자동 사냥 중 떨어진 코어도 가방에 (%d개)" % picked)
+	var casts := 0
 	for hench: Hench in main.get("party"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
+		casts += hench.skill_casts
+	_expect(casts >= 2, "풀오토: 헨치가 스킬을 알아서 씀 (%d번)" % casts)
 
 	# 10) 저장 → 다시 켜기: 가방(코어 하나하나) · 골드 · 코어 조각 · 파티 · 사냥 방식이 그대로
 	var keep := _find_core(bag, "jinjuryong", CoreItem.Gender.FEMALE)

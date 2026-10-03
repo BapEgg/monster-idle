@@ -78,6 +78,25 @@ const ROLE_STATS := {
 	"ranged": {"hp": 130.0, "attack": 9.0, "attack_interval": 1.1, "attack_range": 230.0},
 	"healer": {"hp": 140.0, "attack": 4.0, "attack_interval": 1.5, "attack_range": 210.0, "heal": 18.0, "heal_interval": 1.5},
 }
+# ─── 스킬: 헨치 고유 액티브 (스킬 기초, 수치는 모두 임시 — 밸런스 단계에서 다시 정한다) ─────
+## 효과 종류마다(data/henches.json의 skill). 쓰는 거리는 그 헨치의 사거리(기본 공격과 같다).
+## cooldown = 다시 쓰기까지(초), power = 공격력(회복은 회복력)의 몇 배, hits = 몇 번 때리나, hit_gap = 때리는 사이(초),
+## radius = 범위(땅 위 px. blast·stun = 대상 둘레, taunt·heal_all = 자기 둘레), stun = 기절(초),
+## shield = 최대 체력의 몇 배만큼 보호막, shield_seconds = 보호막이 남는 시간(초).
+## 마나(MP)는 아직 쓰지 않는다.
+const SKILL_KINDS := {
+	"strike": {"cooldown": 8.0, "power": 2.5},
+	"flurry": {"cooldown": 9.0, "power": 0.8, "hits": 4, "hit_gap": 0.12},
+	"blast": {"cooldown": 10.0, "power": 1.6, "radius": 110.0},
+	"stun": {"cooldown": 12.0, "power": 1.2, "radius": 70.0, "stun": 2.0},
+	"taunt": {"cooldown": 14.0, "radius": 170.0, "shield": 0.3, "shield_seconds": 6.0},
+	"heal": {"cooldown": 10.0, "power": 2.5},
+	"heal_all": {"cooldown": 14.0, "power": 1.5, "radius": 230.0},
+}
+## 스킬 칸을 눌렀는데 바로 쓸 수 없으면(대상이 멀거나 없음) 이 시간(초) 동안 다가가며 기다렸다가 쓴다. 지나면 없던 일로.
+const SKILL_REQUEST_SECONDS := 3.0
+## 도발: 맞은 적은 지금 가장 높은 위협 점수보다 이만큼 높게 도발한 헨치를 노린다.
+const TAUNT_THREAT := 1000.0
 ## 사거리가 이보다 길면 투사체를 쏜다(짧으면 몸으로 부딪쳐 때린다).
 const MELEE_RANGE_MAX := 90.0
 const PROJECTILE_SPEED := 700.0

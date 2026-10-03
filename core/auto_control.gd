@@ -48,6 +48,12 @@ func auto_attacks() -> bool:
 	return mode != Mode.MANUAL
 
 
+## 헨치 스킬을 알아서 쓰나. 풀오토만 그렇고, 세미오토("공격만 자동")·수동은 스킬 칸을 눌러야 쓴다.
+## 나중에 설정의 "스킬만 자동"을 고르면 세미오토에서도 알아서 쓰게 된다.
+func auto_skills() -> bool:
+	return mode == Mode.FULL_AUTO
+
+
 ## 지금 손을 대고 있나(수동 중에서도 "조작 중"과 "자동 복귀 대기"를 가른다).
 func is_held() -> bool:
 	return _held

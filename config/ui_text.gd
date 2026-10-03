@@ -48,6 +48,18 @@ const AGE_NAMES := ["어린", "성체", "늙은"]
 ## 성별(CoreItem.Gender 순서). 짧은 글자는 가방 칸 배지
 const GENDER_NAMES := ["암컷", "수컷"]
 const GENDER_SHORT := ["암", "수"]
+# ─── 스킬 (스킬 기초) ─────────────────────────────
+## 스킬 효과 종류 이름(임시 분류, 정보창에 보인다)
+const SKILL_KIND_NAMES := {
+	"strike": "강타", "flurry": "연타", "blast": "범위 공격", "stun": "기절",
+	"taunt": "도발 + 보호막", "heal": "회복", "heal_all": "범위 회복",
+}
+## 스킬을 쓸 때 헨치 머리 위. %s = 스킬 이름
+const SKILL_CAST := "%s!"
+## 보호막이 피해를 모두 막았을 때 숫자 대신
+const SHIELD_BLOCK := "막음"
+## 정보창의 고유 액티브 줄 뒤에 붙는다. %s = 효과 종류 이름
+const INFO_SKILL_KIND := " · 지금 효과(임시): %s"
 ## 여러 이름을 한 줄로 늘어놓을 때 사이
 const LIST_SEPARATOR := ", "
 const VARIANT := "변이"

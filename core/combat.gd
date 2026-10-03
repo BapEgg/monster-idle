@@ -18,6 +18,12 @@ static func threat(damage: float, is_tank: bool) -> float:
 	return damage * (GameConfig.TANK_THREAT_SCALE if is_tank else 1.0)
 
 
+## 보호막이 먼저 피해를 받는다. 돌려주는 값: x = 몸에 들어가는 피해, y = 남은 보호막.
+static func absorb(shield: float, damage: float) -> Vector2:
+	var blocked := minf(maxf(shield, 0.0), damage)
+	return Vector2(damage - blocked, shield - blocked)
+
+
 ## 실제로 들어가는 피해. 기습(아직 파티를 알아채지 못한 적에게 수동 조작 중에 넣은 첫 타)이면 배율만큼 세다.
 ## 사용자 결정(2026-10-02): 기습 보너스는 수동 중일 때만 준다. 자동 사냥은 손해가 아니라 보너스가 없을 뿐이다.
 static func hit_damage(damage: float, ambush: bool) -> float:

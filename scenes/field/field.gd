@@ -4,9 +4,11 @@ extends Node2D
 ## 필드 위에서 움직이거나 서 있는 것은 모두 Objects 아래에 둔다.
 ## Objects는 y정렬이 켜져 있어서 발밑이 화면 아래쪽일수록 앞에 그려진다.
 ## Effects는 그보다 위(z_index)에 그려서 숫자·투사체가 나무에 가려지지 않는다.
+## GroundEffects는 바닥 바로 위(유닛보다 아래)에 그리는 연출(스킬 범위 고리)이다.
 
 @onready var objects: Node2D = $Objects
 @onready var effects: Node2D = $Effects
+@onready var ground_effects: Node2D = $GroundEffects
 
 ## 길찾기 격자. 장식물이 있는 칸은 막힌 칸이다.
 var _grid := AStarGrid2D.new()
@@ -88,6 +90,15 @@ func show_number(at: Vector2, text: String, color: Color) -> void:
 	number.color = color
 	number.position = at
 	effects.add_child(number)
+
+
+## 스킬 범위 연출: 그 자리(발밑)에 땅 위 반지름 radius(px)의 고리가 퍼지며 사라진다.
+func show_burst(at: Vector2, radius: float, color: Color) -> void:
+	var burst := SkillBurst.new()
+	burst.position = at
+	burst.radius = radius
+	burst.color = color
+	ground_effects.add_child(burst)
 
 
 ## 원거리 공격: 투사체를 날려 닿으면 피해를 준다.

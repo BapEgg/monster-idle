@@ -105,6 +105,18 @@ const AUTO_BUTTON_TEXTS := [Color("2b2b33"), Color("2b2b33"), Color(1, 1, 1)]
 ## 스킬 칸(빈 자리)
 const SKILL_SLOT := Color(0, 0, 0, 0.3)
 const SKILL_SLOT_BORDER := Color(1, 1, 1, 0.35)
+## 스킬 칸: 쓸 수 있을 때 테두리 / 눌러서 기다리는 중 테두리 / 대기 중 덮개 / 남은 초 글자
+const SKILL_SLOT_READY := Color("ffd84a")
+const SKILL_SLOT_REQUESTED := Color(1, 1, 1, 0.95)
+const SKILL_SLOT_COOLDOWN := Color(0, 0, 0, 0.6)
+## 스킬 연출(임시 도형): 효과 종류마다 고리·이름 글자 색
+const SKILL_COLORS := {
+	"strike": Color("ff9a3d"), "flurry": Color("ffb35c"), "blast": Color("ff6a3d"), "stun": Color("ffe14d"),
+	"taunt": Color("5ab8ff"), "heal": Color("7dff8a"), "heal_all": Color("7dff8a"),
+}
+## 보호막 막대(체력 바 위) / 기절 별
+const SHIELD_BAR := Color("8fd3ff")
+const STUN_STAR := Color("ffe14d")
 ## 공격 버튼: 평소 / 누르는 중
 const ATTACK_BUTTON := Color(1, 0.42, 0.33, 0.35)
 const ATTACK_BUTTON_DOWN := Color(1, 0.42, 0.33, 0.75)

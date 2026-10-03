@@ -7,8 +7,8 @@ extends CharacterBody2D
 signal died(unit: Unit)
 
 enum Team { PARTY, WILD }
-## 머리 위 표시: 없음 / 감지 중(전구가 차오름) / 알아채고 덤빔·맞고 반격("!") / 추격 포기(파란 표시)
-enum Mark { NONE, DETECTING, ALERT, GIVE_UP }
+## 머리 위 표시: 없음 / 감지 중(전구가 차오름) / 알아채고 덤빔·맞고 반격("!") / 추격 포기(파란 표시) / 기절(별이 돈다)
+enum Mark { NONE, DETECTING, ALERT, GIVE_UP, STUNNED }
 
 ## 충돌 층: 1 = 지형(나무·바위·가장자리), 2 = 유닛. 유닛끼리는 부딪치지 않고 지형에만 막힌다.
 const LAYER_WORLD := 1
@@ -32,6 +32,8 @@ var field: Field
 var facing := Vector2.DOWN
 ## 주인공의 대상으로 지정됐나(발밑 고리, 체력 바를 늘 보임).
 var targeted := false
+## 보호막(스킬): 피해를 먼저 받아 준다. 정해진 시간이 지나면 사라진다. 체력 바 위에 막대로 보인다.
+var shield := 0.0
 
 var _delta := 0.0
 var _cooldown := 0.0
@@ -43,6 +45,8 @@ var _path_goal := Vector2.INF
 var _repath_left := 0.0
 var _lunge_left := 0.0
 var _flash_left := 0.0
+var _shield_left := 0.0
+var _stun_left := 0.0
 
 
 static func group_name(of_team: Team) -> StringName:
@@ -68,10 +72,15 @@ func _physics_process(delta: float) -> void:
 	_delta = delta
 	_cooldown = maxf(_cooldown - delta, 0.0)
 	_heal_cooldown = maxf(_heal_cooldown - delta, 0.0)
+	_shield_left = maxf(_shield_left - delta, 0.0)
+	if _shield_left <= 0.0:
+		shield = 0.0
+	_stun_left = maxf(_stun_left - delta, 0.0)
 	_desired = Vector2.ZERO
 	_speed_scale = 1.0
 	if is_alive():
-		_think(delta)
+		if not is_stunned():  # 기절하면 아무것도 못 한다(움직이기 · 공격 · 회복)
+			_think(delta)
 	else:
 		_dead_tick(delta)
 	# 바라보는 방향은 가려던 방향으로만 정한다(밀려나는 건 몸만 움직인다).
@@ -237,14 +246,20 @@ func try_heal(target: Unit) -> bool:
 
 
 ## from은 이미 사라졌으면 null일 수 있다. 기습이면 피해가 세지고 숫자가 "기습!"으로 뜬다.
+## 보호막이 있으면 보호막이 먼저 받는다(다 막으면 숫자 대신 "막음").
 func take_damage(amount: float, from: Unit) -> void:
 	if not is_alive():
 		return
 	var ambush := is_instance_valid(from) and _is_ambushed_by(from)
-	amount = Combat.hit_damage(amount, ambush)
+	var after := Combat.absorb(shield, Combat.hit_damage(amount, ambush))
+	var blocked := shield - after.y
+	amount = after.x
+	shield = after.y
 	hp = maxf(hp - amount, 0.0)
 	_flash_left = FLASH_SECONDS
-	if ambush:
+	if amount <= 0.0 and blocked > 0.0:
+		field.show_number(_number_point(), UiText.SHIELD_BLOCK, Palette.SHIELD_BAR)
+	elif ambush:
 		field.show_number(_number_point(), UiText.AMBUSH_NUMBER % roundi(amount), Palette.NUMBER_AMBUSH)
 	else:
 		var color := Palette.NUMBER_DEALT if team == Team.WILD else Palette.NUMBER_TAKEN
@@ -265,9 +280,28 @@ func receive_heal(amount: float) -> void:
 		field.show_number(_number_point(), "+%d" % roundi(hp - before), Palette.NUMBER_HEAL)
 
 
+## 기절(스킬): seconds초 동안 아무것도 못 한다. 이미 기절 중이면 더 긴 쪽으로.
+func stun(seconds: float) -> void:
+	if not is_alive():
+		return
+	_stun_left = maxf(_stun_left, seconds)
+	stop()
+
+
+func is_stunned() -> bool:
+	return _stun_left > 0.0
+
+
+## 보호막(스킬)을 씌운다. 겹치지 않고 더 큰 쪽이 남으며, 남는 시간은 새로 센다.
+func add_shield(amount: float, seconds: float) -> void:
+	shield = maxf(shield, amount)
+	_shield_left = seconds
+
+
 ## 체력을 채워 그 자리에서 다시 일어난다.
 func revive_at(point: Vector2) -> void:
 	hp = stats.max_hp
+	_stun_left = 0.0
 	modulate.a = 1.0
 	place_at(point)
 
@@ -304,7 +338,7 @@ func detect_ratio() -> float:
 
 
 func shows_hp_bar() -> bool:
-	return hp < stats.max_hp or targeted
+	return hp < stats.max_hp or targeted or shield > 0.0
 
 
 func hp_bar_color() -> Color:
