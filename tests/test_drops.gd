@@ -2,6 +2,8 @@ extends "res://tests/suite.gd"
 ## core/drops.gd, core/suffix_db.gd, core/core_item.gd, core/bag.gd 테스트: 코어 드랍·접미사·나이·가방.
 
 const ROLLS := 20000
+## 실제 확률(하루 목표 ÷ 잰 처치 수)은 너무 낮아 비율을 잴 수 없으므로, 비율 검사 동안만 개발 배율을 크게 건다.
+const TEST_BOOST := 500.0
 
 
 func test_suffixes_match_plan() -> void:
@@ -13,6 +15,7 @@ func test_suffixes_match_plan() -> void:
 
 
 func test_drop_rate_matches_config() -> void:
+	Balance.dev_boost = TEST_BOOST
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	var drops := 0
@@ -27,8 +30,9 @@ func test_drop_rate_matches_config() -> void:
 		suffixes[item.suffix_id] = true
 		if drops == 1:
 			expect_true(item.species_id == "gochuryong" and item.age == CoreItem.Age.YOUNG and item.level == 7 and item.gender == CoreItem.Gender.MALE, "코어는 쓰러뜨린 헨치의 종·나이·성별·레벨을 받는다")
-	expect_near(float(drops) / ROLLS, GameConfig.CORE_DROP_CHANCE, "드랍 비율 ≈ 설정값", 0.015)
-	expect_near(float(shining) / drops, GameConfig.SHINING_CORE_CHANCE, "빛나는 코어 비율 ≈ 설정값", 0.02)
+	expect_near(float(drops) / ROLLS, Balance.core_chance(), "드랍 비율 ≈ Balance 확률(%.1f%%)" % (Balance.core_chance() * 100.0), 0.015)
+	expect_near(float(shining) / drops, Balance.shining_chance(), "빛나는 코어 비율 ≈ Balance 확률(%.1f%%)" % (Balance.shining_chance() * 100.0), 0.02)
+	Balance.dev_boost = 1.0
 	expect_true(suffixes.size() == SuffixDb.ids().size(), "접미사 9종이 모두 나온다")
 
 
@@ -57,6 +61,7 @@ func test_variant_always_drops() -> void:
 
 
 func test_gender_and_variant_rates() -> void:
+	Balance.dev_boost = TEST_BOOST
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
 	var females := 0
@@ -65,7 +70,8 @@ func test_gender_and_variant_rates() -> void:
 		females += 1 if Drops.roll_gender(rng) == CoreItem.Gender.FEMALE else 0
 		variants += 1 if Drops.roll_variant(rng) else 0
 	expect_near(float(females) / ROLLS, GameConfig.FEMALE_CHANCE, "암컷 비율 ≈ 설정값", 0.015)
-	expect_near(float(variants) / ROLLS, GameConfig.VARIANT_CHANCE, "변이 비율 ≈ 설정값", 0.01)
+	expect_near(float(variants) / ROLLS, Balance.variant_chance(), "변이 비율 ≈ Balance 확률", 0.01)
+	Balance.dev_boost = 1.0
 
 
 ## 기획서 4장: 어린 = 지역 평균 -2, 늙은 = +2 (지역 평균 대신 종 레벨대 가운데)

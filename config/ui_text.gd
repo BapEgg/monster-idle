@@ -107,6 +107,12 @@ const HUNT_RATES := "시간당 처치: 자동 %s · 수동 %s (%s) · 하루 예
 const HUNT_UNKNOWN := "—"
 ## 수동이 자동보다 얼마나 더 잡는지. %+d = 퍼센트
 const HUNT_ADVANTAGE := "수동 %+d%%"
+## 밸런스 1차(기획서 8장): 지금 확률과, 그 확률로 하루 처치 수만큼 잡으면 얻는 양(목표 대비)
+const DEBUG_BALANCE := "확률(하루 처치 %s마리 기준): " + TERM_CORE + " %.3f%% · 빛나는 %.1f%% · 변이 %.4f%%\n목표 대비: 하루 " + TERM_CORE + " %.1f개(목표 %d~%d) · 주 빛나는 %.1f개(목표 %d) · 월 변이 %.1f마리(목표 %d~%d)"
+## 개발 확인용 드랍 배율 버튼(켜짐/꺼짐)
+const DEBUG_DROP_BOOST := "드랍 확인 ×%d: %s"
+const DEBUG_ON := "켜짐"
+const DEBUG_OFF := "꺼짐"
 
 # ─── 가방 칸 · 코어 정보 · 믹스 (프로토타입 5) ─────────────
 const ROLE_NAMES := {"tank": "탱커", "melee": "근접딜러", "ranged": "원거리딜러", "healer": "힐러", "boss": "보스"}

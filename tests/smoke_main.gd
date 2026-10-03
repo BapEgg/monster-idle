@@ -426,6 +426,10 @@ func _run(main: Node) -> void:
 	await _tap(hud.debug_button.global_position)
 	var first_hench := (main.get("party") as Array)[0] as Hench
 	_expect(hud.debug_panel.visible and hud.debug_panel.party_text().contains(first_hench.display_name), "디버그 버튼 → 디버그 화면(사냥 기록 · 파티 전투 값)")
+	var boost_button := hud.debug_panel.find_child("DropBoost", true, false) as Button
+	var real_core := Balance.core_chance()
+	await _tap(boost_button.get_global_rect().get_center())
+	_expect(Balance.dev_boost == GameConfig.DEV_DROP_BOOST and is_equal_approx(Balance.core_chance(), minf(real_core * GameConfig.DEV_DROP_BOOST, 1.0)), "드랍 확인 버튼 → 코어 확률 ×%d (%.3f%% → %.2f%%)" % [roundi(GameConfig.DEV_DROP_BOOST), real_core * 100.0, Balance.core_chance() * 100.0])
 	await _save_shot("debug")
 	await _seconds(0.2)
 	await _tap((hud.debug_panel.find_child("Close", true, false) as Button).get_global_rect().get_center())
@@ -436,6 +440,7 @@ func _run(main: Node) -> void:
 	var bag_before_hunt := bag.count()
 	var cores_before_hunt := hunt_log.cores
 	(main.get_node("WildSpawner") as WildSpawner).setup(main.get_node("Field"), player)
+	Balance.dev_boost = 600.0  # 실행 검사 전용: 실제 확률로는 40초 안에 코어가 거의 안 떨어지므로 크게
 	Engine.time_scale = 4.0
 	var shot := _shot_path()
 	var frames := int(40.0 * Engine.physics_ticks_per_second / Engine.time_scale)
@@ -448,6 +453,7 @@ func _run(main: Node) -> void:
 			print("스크린샷: ", shot)
 			shot = ""
 	Engine.time_scale = 1.0
+	Balance.dev_boost = 1.0
 	var kills: int = main.get("kills")
 	_expect(kills >= 3, "자동 사냥 40초 → 3마리 이상 처치 (실제 %d)" % kills)
 	_expect(hunt_log.kills() == kills and hunt_log.kills_per_hour(false) > 0.0, "사냥 기록: 처치 %d · 자동 시간당 %.0f마리" % [hunt_log.kills(), hunt_log.kills_per_hour(false)])
