@@ -5,7 +5,7 @@ extends SceneTree
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
 ## 감지 전구가 차오르는 장면을 "<이름>_detect.png", 가방 창을 "<이름>_bag.png", 믹스창을 "<이름>_mix.png",
-## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png"로 저장한다.
+## 주·보조를 바꾼 믹스창을 "<이름>_mix_swap.png", 변이 코어 정보창을 "<이름>_variant.png"로 저장한다.
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
@@ -293,7 +293,7 @@ func _run(main: Node) -> void:
 	_expect(wallet.gold == gold_before - Mix.gold_cost("dolguana"), "골드가 비용만큼 나감")
 	_expect(hud.confirm_box.visible and not hud.mix_panel.visible, "믹스창이 닫히고 결과 알림")
 	if born_ok:
-		var birth := info.find_child("Birth", true, false) as Label
+		var birth := info.find_child("Bonus", true, false) as Label
 		_expect(info.item != null and info.item.species_id == "dolguana" and info.item.main_parent_gender == CoreItem.Gender.FEMALE and birth.visible, "태어난 돌구아나: 주 코어(암컷) 능력치 경향이 정보창에 보임")
 	await _tap(_center_of(hud.confirm_box, "Yes"))
 	_expect(not hud.confirm_box.visible and hud.bag_panel.visible, "알림 확인 → 가방 창으로 돌아옴")
@@ -301,6 +301,14 @@ func _run(main: Node) -> void:
 	await _seconds(GameConfig.SAVE_SOON_SECONDS + 0.5)
 	var saved := LocalSaveStore.new(SMOKE_SAVE_PATH).load_data()
 	_expect(saved.get("cores", []).size() == bag.count() and int(saved.get("gold", -1)) == wallet.gold, "믹스하고 %.0f초 뒤 저장됨 (코어 %d개 · 골드 %d)" % [GameConfig.SAVE_SOON_SECONDS, bag.count(), wallet.gold])
+	# 변이(돌연변이) 코어: 정보창에 변이 보정 줄, 믹스 버튼은 못 누름
+	var mutant := _find_core(bag, "haemapo", CoreItem.Gender.MALE)
+	await _tap(hud.bag_panel.card_for(mutant).get_global_rect().get_center())
+	var bonus := info.find_child("Bonus", true, false) as Label
+	var mix_button := info.find_child("MixButton", true, false) as Button
+	_expect(mutant.variant and bonus.visible and bonus.text.begins_with(UiText.VARIANT) and mix_button.disabled, "변이 코어: 변이 보정 줄이 보이고 믹스 버튼은 꺼짐")
+	await _save_shot("variant")
+	await _seconds(0.2)
 	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.
 	var on_panel := hud.bag_panel.get_global_rect().position + Vector2(40, 70)
 	start = player.position

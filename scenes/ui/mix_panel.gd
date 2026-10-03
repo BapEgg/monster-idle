@@ -222,7 +222,7 @@ func _show_result(result: String, reveal: Mix.Reveal, has_pair: bool) -> void:
 		_result_name.text = UiText.MIX_HINT_NAME
 
 
-## 아래 목록: 주 코어를 뺀 가방의 코어. 짝이 될 수 있는 것(반대 성별 · 잠금·파티 아님)이 앞, 그 안에서는 새로 얻은 것이 앞.
+## 아래 목록: 주 코어를 뺀 가방의 코어. 짝이 될 수 있는 것(반대 성별 · 잠금·파티·변이 아님)이 앞, 그 안에서는 새로 얻은 것이 앞.
 ## 누르면 보조 칸에 들어간다.
 func _rebuild_candidates() -> void:
 	for child in _candidates.get_children():
@@ -235,7 +235,7 @@ func _rebuild_candidates() -> void:
 		var item := cores[i]
 		if item == main_core:
 			continue
-		var fits := item.gender != main_core.gender and not item.locked and not item.in_party()
+		var fits := item.gender != main_core.gender and not item.locked and not item.in_party() and not item.variant
 		(usable if fits else others).append(item)
 	for item in usable + others:
 		var card := CoreCard.create(item)

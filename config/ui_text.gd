@@ -94,6 +94,8 @@ const INFO_COMBAT := "파티 전투(임시): 공격 %d · 공격 간격 %.2f초"
 const INFO_COMBAT_HEAL := " · 회복 %d"
 ## 믹스로 태어난 코어: %s = 주 코어 성별, %s = 오른 능력치들, %d = 몇 %
 const INFO_BIRTH := TERM_MIX + " 출생(%s이 주 " + TERM_CORE + "): %s +%d%%"
+## 변이 코어: %s = 오른 능력치들, %d = 몇 %. 믹스 재료로는 못 쓴다.
+const INFO_VARIANT := VARIANT + ": %s +%d%% · " + TERM_MIX + " 재료로 못 씀"
 const INFO_ACTIVE := "고유 액티브: %s"
 const INFO_PASSIVE := "고유 패시브: %s"
 ## 유산으로 받은 패시브. %s = 원래 주인 종 이름, %s = 패시브
@@ -144,6 +146,6 @@ const MIX_SUCCESS := TERM_MIX + " 성공!\n%s(%s · %s) 탄생"
 const MIX_FAIL := TERM_MIX + " 실패…\n재료 둘이 사라졌습니다"
 const PERCENT := "%d%%"
 const UNKNOWN_PERCENT := "?%"
-## 믹스할 수 없는 까닭(Mix.Problem 순서: NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, NO_GOLD)
+## 믹스할 수 없는 까닭(Mix.Problem 순서: NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, VARIANT, NO_GOLD)
 const MIX_PROBLEMS := ["", "보조 칸이 비어 있습니다", "같은 것끼리는 안 됩니다", "암수 한 쌍이어야 합니다",
-	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", "골드가 모자랍니다"]
+	"잠긴 것은 쓸 수 없습니다", "파티에 있는 것은 쓸 수 없습니다", VARIANT + "는 재료로 쓸 수 없습니다", "골드가 모자랍니다"]

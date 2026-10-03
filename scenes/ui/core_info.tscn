@@ -71,7 +71,7 @@ unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
 
-[node name="Birth" type="Label" parent="Body"]
+[node name="Bonus" type="Label" parent="Body"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3

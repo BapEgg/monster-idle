@@ -160,6 +160,37 @@ func test_core_combat_stats() -> void:
 	expect_true(melee.attack_interval < GameConfig.ROLE_STATS["melee"]["attack_interval"], "간격은 역할 간격보다 짧아진다(절반까지는 안 됨)")
 
 
+## 사용자 결정(2026-10-03): 변이(돌연변이)는 드롭 전용 — 믹스 재료로 못 쓰고, 믹스로 태어나지도 않는다.
+## 대신 역할의 주특기 능력치 몇 개가 조금 오른다(임시 설정값).
+func test_variant_rules() -> void:
+	var f := _core("gochuryong", CoreItem.Gender.FEMALE)
+	var m := _core("kkangtonggeobuk", CoreItem.Gender.MALE)
+	m.variant = true
+	expect_true(Mix.problem(f, m, 9999) == Mix.Problem.VARIANT and Mix.problem(m, f, 9999) == Mix.Problem.VARIANT, "변이는 주·보조 어느 쪽으로도 재료가 안 된다")
+	expect_true(UiText.MIX_PROBLEMS.size() == Mix.Problem.size(), "믹스 못 하는 까닭 문구가 까닭 수만큼 있다")
+	m.variant = false
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var any_variant := false
+	for i in 300:
+		var born := Mix.roll(rng, f, m, false)
+		any_variant = any_variant or (born != null and born.variant)
+	expect_true(not any_variant, "믹스로 태어난 코어는 변이가 아니다")
+	var plain := _core("sotmabaem", CoreItem.Gender.FEMALE, "lucky")  # 탱커
+	var mutant := _core("sotmabaem", CoreItem.Gender.FEMALE, "lucky")
+	mutant.variant = true
+	var p := CoreStats.compute(plain)
+	var v := CoreStats.compute(mutant)
+	var boosted: Array = GameConfig.VARIANT_STATS["tank"]
+	expect_true(CoreStats.variant_stats(plain).is_empty() and CoreStats.variant_stats(mutant) == boosted, "변이 보정 능력치 = 역할(탱커)의 주특기")
+	for stat: String in p:
+		if stat in boosted:
+			expect_near(float(v[stat]), p[stat] * (1.0 + GameConfig.VARIANT_STAT_BONUS), "변이 → %s +설정값" % stat, 1.0)
+		elif stat != "hp" and stat != "mp":
+			expect_true(v[stat] == p[stat], "변이여도 %s는 그대로" % stat)
+	expect_true(UnitStats.from_core(mutant).max_hp > UnitStats.from_core(plain).max_hp, "파티에 넣으면 변이 보정으로 싸운다(탱커 체력↑)")
+
+
 func test_wallet() -> void:
 	var wallet := Wallet.new()
 	wallet.add_gold(100)

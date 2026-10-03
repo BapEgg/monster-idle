@@ -172,6 +172,15 @@ const CORE_FLY_SPEED := 150.0
 const CORE_FLY_ACCEL := 1500.0
 ## 야생 헨치 성별: 암컷일 확률(임시).
 const FEMALE_CHANCE := 0.5
+## 변이(돌연변이) 코어의 능력치 보정(사용자 결정 2026-10-03: 믹스로 태어난 코어처럼 조금). 드롭 전용이라 믹스 재료로는 못 쓴다.
+## 역할마다 주특기 능력치 3개를 올린다(고른 능력치·배율은 임시). 원종과 다른 공격 패턴·스킬은 스킬 단계에서 붙인다.
+const VARIANT_STATS := {
+	"tank": ["sturdy", "tough", "steadfast"],
+	"melee": ["swift", "mighty", "nimble"],
+	"ranged": ["precise", "mighty", "swift"],
+	"healer": ["abundant", "steadfast", "tough"],
+}
+const VARIANT_STAT_BONUS := 0.1
 ## 야생 헨치가 변이체일 확률(임시: 기획서 목표는 월 3~4마리지만, 프로토타입이라 가끔 보이게 높게). 변이체는 코어가 반드시 떨어진다.
 const VARIANT_CHANCE := 0.03
 ## 나이에 따른 레벨 보정(기획서 4장: 어린 -2 · 성체 0 · 늙은 +2). 야생 레벨 = 종 레벨대 가운데 + 보정.

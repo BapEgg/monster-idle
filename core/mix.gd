@@ -10,7 +10,7 @@ extends RefCounted
 ## 결과 미리보기(기획서 4장 초안): 공개 = 이름, 힌트 = 실루엣, 비밀 = ?
 enum Reveal { OPEN, HINT, SECRET }
 ## 믹스할 수 없는 까닭
-enum Problem { NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, NO_GOLD }
+enum Problem { NONE, MISSING, SAME_CORE, SAME_GENDER, LOCKED, IN_PARTY, VARIANT, NO_GOLD }
 
 
 ## 주 코어 + 보조 코어로 태어날 종 id. 공식이 없으면 "". (암수가 맞는지는 problem()이 본다.)
@@ -58,6 +58,8 @@ static func problem(main: CoreItem, secondary: CoreItem, gold: int) -> Problem:
 		return Problem.LOCKED
 	if main.in_party() or secondary.in_party():
 		return Problem.IN_PARTY
+	if main.variant or secondary.variant:
+		return Problem.VARIANT  # 사용자 결정(2026-10-03): 변이(돌연변이)는 드롭 전용이고 믹스 재료로 못 쓴다
 	if main.gender == secondary.gender:
 		return Problem.SAME_GENDER
 	if gold < gold_cost(result_id(main, secondary)):
