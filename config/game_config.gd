@@ -70,7 +70,6 @@ const MANUAL_RETURN_SECONDS := 0.0
 ## 체력, 공격력, 공격 간격(초), 사거리(땅 위 px), 회복량, 회복 간격(초).
 ## 모든 헨치는 기본 공격을 한다. 역할은 "잘하는 것"이고 차이는 나중에 스킬로 드러낸다(사용자 결정 2026-10-02).
 ## 밸런스는 프로토타입이 어느 정도 완성된 뒤 잡는다.
-const PLAYER_STATS := {"hp": 300.0, "attack": 12.0, "attack_interval": 1.0, "attack_range": 60.0}
 ## 헨치 역할별 능력치. 종마다 다른 값은 나중에 data/의 도감 데이터로 옮긴다.
 const ROLE_STATS := {
 	"tank": {"hp": 260.0, "attack": 6.0, "attack_interval": 1.2, "attack_range": 56.0},
@@ -80,19 +79,25 @@ const ROLE_STATS := {
 }
 # ─── 스킬: 헨치 고유 액티브 (스킬 기초, 수치는 모두 임시 — 밸런스 단계에서 다시 정한다) ─────
 ## 효과 종류마다(data/henches.json의 skill). 쓰는 거리는 그 헨치의 사거리(기본 공격과 같다).
-## cooldown = 다시 쓰기까지(초), power = 공격력(회복은 회복력)의 몇 배, hits = 몇 번 때리나, hit_gap = 때리는 사이(초),
+## cooldown = 다시 쓰기까지(초), coefs = 피해(회복) 계수 {능력치: 계수}(아래 SKILL_DAMAGE_PER_STAT), hits = 몇 번 때리나, hit_gap = 때리는 사이(초),
 ## radius = 범위(땅 위 px. blast·stun = 대상 둘레, taunt·heal_all = 자기 둘레), stun = 기절(초),
 ## shield = 최대 체력의 몇 배만큼 보호막, shield_seconds = 보호막이 남는 시간(초).
 ## 마나(MP)는 아직 쓰지 않는다.
 const SKILL_KINDS := {
-	"strike": {"cooldown": 8.0, "power": 2.5},
-	"flurry": {"cooldown": 9.0, "power": 0.8, "hits": 4, "hit_gap": 0.12},
-	"blast": {"cooldown": 10.0, "power": 1.6, "radius": 110.0},
-	"stun": {"cooldown": 12.0, "power": 1.2, "radius": 70.0, "stun": 2.0},
+	"strike": {"cooldown": 8.0, "coefs": {"mighty": 2.5}},
+	"flurry": {"cooldown": 9.0, "coefs": {"mighty": 0.8}, "hits": 4, "hit_gap": 0.12},
+	"blast": {"cooldown": 10.0, "coefs": {"mighty": 1.6}, "radius": 110.0},
+	"stun": {"cooldown": 12.0, "coefs": {"mighty": 1.2}, "radius": 70.0, "stun": 2.0},
 	"taunt": {"cooldown": 14.0, "radius": 170.0, "shield": 0.3, "shield_seconds": 6.0},
-	"heal": {"cooldown": 10.0, "power": 2.5},
-	"heal_all": {"cooldown": 14.0, "power": 1.5, "radius": 230.0},
+	"heal": {"cooldown": 10.0, "coefs": {"abundant": 2.5}},
+	"heal_all": {"cooldown": 14.0, "coefs": {"abundant": 1.5}, "radius": 230.0},
 }
+## 스킬 계수(기획서 4장 확정 "스킬별 다중 스탯 계수", 사용자 결정 2026-10-03: 주인공도 같이): 피해 · 회복 = Σ 계수 × 능력치 × 아래 값.
+## 능력치는 코어 · 주인공 능력치 9종(data/suffixes.json). 공격(강력) × 계수 = 지금까지의 "공격력 × 배율"과 같은 크기가 되게 기본 공격 환산값과 맞춘다.
+const SKILL_DAMAGE_PER_STAT := 0.75
+const SKILL_HEAL_PER_STAT := 0.8
+## 헨치 고유 액티브의 둘째 계수: 도감 설명 괄호 안 "○○ 비례"(예: 물대포 (명중 비례))의 능력치에 이 계수를 더한다(임시)
+const SKILL_SECONDARY_COEF := 0.5
 ## 스킬 칸을 눌렀는데 바로 쓸 수 없으면(대상이 멀거나 없음) 이 시간(초) 동안 다가가며 기다렸다가 쓴다. 지나면 없던 일로.
 const SKILL_REQUEST_SECONDS := 3.0
 ## 도발: 맞은 적은 지금 가장 높은 위협 점수보다 이만큼 높게 도발한 헨치를 노린다.
@@ -113,13 +118,23 @@ const PERSONAL_SPACE_PUSH := 0.6
 # ─── 주인공 직업 · 직업 스킬 (기획서 3장, 직업 1차 — 수치는 모두 임시) ─────
 ## 처음 시작할 때 직업(직업 고르기는 프롤로그 단계에서. 지금은 직업 창에서 개발용으로 바꾼다)
 const START_JOB := "warrior"
-## 직업별 기본 능력치(레벨만큼 오른다, Growth.stat_scale). heal = 회복 스킬의 바탕(없으면 공격).
-const JOB_STATS := {
-	"warrior": {"hp": 420.0, "attack": 10.0, "attack_interval": 1.1, "attack_range": 60.0},
-	"rogue": {"hp": 280.0, "attack": 13.0, "attack_interval": 0.75, "attack_range": 56.0},
-	"archer": {"hp": 250.0, "attack": 12.0, "attack_interval": 1.0, "attack_range": 240.0},
-	"healer": {"hp": 270.0, "attack": 8.0, "attack_interval": 1.1, "attack_range": 200.0, "heal": 14.0},
-	"buffer": {"hp": 290.0, "attack": 9.0, "attack_interval": 1.0, "attack_range": 180.0},
+## 직업별 무기: 기본 공격 간격(초, 공격 속도 능력치로 줄어든다) · 사거리(땅 위 px)
+const JOB_WEAPONS := {
+	"warrior": {"attack_interval": 1.2, "attack_range": 60.0},
+	"rogue": {"attack_interval": 0.85, "attack_range": 56.0},
+	"archer": {"attack_interval": 1.1, "attack_range": 240.0},
+	"healer": {"attack_interval": 1.2, "attack_range": 200.0},
+	"buffer": {"attack_interval": 1.1, "attack_range": 180.0},
+}
+## 직업별 Lv 1 능력치 9종(코어와 같은 능력치, 사용자 결정 2026-10-03 — 나중에 장비가 이 값을 올린다). 레벨만큼 오른다(Growth.stat_scale).
+## 전투 환산은 코어와 같다: 체력 × HP_PER_TOUGH = HP, 강력 × CORE_COMBAT_ATTACK_PER_MIGHTY = 공격력, 충만 × CORE_COMBAT_HEAL_PER_ABUNDANT = 회복력,
+## 무기 공격 간격 × 값 / (값 + 신속) = 공격 간격.
+const JOB_BASE_STATS := {
+	"warrior": {"swift": 10, "mighty": 13, "precise": 10, "nimble": 6, "sturdy": 20, "tough": 42, "abundant": 8, "steadfast": 14, "lucky": 8},
+	"rogue": {"swift": 25, "mighty": 17, "precise": 12, "nimble": 16, "sturdy": 8, "tough": 28, "abundant": 6, "steadfast": 8, "lucky": 10},
+	"archer": {"swift": 14, "mighty": 16, "precise": 18, "nimble": 12, "sturdy": 7, "tough": 25, "abundant": 8, "steadfast": 8, "lucky": 10},
+	"healer": {"swift": 10, "mighty": 10, "precise": 10, "nimble": 8, "sturdy": 9, "tough": 27, "abundant": 18, "steadfast": 14, "lucky": 8},
+	"buffer": {"swift": 12, "mighty": 12, "precise": 10, "nimble": 9, "sturdy": 10, "tough": 29, "abundant": 14, "steadfast": 12, "lucky": 9},
 }
 ## 처음부터 배운 상태인 스킬의 해금 레벨(이하). 그보다 높은 스킬은 레벨이 닿으면 직업 창에서 "배우기"(사용자 결정 2026-10-03)
 const JOB_START_SKILL_LEVEL := 1
@@ -137,59 +152,60 @@ const JOB_PARTY_RADIUS := 600.0
 const JOB_AUTO_HEAL_THRESHOLD := 0.7
 ## 직업 스킬 수치(스킬 id → 값). 액티브 · 궁극기 = {cooldown(초), effects: [효과…]}, 패시브 = {mods: {보정…}}.
 ## 효과 type:
-##   hit = 대상 하나(power = 공격력 배율, hits · gap = 여러 번, range = 사거리를 이 값으로)
-##   area = 범위(at = target | self, power, radius, stun = 기절 초, vulnerable · seconds = 그동안 받는 피해 +)
+##   피해 · 회복은 coefs = {능력치: 계수}(Σ 계수 × 능력치 × SKILL_DAMAGE_PER_STAT / SKILL_HEAL_PER_STAT, 주인공 능력치 9종)
+##   hit = 대상 하나(coefs, hits · gap = 여러 번, range = 사거리를 이 값으로)
+##   area = 범위(at = target | self, coefs, radius, stun = 기절 초, vulnerable · seconds = 그동안 받는 피해 +)
 ##   taunt = 둘레(radius)의 적이 나를 노림 · shield = 보호막(amount = 최대 체력 비율, seconds, who = self | party)
-##   dash = 대상 곁으로 순간 이동해 때림(power, range, radius) · retreat = 때리고 물러남(power, distance)
-##   pierce = 일직선 관통(power, length, width) · smoke = 둘레의 적이 seconds초 아무것도 못 하고 나를 놓침(radius)
-##   heal = 회복(who = lowest | area, power = 회복력 배율, radius, cleanse = 기절 풀기) · revive = 쓰러진 헨치 일으킴(count, hp = 체력 비율)
+##   dash = 대상 곁으로 순간 이동해 때림(coefs, range, radius) · retreat = 때리고 물러남(coefs, distance)
+##   pierce = 일직선 관통(coefs, length, width) · smoke = 둘레의 적이 seconds초 아무것도 못 하고 나를 놓침(radius)
+##   heal = 회복(who = lowest | area, coefs, radius, cleanse = 기절 풀기) · revive = 쓰러진 헨치 일으킴(count, hp = 체력 비율)
 ##   buff = 강화(who = self | party, attack = 공격 +, speed = 공격 속도 +, guard = 받는 피해 −, seconds)
-##   storm = 둘레(radius)를 여러 번 휩쓴다(power, hits, gap)
-## 패시브 mods: hp(최대 체력 +) · damage_taken(받는 피해 −) · attack · attack_speed · move_speed · range(사거리 +) · ambush(기습 배율 +)
-##   · heal_power(회복 +) · tank_damage_taken(파티 탱커 헨치가 받는 피해 −) · party_hp(파티 헨치 최대 체력 +) · buff_seconds · buff_power
+##   storm = 둘레(radius)를 여러 번 휩쓴다(coefs, hits, gap)
+## 패시브 mods: hp(체력 능력치 +) · damage_taken(받는 피해 −) · attack(강력 +) · attack_speed · move_speed · range(사거리 +) · ambush(기습 배율 +)
+##   · heal_power(충만 +) · tank_damage_taken(파티 탱커 헨치가 받는 피해 −) · party_hp(파티 헨치 최대 체력 +) · buff_seconds · buff_power
 const JOB_SKILLS := {
 	# 전사
-	"shield_bash": {"cooldown": 9.0, "effects": [{"type": "area", "at": "self", "power": 1.0, "radius": 80.0, "stun": 1.2}]},
+	"shield_bash": {"cooldown": 9.0, "effects": [{"type": "area", "at": "self", "coefs": {"mighty": 0.8, "sturdy": 0.5}, "radius": 80.0, "stun": 1.2}]},
 	"war_cry": {"cooldown": 14.0, "effects": [{"type": "taunt", "radius": 180.0}, {"type": "shield", "who": "self", "amount": 0.2, "seconds": 6.0}]},
 	"shield_block": {"cooldown": 16.0, "effects": [{"type": "shield", "who": "self", "amount": 0.35, "seconds": 6.0}, {"type": "buff", "who": "self", "guard": 0.3, "seconds": 6.0}]},
-	"charge": {"cooldown": 10.0, "effects": [{"type": "dash", "power": 1.6, "range": 320.0, "radius": 70.0}]},
-	"shield_throw": {"cooldown": 9.0, "effects": [{"type": "hit", "power": 2.0, "range": 280.0}]},
+	"charge": {"cooldown": 10.0, "effects": [{"type": "dash", "coefs": {"mighty": 1.3, "sturdy": 0.4}, "range": 320.0, "radius": 70.0}]},
+	"shield_throw": {"cooldown": 9.0, "effects": [{"type": "hit", "coefs": {"mighty": 1.4, "sturdy": 0.8}, "range": 280.0}]},
 	"iron_stance": {"mods": {"hp": 0.15, "damage_taken": 0.1}},
 	"comradeship": {"mods": {"tank_damage_taken": 0.15}},
 	"fortress": {"cooldown": 60.0, "effects": [{"type": "shield", "who": "party", "amount": 0.4, "seconds": 8.0}, {"type": "taunt", "radius": 240.0}]},
 	# 도적
-	"double_slash": {"cooldown": 8.0, "effects": [{"type": "hit", "power": 0.6, "hits": 4, "gap": 0.1}]},
-	"shadow_dash": {"cooldown": 9.0, "effects": [{"type": "dash", "power": 1.5, "range": 340.0, "radius": 0.0}]},
-	"vital_stab": {"cooldown": 10.0, "effects": [{"type": "hit", "power": 3.0}]},
+	"double_slash": {"cooldown": 8.0, "effects": [{"type": "hit", "coefs": {"mighty": 0.5, "swift": 0.15}, "hits": 4, "gap": 0.1}]},
+	"shadow_dash": {"cooldown": 9.0, "effects": [{"type": "dash", "coefs": {"mighty": 1.2, "nimble": 0.4}, "range": 340.0, "radius": 0.0}]},
+	"vital_stab": {"cooldown": 10.0, "effects": [{"type": "hit", "coefs": {"mighty": 2.4, "precise": 0.6}}]},
 	"poison_coat": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "self", "attack": 0.3, "seconds": 10.0}]},
 	"smoke_bomb": {"cooldown": 18.0, "effects": [{"type": "smoke", "radius": 150.0, "seconds": 3.0}]},
 	"ambush_master": {"mods": {"ambush": 0.5}},
 	"nimble_body": {"mods": {"attack_speed": 0.15, "move_speed": 0.1}},
-	"blade_storm": {"cooldown": 60.0, "effects": [{"type": "storm", "power": 0.6, "hits": 10, "gap": 0.15, "radius": 140.0}]},
+	"blade_storm": {"cooldown": 60.0, "effects": [{"type": "storm", "coefs": {"mighty": 0.5, "swift": 0.1}, "hits": 10, "gap": 0.15, "radius": 140.0}]},
 	# 궁수
-	"aimed_shot": {"cooldown": 7.0, "effects": [{"type": "hit", "power": 2.4}]},
-	"arrow_rain": {"cooldown": 10.0, "effects": [{"type": "area", "at": "target", "power": 1.3, "radius": 130.0}]},
-	"retreat_shot": {"cooldown": 9.0, "effects": [{"type": "retreat", "power": 1.6, "distance": 140.0}]},
-	"snare_trap": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "power": 0.5, "radius": 90.0, "stun": 2.0}]},
-	"piercing_arrow": {"cooldown": 10.0, "effects": [{"type": "pierce", "power": 1.8, "length": 420.0, "width": 45.0}]},
+	"aimed_shot": {"cooldown": 7.0, "effects": [{"type": "hit", "coefs": {"mighty": 1.8, "precise": 0.8}}]},
+	"arrow_rain": {"cooldown": 10.0, "effects": [{"type": "area", "at": "target", "coefs": {"mighty": 1.0, "precise": 0.4}, "radius": 130.0}]},
+	"retreat_shot": {"cooldown": 9.0, "effects": [{"type": "retreat", "coefs": {"mighty": 1.2, "nimble": 0.5}, "distance": 140.0}]},
+	"snare_trap": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "coefs": {"mighty": 0.4, "precise": 0.2}, "radius": 90.0, "stun": 2.0}]},
+	"piercing_arrow": {"cooldown": 10.0, "effects": [{"type": "pierce", "coefs": {"mighty": 1.4, "precise": 0.6}, "length": 420.0, "width": 45.0}]},
 	"hawk_eye": {"mods": {"range": 0.15, "attack": 0.05}},
 	"hunter_mark": {"mods": {"attack": 0.12}},
-	"sky_splitter": {"cooldown": 60.0, "effects": [{"type": "area", "at": "target", "power": 3.5, "radius": 240.0}]},
+	"sky_splitter": {"cooldown": 60.0, "effects": [{"type": "area", "at": "target", "coefs": {"mighty": 2.8, "precise": 1.0}, "radius": 240.0}]},
 	# 힐러
-	"healing_light": {"cooldown": 8.0, "effects": [{"type": "heal", "who": "lowest", "power": 2.5}]},
-	"purify": {"cooldown": 12.0, "effects": [{"type": "heal", "who": "area", "power": 0.8, "radius": 220.0, "cleanse": true}]},
-	"healing_field": {"cooldown": 13.0, "effects": [{"type": "heal", "who": "area", "power": 1.4, "radius": 260.0}]},
+	"healing_light": {"cooldown": 8.0, "effects": [{"type": "heal", "who": "lowest", "coefs": {"abundant": 2.2, "steadfast": 0.4}}]},
+	"purify": {"cooldown": 12.0, "effects": [{"type": "heal", "who": "area", "coefs": {"abundant": 0.7, "steadfast": 0.2}, "radius": 220.0, "cleanse": true}]},
+	"healing_field": {"cooldown": 13.0, "effects": [{"type": "heal", "who": "area", "coefs": {"abundant": 1.2, "steadfast": 0.3}, "radius": 260.0}]},
 	"protective_veil": {"cooldown": 16.0, "effects": [{"type": "shield", "who": "party", "amount": 0.2, "seconds": 6.0}]},
 	"first_aid": {"cooldown": 30.0, "effects": [{"type": "revive", "count": 1, "hp": 0.5}]},
 	"house_call": {"mods": {"heal_power": 0.2}},
 	"diagnosis": {"mods": {"party_hp": 0.1}},
-	"breath_of_life": {"cooldown": 70.0, "effects": [{"type": "revive", "count": 9, "hp": 0.6}, {"type": "heal", "who": "area", "power": 3.0, "radius": 600.0}]},
+	"breath_of_life": {"cooldown": 70.0, "effects": [{"type": "revive", "count": 9, "hp": 0.6}, {"type": "heal", "who": "area", "coefs": {"abundant": 2.5, "steadfast": 0.6}, "radius": 600.0}]},
 	# 버퍼
 	"courage_melody": {"cooldown": 16.0, "effects": [{"type": "buff", "who": "party", "attack": 0.25, "seconds": 8.0}]},
 	"sprint_beat": {"cooldown": 16.0, "effects": [{"type": "buff", "who": "party", "speed": 0.3, "seconds": 8.0}]},
 	"concerto": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "party", "attack": 0.15, "speed": 0.15, "seconds": 10.0}]},
 	"guard_bass": {"cooldown": 18.0, "effects": [{"type": "buff", "who": "party", "guard": 0.25, "seconds": 8.0}]},
-	"dissonance": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "power": 0.9, "radius": 120.0, "vulnerable": 0.25, "seconds": 6.0}]},
+	"dissonance": {"cooldown": 12.0, "effects": [{"type": "area", "at": "target", "coefs": {"abundant": 0.8, "mighty": 0.3}, "radius": 120.0, "vulnerable": 0.25, "seconds": 6.0}]},
 	"encore": {"mods": {"buff_seconds": 0.3}},
 	"stage_presence": {"mods": {"buff_power": 0.2}},
 	"grand_ensemble": {"cooldown": 70.0, "effects": [{"type": "buff", "who": "party", "attack": 0.5, "speed": 0.4, "seconds": 12.0}]},
@@ -296,6 +312,7 @@ const TARGET_VARIANTS_PER_MONTH := Vector2(3, 4)
 ## 2026-10-03 프로토타입 필드(야생 6마리 · 7분 뒤 다시 나옴 · 체력 5배, 주인공 Lv 1에서 시작)에서 풀오토 60분:
 ## 시간당 47마리 → 하루 1,128마리(기획서 예시 1,000마리 쪽). 이전 값: 야생 14마리 · 4초 · 체력 0.4배 → 하루 23,568마리.
 ## 2026-10-03 주인공 직업 1차(전사 Lv 1 · 직업 스킬 자동) 뒤 다시 잼: 풀오토 60분 처치 48마리 → 하루 1,152마리.
+## 2026-10-03 능력치 계수(주인공 능력치 9종 · 스킬 계수) 뒤 다시 잼: 그대로 처치 48마리 → 하루 1,152마리.
 const MEASURED_DAILY_KILLS := 1152.0
 ## 확률 보너스 수확 체감 상수 K(기획서 8장 확정: 변이체 K = 50%). 유효 보너스 = B × K ÷ (B + K).
 const VARIANT_BONUS_K := 0.5

@@ -332,10 +332,11 @@ func _run(main: Node) -> void:
 	var skill_window := hud.skill_window
 	var damage_row := ""
 	for row: Array in skill_window.row_texts():
-		if row[0] == UiText.SKILL_ROW_DAMAGE:
+		if row[0] == UiText.SKILL_ROW_PHYSICAL:
 			damage_row = row[1]
-	var gochu_attack := UnitStats.from_core(gochu).attack * float(GameConfig.SKILL_KINDS["strike"]["power"])
-	_expect(skill_window.visible and skill_window.texts()[1] == "매운 박치기" and skill_window.preview_motion() == "strike" and damage_row.ends_with(UiText.SKILL_NOW % roundi(gochu_attack)), "액티브 카드 → 스킬 상세 창: 강타 모션 · 피해 %s" % damage_row)
+	var gochu_damage := UnitStats.from_core(gochu).skill_amount(HenchSkill.skill_coefs("strike", gochu.species().active))
+	_expect(skill_window.visible and skill_window.texts()[1] == "매운 박치기" and skill_window.preview_motion() == "strike" and damage_row.begins_with(SuffixDb.stat_name("mighty") + " × ") and damage_row.ends_with(UiText.SKILL_NOW % roundi(gochu_damage)), "액티브 카드 → 스킬 상세 창: 강타 모션 · 물리 피해 = 능력치 계수 %s" % damage_row)
+	_expect(skill_window.find_child("Actions", true, false) == null, "스킬 상세 창은 보기 전용(아래 버튼 없음)")
 	await _seconds(0.45)
 	await _save_shot("skill_detail")
 	await _seconds(0.2)
@@ -437,7 +438,7 @@ func _run(main: Node) -> void:
 	await _save_shot("mix_preview")
 	await _seconds(0.2)
 	await _tap(mix_info.skill_chip(0).get_global_rect().get_center())
-	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == HenchDb.get_species("dolguana").skill and not hud.skill_window.row_texts()[1][1].contains("("), "결과 미리보기의 액티브 카드 → 믹스창 위에 스킬 상세 창(지금 값 없이 배율만)")
+	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == HenchDb.get_species("dolguana").skill and not hud.skill_window.row_texts()[1][1].contains("("), "결과 미리보기의 액티브 카드 → 믹스창 위에 스킬 상세 창(지금 값 없이 계수만)")
 	await _seconds(0.6)
 	await _save_shot("skill_blast")
 	await _seconds(0.2)
@@ -619,53 +620,83 @@ func _run(main: Node) -> void:
 	await _tap(close.get_global_rect().get_center())
 	await process_frame
 	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
-	# 8-2) 주인공 직업(기획서 3장, 직업 1차): Lv 20 전사 → 직업 창(액티브 · 패시브 · 궁극기 3섹터, 네모 칸 + 레벨 배지) →
-	#      스킬 상세 창에서 배우기 · 장착 · 레벨 올리기 → 직업 바꾸기. 처음 스킬만 처음부터 배우고 나머지는 직접 배운다.
+	# 8-2) 주인공 직업(기획서 3장, 직업 1차): Lv 20 전사 → 직업 창(액티브 · 패시브 · 궁극기 한 섹터씩 위아래, 섹터마다 장착 칸 + 스킬 목록) →
+	#      스킬을 눌러 고르고 아래 행동 줄에서 배우기 · 장착 · 레벨 올리기, 장착 칸을 눌러 바꾸기, 미리보기(보기 전용) → 직업 바꾸기.
 	var job: JobState = main.get("job")
 	_expect(job.levels.keys() == ["shield_bash"] and job.learnable(20) == ["war_cry", "shield_block", "charge", "iron_stance"], "Lv 20 전사: 처음 스킬(방패 밀치기)만 배움, 배울 수 있는 스킬 4개")
 	_expect(hud.skill_slot(3).skill.title == "방패 밀치기" and hud.skill_slot(4).skill == null and hud.ultimate_slot.skill == null and hud.ultimate_slot.locked_text == UiText.SKILL_SLOT_LOCKED % 25 and hud.ultimate_slot.locked_color == Palette.JOB_LEVEL_SHORT, "스킬 칸 4 = 방패 밀치기, 궁극기 칸은 빨간 \"Lv 25\"(레벨 모자람)")
 	await _tap(hud.job_button.global_position)
 	var panel := hud.job_panel
 	_expect(panel.visible and (panel.find_child("Points", true, false) as Label).text == UiText.JOB_POINTS % job.points(20), "직업 버튼 → 직업 창(스킬 포인트 %d)" % job.points(20))
+	var sections: Array[Control] = []
+	for section_name in ["ActiveSection", "PassiveSection", "UltimateSection"]:
+		sections.append(panel.find_child(section_name, true, false) as Control)
+	var action_bar := panel.find_child("ActionBar", true, false) as Control
+	var stacked := sections[0].get_global_rect().end.y <= sections[1].global_position.y and sections[1].get_global_rect().end.y <= sections[2].global_position.y and sections[2].get_global_rect().end.y <= action_bar.global_position.y
+	_expect(stacked and is_equal_approx(sections[0].global_position.x, sections[2].global_position.x) and Rect2(Vector2.ZERO, panel.get_viewport_rect().size).encloses(panel.get_global_rect()), "액티브 · 패시브 · 궁극기가 한 섹터씩 위아래로, 맨 아래 행동 줄, 창이 화면 안에")
+	var sheet_now := JobRules.player_sheet("warrior", 20, job.mods(20))
+	_expect(panel.stat_text("mighty") == str(sheet_now["mighty"]) and panel.stat_text("hp") == str(sheet_now["hp"]) and panel.stat_text("lucky") != "", "왼쪽에 주인공 능력치 9종 + HP · MP(공격 %s · HP %s)" % [panel.stat_text("mighty"), panel.stat_text("hp")])
 	var bash_tile := panel.skill_tile("shield_bash")
 	var cry_tile := panel.skill_tile("war_cry")
 	var fortress_tile := panel.skill_tile("fortress")
 	_expect(bash_tile.state == JobSkillTile.State.LEARNED and bash_tile.badge_text() == "" and bash_tile.slot_badge == "1" and JobDb.icon(bash_tile.skill) != null, "배운 칸: 그림 · 레벨 배지 없음 · 장착 칸 번호 1")
 	_expect(cry_tile.state == JobSkillTile.State.LEARNABLE and cry_tile.badge_text() == UiText.SKILL_SLOT_LOCKED % 5 and fortress_tile.state == JobSkillTile.State.LOCKED and fortress_tile.badge_text() == UiText.SKILL_SLOT_LOCKED % 25, "레벨은 됐는데 안 배움 = 회색 \"Lv 5\", 레벨 모자람 = 빨간 \"Lv 25\"")
-	_expect(panel.section_info("active") == UiText.JOB_SECTION_INFO["active"] % [1, 3] and panel.section_info("passive") == UiText.JOB_SECTION_INFO["passive"] % [0, 1] and panel.section_info("ultimate") == UiText.JOB_SECTION_INFO["ultimate"] % [0, 1], "3섹터: 액티브 1/3 · 패시브 0/1 · 궁극기 0/1")
+	_expect(panel.slot_card("active", 0).skill.id == "shield_bash" and panel.slot_card("active", 1).skill == null and panel.slot_card("active", 2) != null and not panel.slot_card("passive", 0).is_locked() and panel.slot_card("passive", 1).is_locked() and panel.slot_card("ultimate", 0) != null, "장착 칸: 액티브 3(1번 = 방패 밀치기) · 패시브 2(Lv 30 칸은 잠김) · 궁극기 1")
+	_expect(panel.section_info("active") == UiText.JOB_SECTION_INFO["active"] % [1, 3] and panel.section_info("passive") == UiText.JOB_SECTION_INFO["passive"] % [0, 1] and panel.section_info("ultimate") == UiText.JOB_SECTION_INFO["ultimate"] % [0, 1], "섹터 정보: 액티브 1/3 · 패시브 0/1 · 궁극기 0/1")
+	_expect(panel.status_text() == UiText.JOB_HINT and not panel.action_button("main").is_visible_in_tree(), "아무것도 안 고르면 행동 줄은 안내 한 줄")
 	await _save_shot("job")
 	await _seconds(0.2)
-	await _tap(cry_tile.get_global_rect().get_center())
 	var window := hud.skill_window
-	_expect(window.visible and window.action_texts() == PackedStringArray([UiText.JOB_ACT_LEARN]) and window.row_texts()[0][1] == UiText.JOB_LEVEL_LEARNABLE % 5, "안 배운 스킬을 누름 → 상세 창 + \"배우기\"")
-	await _tap(window.action_button(UiText.JOB_ACT_LEARN).get_global_rect().get_center())
+	await _tap(cry_tile.get_global_rect().get_center())
+	await _physics_frames(2)
+	_expect(panel.selected_skill() == "war_cry" and panel.skill_tile("war_cry").selected and not window.visible and panel.action_button("main").text == UiText.JOB_ACT_LEARN and panel.status_text() == UiText.JOB_STATUS_LEARNABLE % [UiText.JOB_TYPE_NAMES["active"], 5], "안 배운 스킬을 누름 → 고름(흰 테두리 + 체크), 행동 줄 \"배우기\"(상세 창은 안 뜸)")
+	await _tap(panel.action_button("main").get_global_rect().get_center())
 	await _physics_frames(3)
-	_expect(job.skill_level("war_cry") == 1 and job.actives[1] == "war_cry" and hud.skill_slot(4).skill.title == "도발 함성" and UiText.JOB_ACT_UNEQUIP in window.action_texts(), "배우기 → 빈 칸(2번)에 장착, 스킬 칸 5 = 도발 함성, 창은 그대로 \"해제\"")
+	_expect(job.skill_level("war_cry") == 1 and job.actives[1] == "war_cry" and hud.skill_slot(4).skill.title == "도발 함성" and panel.action_button("main").text == UiText.JOB_ACT_UNEQUIP and panel.slot_card("active", 1).selected, "배우기 → 빈 칸(2번)에 장착, 스킬 칸 5 = 도발 함성, 행동 줄 \"해제\"")
 	_expect(panel.skill_tile("war_cry").state == JobSkillTile.State.LEARNED and panel.skill_tile("war_cry").badge_text() == "", "배운 칸은 레벨 배지가 사라짐")
+	await _tap(panel.skill_tile("war_cry").get_global_rect().get_center())
+	await _physics_frames(2)
+	_expect(window.visible and window.texts()[1] == "도발 함성" and window.row_texts()[0][1] == UiText.JOB_LEVEL_VALUE % [1, GameConfig.JOB_SKILL_MAX_LEVEL], "고른 스킬을 한 번 더 누름 → 스킬 상세 창(보기 전용)")
 	await _tap(_center_of(window, "Close"))
 	job.learn("shield_block", 20)
 	await _physics_frames(2)
 	await _tap(panel.skill_tile("charge").get_global_rect().get_center())
-	await _tap(window.action_button(UiText.JOB_ACT_LEARN).get_global_rect().get_center())
+	await _physics_frames(2)
+	await _tap(panel.action_button("main").get_global_rect().get_center())
 	await _physics_frames(3)
-	var expected_actions := PackedStringArray([UiText.JOB_ACT_EQUIP_AT % 1, UiText.JOB_ACT_EQUIP_AT % 2, UiText.JOB_ACT_EQUIP_AT % 3, UiText.JOB_ACT_LEVEL])
-	_expect(job.levels.has("charge") and not job.is_equipped("charge") and window.preview_motion() == "dash" and window.action_texts() == expected_actions, "칸이 차 있으면 배우기만 → 버튼 %s" % " / ".join(window.action_texts()))
+	_expect(job.levels.has("charge") and not job.is_equipped("charge") and panel.action_button("main").text == UiText.JOB_ACT_EQUIP and panel.action_button("level").text == UiText.JOB_ACT_LEVEL, "칸이 차 있으면 배우기만 → 행동 줄 \"장착\" · \"레벨 올리기\"")
+	await _tap(panel.action_button("main").get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(panel.is_picking() and panel.status_text() == UiText.JOB_PICK_SLOT and panel.slot_card("active", 1).picking and not panel.slot_card("passive", 0).picking, "칸이 다 찼는데 \"장착\" → \"바꿀 칸을 누르세요\", 액티브 칸 테두리만 깜빡임")
+	await _seconds(0.3)
+	await _save_shot("job_pick")
+	await _seconds(0.2)
+	await _tap(panel.slot_card("active", 1).get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(job.actives[1] == "charge" and not job.is_equipped("war_cry") and hud.skill_slot(4).skill.title == "돌진 충격" and not panel.is_picking(), "2번 칸을 누름 → 돌진 충격 장착(도발 함성은 빠짐), 스킬 칸 5 = 돌진 충격")
+	var points_before := job.points(20)
+	await _tap(panel.action_button("level").get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(job.skill_level("charge") == 2 and job.points(20) == points_before - 1 and player.caster.skills[1].level == 2, "레벨 올리기 → 스킬 레벨 2, 포인트 −1, 필드 스킬도 2레벨")
+	await _tap(panel.slot_card("active", 0).get_global_rect().get_center())
+	await _physics_frames(3)
+	_expect(job.actives == ["charge", "shield_bash", "shield_block"] and hud.skill_slot(3).skill.title == "돌진 충격" and hud.skill_slot(4).skill.title == "방패 밀치기", "고른 채 1번 칸을 누름 → 두 칸이 자리를 바꿈")
+	await _tap(panel.action_button("preview").get_global_rect().get_center())
+	await _physics_frames(2)
+	var charge_row := ""
+	for row: Array in window.row_texts():
+		if row[0] == UiText.SKILL_ROW_PHYSICAL:
+			charge_row = row[1]
+	_expect(window.visible and window.preview_motion() == "dash" and charge_row.contains(SuffixDb.stat_name("sturdy") + " × ") and charge_row.contains("(지금"), "미리보기 → 돌진 충격 상세: 물리 피해 = 공격 + 방어 계수 (%s)" % charge_row)
 	await _seconds(0.45)
 	await _save_shot("job_skill")
 	await _seconds(0.2)
-	await _tap(window.action_button(UiText.JOB_ACT_EQUIP_AT % 2).get_global_rect().get_center())
-	await _physics_frames(3)
-	_expect(job.actives[1] == "charge" and not job.is_equipped("war_cry") and hud.skill_slot(4).skill.title == "돌진 충격", "2번 칸에 → 돌진 충격 장착(도발 함성은 빠짐), 스킬 칸 5 = 돌진 충격")
-	var points_before := job.points(20)
-	await _tap(window.action_button(UiText.JOB_ACT_LEVEL).get_global_rect().get_center())
-	await _physics_frames(3)
-	_expect(job.skill_level("charge") == 2 and job.points(20) == points_before - 1 and player.caster.skills[1].level == 2, "레벨 올리기 → 스킬 레벨 2, 포인트 −1, 필드 스킬도 2레벨")
 	await _tap(_center_of(window, "Close"))
 	await _physics_frames(2)
 	_expect(not window.visible and panel.visible, "스킬 상세 창 닫기 → 직업 창")
 	job.learn("iron_stance", 20)
 	await _physics_frames(2)
-	_expect(job.passives[0] == "iron_stance" and is_equal_approx(player.stats.max_hp, JobRules.player_stats("warrior", 20, job.mods(20)).max_hp) and player.damage_taken_scale < 1.0, "철벽 자세를 배우면 패시브 칸에 → 주인공 최대 체력 + · 받는 피해 −")
+	_expect(job.passives[0] == "iron_stance" and is_equal_approx(player.stats.max_hp, JobRules.player_stats("warrior", 20, job.mods(20)).max_hp) and player.damage_taken_scale < 1.0 and panel.stat_text("tough") == str(JobRules.player_sheet("warrior", 20, job.mods(20))["tough"]), "철벽 자세를 배우면 패시브 칸에 → 체력 능력치 + · 받는 피해 −")
 	await _save_shot("job_learned")
 	await _seconds(0.2)
 	# 직업 바꾸기(개발용): 궁수 → 원거리 공격, 궁수 스킬
@@ -673,7 +704,7 @@ func _run(main: Node) -> void:
 	_expect(hud.confirm_box.visible, "직업 바꾸기 → 확인 창")
 	await _tap(_center_of(hud.confirm_box, "Yes"))
 	await _physics_frames(3)
-	_expect(job.job_id == "archer" and player.job_id == "archer" and player.stats.attack_range > GameConfig.MELEE_RANGE_MAX and hud.skill_slot(3).skill.title == "조준 사격", "궁수로 → 원거리 공격 · 스킬 칸 = 궁수 스킬")
+	_expect(job.job_id == "archer" and player.job_id == "archer" and player.stats.attack_range > GameConfig.MELEE_RANGE_MAX and hud.skill_slot(3).skill.title == "조준 사격" and panel.selected_skill() == "", "궁수로 → 원거리 공격 · 스킬 칸 = 궁수 스킬, 고른 스킬은 풀림")
 	await _tap(_center_of(panel, "Close"))
 	_expect(not panel.visible, "직업 창 닫기")
 	# 직업 스킬 효과(필드): 강화 · 보호막 · 일으키기 · 회복 · 범위(약화) · 연막을 하나씩 직접 걸어 본다
@@ -689,11 +720,13 @@ func _run(main: Node) -> void:
 	_expect(not downed.is_alive(), "헨치 하나를 쓰러뜨려 둠")
 	caster.call("_apply", {"type": "revive", "count": 1, "hp": 0.5}, null)
 	_expect(downed.is_alive() and is_equal_approx(downed.hp, downed.stats.max_hp * 0.5), "일으키기: 쓰러진 헨치가 체력 50%로")
-	caster.call("_apply", {"type": "heal", "who": "lowest", "power": 2.0}, null)
+	caster.call("_apply", {"type": "heal", "who": "lowest", "coefs": {"abundant": 2.0}}, null)
 	_expect(downed.hp > downed.stats.max_hp * 0.5, "회복: 체력이 가장 낮은 동료부터")
 	var foe := _spawn_wild(main, "sotmabaem", Vector2(90, 0), Vector2.RIGHT)
 	await _physics_frames(2)
-	caster.call("_apply", {"type": "area", "at": "target", "power": 1.0, "radius": 100.0, "vulnerable": 0.25, "seconds": 6.0}, foe)
+	var expected_hit := float(player.stats.sheet["mighty"]) * GameConfig.SKILL_DAMAGE_PER_STAT * (1.0 + player.boost("attack"))
+	_expect(is_equal_approx(player.skill_amount({"mighty": 1.0}), expected_hit), "주인공 스킬 피해 = 주인공 능력치(공격) × 계수 × 환산 × 공격 강화")
+	caster.call("_apply", {"type": "area", "at": "target", "coefs": {"mighty": 1.0}, "radius": 100.0, "vulnerable": 0.25, "seconds": 6.0}, foe)
 	_expect(foe.hp < foe.stats.max_hp and is_equal_approx(foe.boost("vulnerable"), 0.25), "범위(불협화음): 피해 + 받는 피해 +25%")
 	caster.call("_apply", {"type": "smoke", "radius": 150.0, "seconds": 2.0}, null)
 	_expect(foe.is_stunned() and not foe.is_fighting(), "연막: 기절하고 파티를 놓침")
@@ -748,7 +781,7 @@ func _run(main: Node) -> void:
 	var casts := 0
 	for hench: Hench in main.get("party"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
-		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
+		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음 (땅 위 거리 %.0f)" % [hench.display_name, Iso.ground_distance(hench.position, player.position)])
 		casts += hench.skill_casts
 	_expect(casts >= 2, "풀오토: 헨치가 스킬을 알아서 씀 (%d번)" % casts)
 	_expect(player.caster.casts > job_casts_before, "풀오토: 주인공도 직업 스킬을 알아서 씀 (%d번)" % (player.caster.casts - job_casts_before))
@@ -812,7 +845,10 @@ func _run(main: Node) -> void:
 	var others_free := true
 	for hench in melee:
 		others_free = others_free and not hench.is_holding()
-	_expect(held and others_free, "원거리조를 끌어다 놓음 → %d마리가 그 자리에서 버팀(근접조는 그대로)" % ranged.size())
+	var held_text := PackedStringArray()
+	for hench in ranged:
+		held_text.append("%s %s %.0f" % [hench.display_name, hench.is_holding(), Iso.ground_distance(hench.position, hold_at)])
+	_expect(held and others_free, "원거리조를 끌어다 놓음 → %d마리가 그 자리에서 버팀(근접조는 그대로) [%s]" % [ranged.size(), ", ".join(held_text)])
 	await _save_shot("boss_command")
 	await _drag_button(hud.command_button(1), _screen_of(boss))
 	var focused := melee.size() > 0

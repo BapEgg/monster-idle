@@ -1,7 +1,7 @@
 class_name UnitStats
 extends RefCounted
-## 유닛 능력치 한 벌. 값은 GameConfig의 표(JOB_STATS, ROLE_STATS)나 코어 능력치(from_core)에서 만든다.
-## 표에서 만들 때는 레벨만큼 체력 · 공격 · 회복이 오른다(Growth.stat_scale, 주인공 · 야생 · 코어 없는 헨치).
+## 유닛 능력치 한 벌. 값은 GameConfig의 표(ROLE_STATS)나 능력치 9종(코어 = from_core, 주인공 = JobRules.player_stats)에서 만든다.
+## 표에서 만들 때는 레벨만큼 체력 · 공격 · 회복이 오른다(Growth.stat_scale, 야생 · 코어 없는 헨치).
 
 var max_hp := 1.0
 var attack := 0.0
@@ -14,6 +14,8 @@ var heal := 0.0
 var heal_interval := 1.0
 ## 이동 속력(px/초, 화면 가로 기준).
 var speed := 0.0
+## 능력치 9종 + hp · mp(코어 = CoreStats.compute, 주인공 = JobRules.player_sheet). 스킬 계수가 읽는다(Unit.stat_value). 표에서 만들면 {}.
+var sheet := {}
 
 
 static func from_table(row: Dictionary, move_speed: float, hp_scale := 1.0, attack_scale := 1.0) -> UnitStats:
@@ -52,9 +54,30 @@ static func for_hench(role: String, wild: bool, level := 1) -> UnitStats:
 static func from_core(item: CoreItem) -> UnitStats:
 	var core := CoreStats.compute(item)
 	var s := for_hench(item.species().role, false)
+	s.sheet = core
 	s.max_hp = maxf(float(core["hp"]), 1.0)
 	s.attack = float(core["mighty"]) * GameConfig.CORE_COMBAT_ATTACK_PER_MIGHTY
 	s.attack_interval *= GameConfig.CORE_COMBAT_SWIFT_HALF / (GameConfig.CORE_COMBAT_SWIFT_HALF + float(core["swift"]))
 	if s.heal > 0.0:
 		s.heal = float(core["abundant"]) * GameConfig.CORE_COMBAT_HEAL_PER_ABUNDANT
 	return s
+
+
+## 능력치 하나(9종). 능력치 표가 없으면(야생 · 코어 없는 헨치) 전투 값에서 거꾸로 셈한다(강력 ← 공격력, 충만 ← 회복력, 나머지 0).
+func stat(stat_id: String) -> float:
+	if sheet.has(stat_id):
+		return float(sheet[stat_id])
+	match stat_id:
+		"mighty":
+			return attack / GameConfig.CORE_COMBAT_ATTACK_PER_MIGHTY
+		"abundant":
+			return heal / GameConfig.CORE_COMBAT_HEAL_PER_ABUNDANT
+	return 0.0
+
+
+## 스킬 피해(heal이면 회복) 한 번의 양: Σ 계수 × 능력치(Combat.skill_amount). 강화는 빼고.
+func skill_amount(coefs: Dictionary, is_heal := false) -> float:
+	var values := {}
+	for stat_id: String in coefs:
+		values[stat_id] = stat(stat_id)
+	return Combat.skill_amount(coefs, values, is_heal)

@@ -9,6 +9,7 @@ const BADGE_PAD := Vector2(4, 1)
 const BADGE_CORNER := 6
 const ACCENT_CORNER := 8
 const ACCENT_PAD := 10.0
+const CHECK_WIDTH := 3.0
 ## 굵은 글씨: 기본 글꼴을 이만큼 두껍게 그린다(굵은 글꼴 파일이 들어오면 바꾼다).
 const BOLD_EMBOLDEN := 0.7
 
@@ -104,3 +105,10 @@ static func draw_badge(canvas: CanvasItem, at: Vector2, align: Vector2, text: St
 	canvas.draw_style_box(box, rect)
 	canvas.draw_string(font, rect.position + Vector2(pad.x, pad.y + font_size * 0.85), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Palette.BADGE_TEXT)
 	return rect
+
+
+## 고른 칸 표시(사용자 결정 2026-10-03: 고른 것 = 흰 테두리 + 체크): 흰 동그라미 + 체크. at = 가운데, radius = 반지름.
+static func draw_check(canvas: CanvasItem, at: Vector2, radius: float) -> void:
+	canvas.draw_circle(at, radius, Palette.CARD_SELECTED_BORDER, true, -1.0, true)
+	var mark := PackedVector2Array([at + Vector2(-0.5, 0.0) * radius, at + Vector2(-0.12, 0.38) * radius, at + Vector2(0.5, -0.35) * radius])
+	canvas.draw_polyline(mark, Palette.CHECK_MARK, CHECK_WIDTH, true)

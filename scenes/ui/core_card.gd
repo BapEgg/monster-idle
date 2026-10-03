@@ -22,7 +22,6 @@ const BLOCKED_ICON_ALPHA := 0.3
 const REASON_CENTER_RATIO := 0.6
 ## 고른 칸의 체크 동그라미 반지름(칸 폭 비율) · 체크 선 굵기
 const CHECK_RADIUS_RATIO := 0.11
-const CHECK_WIDTH := 3.0
 const CORNER := 10
 const INSET := 5.0
 const EDGE := 3
@@ -155,17 +154,9 @@ func _draw() -> void:
 	elif item.locked:
 		UiKit.draw_badge(self, bottom_right, Vector2.ONE, UiText.BADGE_LOCK, Palette.BADGE_LOCK, badge_size)
 	elif selected:
-		_draw_check(bottom_right - Vector2.ONE * size.x * CHECK_RADIUS_RATIO)
+		UiKit.draw_check(self, bottom_right - Vector2.ONE * size.x * CHECK_RADIUS_RATIO, size.x * CHECK_RADIUS_RATIO)
 	if blocked:
 		UiKit.draw_badge(self, Vector2(size.x * 0.5, size.y * REASON_CENTER_RATIO), Vector2(0.5, 0.5), block_reason, Palette.BADGE_BLOCKED, badge_size)
-
-
-## 고른 칸 표시: 흰 동그라미 + 체크.
-func _draw_check(at: Vector2) -> void:
-	var radius := size.x * CHECK_RADIUS_RATIO
-	draw_circle(at, radius, Palette.CARD_SELECTED_BORDER, true, -1.0, true)
-	var mark := PackedVector2Array([at + Vector2(-0.5, 0.0) * radius, at + Vector2(-0.12, 0.38) * radius, at + Vector2(0.5, -0.35) * radius])
-	draw_polyline(mark, Palette.CHECK_MARK, CHECK_WIDTH, true)
 
 
 ## 테두리 색들(바깥부터): 고른 칸 = 흰색, 빛나는 = 노랑, 변이 = 보라 반짝임. 아무것도 아니면 빈 배열(얇은 기본 테두리).

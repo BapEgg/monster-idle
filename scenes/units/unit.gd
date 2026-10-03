@@ -269,9 +269,15 @@ func lunge() -> void:
 	_lunge_left = LUNGE_SECONDS
 
 
-## 지금 공격력(강화 포함). 기본 공격 · 스킬 피해의 바탕.
+## 지금 공격력(강화 포함). 기본 공격의 바탕.
 func attack_power() -> float:
 	return stats.attack * (1.0 + boost("attack"))
+
+
+## 스킬 피해(heal이면 회복) 양: 계수(능력치 → 배율)마다 능력치 × 계수를 더한 값(UnitStats.skill_amount). 피해는 공격 강화를 받는다.
+func skill_amount(coefs: Dictionary, heal := false) -> float:
+	var amount := stats.skill_amount(coefs, heal)
+	return amount if heal else amount * (1.0 + boost("attack"))
 
 
 ## 강화 · 약화를 건다(종류는 BOOST_KINDS). 이미 걸려 있으면 더 큰 양 · 더 긴 시간으로.

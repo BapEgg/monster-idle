@@ -42,7 +42,8 @@ func test_rewards_and_stats() -> void:
 	expect_near(Growth.stat_scale(1), 1.0, "Lv 1 = 기본 능력치")
 	var low := UnitStats.for_player(1)
 	var high := UnitStats.for_player(11)
-	expect_near(high.attack / low.attack, 1.0 + GameConfig.LEVEL_STAT_GROWTH * 10.0, "주인공 Lv 11 공격 = Lv 1 × (1 + 성장 × 10)")
+	var mighty := float(GameConfig.JOB_BASE_STATS[GameConfig.START_JOB]["mighty"])
+	expect_near(high.attack / low.attack, roundi(mighty * (1.0 + GameConfig.LEVEL_STAT_GROWTH * 10.0)) / mighty, "주인공 Lv 11 공격 = Lv 1 × (1 + 성장 × 10)(능력치는 정수로 반올림)")
 	expect_true(UnitStats.for_hench("tank", true, 10).max_hp > UnitStats.for_hench("tank", true, 1).max_hp, "야생도 레벨만큼 세다")
 
 

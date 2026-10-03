@@ -142,8 +142,8 @@ func _cast(skill: JobSkill, foe: Unit) -> void:
 # ─── 효과 ───────────────────────────────────────
 
 func _apply(effect: Dictionary, foe: Unit) -> void:
-	var power := float(effect.get("power", 0.0))
-	var damage := player.attack_power() * power
+	var coefs: Dictionary = effect.get("coefs", {})
+	var damage := player.skill_amount(coefs)
 	var radius := float(effect.get("radius", 0.0))
 	var color: Color = Palette.JOB_EFFECT_COLORS.get(str(effect.get("type", "")), Palette.JOB_SKILL_CAST)
 	match str(effect.get("type", "")):
@@ -208,7 +208,7 @@ func _apply(effect: Dictionary, foe: Unit) -> void:
 				wild.stun(float(effect.get("seconds", 0.0)))
 				wild.lose_track()
 		"heal":
-			var amount := SkillSheet.heal_power(player.stats) * power
+			var amount := player.skill_amount(coefs, true)
 			if effect.get("who", "lowest") == "lowest":
 				var patient := _lowest_ally(1.0)
 				if patient != null:

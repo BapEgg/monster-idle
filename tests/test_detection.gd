@@ -40,6 +40,6 @@ func test_gauge_fills_and_drains() -> void:
 func test_sneaking_from_side_beats_detection() -> void:
 	# 주변시로 다가가면 감지 거리 끝에서 사거리까지 걷는 동안 다 알아채지 못한다(기습할 수 있다).
 	# 정면으로 다가가면 그 전에 알아챈다.
-	var walk_seconds := (GameConfig.DETECT_RANGE - GameConfig.PLAYER_STATS["attack_range"]) / GameConfig.PLAYER_SPEED
+	var walk_seconds := (GameConfig.DETECT_RANGE - GameConfig.JOB_WEAPONS[GameConfig.START_JOB]["attack_range"]) / GameConfig.PLAYER_SPEED
 	expect_true(walk_seconds < GameConfig.DETECT_SIDE_SECONDS, "옆으로 다가가면 기습 가능 (걷는 %.2f초 < 주변시 %.1f초)" % [walk_seconds, GameConfig.DETECT_SIDE_SECONDS])
 	expect_true(walk_seconds > GameConfig.DETECT_FRONT_SECONDS, "정면으로 다가가면 들킨다 (걷는 %.2f초 > 정면 %.1f초)" % [walk_seconds, GameConfig.DETECT_FRONT_SECONDS])

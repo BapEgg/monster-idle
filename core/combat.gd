@@ -29,3 +29,12 @@ static func absorb(shield: float, damage: float) -> Vector2:
 ## bonus = 공격한 쪽의 기습 배율 보너스(직업 패시브: 기습의 달인).
 static func hit_damage(damage: float, ambush: bool, bonus := 0.0) -> float:
 	return damage * (GameConfig.AMBUSH_SCALE + bonus if ambush else 1.0)
+
+
+## 스킬 피해 · 회복(기획서 4장 "스킬별 다중 스탯 계수"): Σ 계수 × 능력치 × 환산값(GameConfig.SKILL_DAMAGE_PER_STAT / SKILL_HEAL_PER_STAT).
+## coefs = {능력치 id: 계수}, stats = {능력치 id: 값}(코어 · 주인공 능력치 9종). 없는 능력치는 0.
+static func skill_amount(coefs: Dictionary, stats: Dictionary, heal := false) -> float:
+	var total := 0.0
+	for stat: String in coefs:
+		total += float(coefs[stat]) * float(stats.get(stat, 0.0))
+	return total * (GameConfig.SKILL_HEAL_PER_STAT if heal else GameConfig.SKILL_DAMAGE_PER_STAT)

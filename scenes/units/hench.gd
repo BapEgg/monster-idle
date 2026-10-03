@@ -322,21 +322,21 @@ func _cast_skill(target: Unit) -> void:
 		face(target.position)
 	var color: Color = Palette.SKILL_COLORS[skill.kind]
 	field.show_number(position + Vector2(0, -overlay_height() - 26.0), UiText.SKILL_CAST % skill.title, color)
-	var power := skill.value("power")
+	var amount := skill_amount(skill.coefs, skill.is_heal())
 	var radius := skill.value("radius")
 	match skill.kind:
 		"strike":
-			_skill_hit(target, attack_power() * power)
+			_skill_hit(target, amount)
 		"flurry":
 			# 몇 번에 나눠 때린다. 트윈은 이 헨치에 묶여 있어서, 헨치가 사라지면 함께 멈춘다.
 			var tween := create_tween()
 			for i in int(skill.value("hits", 1.0)):
-				tween.tween_callback(_skill_hit.bind(target, attack_power() * power))
+				tween.tween_callback(_skill_hit.bind(target, amount))
 				tween.tween_interval(skill.value("hit_gap"))
 		"blast", "stun":
 			field.show_burst(target.position, radius, color)
 			for wild in wilds_within(target.position, radius):
-				wild.take_damage(attack_power() * power, self)
+				wild.take_damage(amount, self)
 				if skill.kind == "stun":
 					wild.stun(skill.value("stun"))
 		"taunt":
@@ -345,11 +345,11 @@ func _cast_skill(target: Unit) -> void:
 				wild.taunt(self)
 			add_shield(stats.max_hp * skill.value("shield"), skill.value("shield_seconds"))
 		"heal":
-			target.receive_heal(_heal_power() * power)
+			target.receive_heal(amount)
 		"heal_all":
 			field.show_burst(position, radius, color)
 			for ally in allies_within(position, radius):
-				ally.receive_heal(_heal_power() * power)
+				ally.receive_heal(amount)
 
 
 ## 스킬 한 대: 사거리가 길면 투사체, 짧으면 몸으로 부딪친다. 그 사이 쓰러진 상대는 건너뛴다.
@@ -361,11 +361,6 @@ func _skill_hit(target: Unit, damage: float) -> void:
 	else:
 		_lunge_left = LUNGE_SECONDS
 		target.take_damage(damage, self)
-
-
-## 회복 스킬의 바탕 값: 회복력(힐러), 없으면 공격력.
-func _heal_power() -> float:
-	return stats.heal if stats.heal > 0.0 else stats.attack
 
 
 ## 체력 비율이 threshold보다 낮은 동료 중 가장 낮은 것(radius = 나에게서 땅 위 거리). 없으면 null.

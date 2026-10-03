@@ -1,9 +1,9 @@
 class_name SkillWindow
 extends Control
 ## 스킬 상세 창(사용자 결정 2026-10-03: 롤처럼 스킬을 누르면 모션 미리보기 · 설명 · 계수).
-## 코어 정보창의 스킬 카드(액티브 · 패시브 · 변이 · 믹스 계승)를 누르면 뜬다. 뒤를 어둡게 덮고, 덮개나 닫기를 누르면 닫힌다.
+## 코어 정보창의 스킬 카드(액티브 · 패시브 · 변이 · 믹스 계승)나 직업 창의 "미리보기"를 누르면 뜬다. 뒤를 어둡게 덮고, 덮개나 닫기를 누르면 닫힌다.
 ## 왼쪽 = 모션 미리보기(SkillPreview, 임시 도형), 오른쪽 = 설명 한 줄 + 계수 표(이름표 회색 · 값 흰색 굵게) + 작은 안내.
-## 내용은 SkillSheet가 만든다. 직업 창에서 열면 아래에 행동 버튼(장착 · 해제 · 레벨 올리기)이 붙는다(open의 actions).
+## 내용은 SkillSheet가 만든다. 보기 전용이다(사용자 결정 2026-10-03: 장착 · 해제 · 레벨 올리기는 직업 창 아래 줄에서).
 ## 자리 · 크기는 skill_window.tscn을 에디터에서 열어 바꾼다.
 
 const TAG_FONT_SIZE := 15
@@ -11,8 +11,6 @@ const TITLE_FONT_SIZE := 26
 const TEXT_FONT_SIZE := 18
 const ROW_FONT_SIZE := 17
 const NOTE_FONT_SIZE := 14
-const ACTION_FONT_SIZE := 17
-const ACTION_HEIGHT := 46.0
 
 @onready var _shade: ColorRect = %Shade
 @onready var _panel: PanelContainer = %Panel
@@ -24,7 +22,6 @@ const ACTION_HEIGHT := 46.0
 @onready var _description: Label = %Description
 @onready var _rows: GridContainer = %Rows
 @onready var _note: Label = %Note
-@onready var _actions: HBoxContainer = %Actions
 
 
 func _ready() -> void:
@@ -46,11 +43,9 @@ func _ready() -> void:
 
 
 ## 띄운다. sheet = SkillSheet 내용, caster = 시전자 색(종족 · 직업 색).
-## actions = 아래 버튼들 [{text, call(Callable), disabled(bool), accent(bool)}]. 비우면 버튼 줄을 숨긴다.
-func open(sheet: Dictionary, caster: Color, actions: Array = []) -> void:
+func open(sheet: Dictionary, caster: Color) -> void:
 	if sheet.is_empty():
 		return
-	_show_actions(actions)
 	_tag.text = sheet.get("tag", "")
 	_title.text = sheet.get("title", "")
 	_description.text = sheet.get("description", "")
@@ -73,41 +68,6 @@ func open(sheet: Dictionary, caster: Color, actions: Array = []) -> void:
 	var motion := str(sheet.get("motion", ""))
 	_preview.show_sheet(sheet, caster, effect_color(motion))
 	show()
-
-
-func _show_actions(actions: Array) -> void:
-	for child in _actions.get_children():
-		_actions.remove_child(child)
-		child.queue_free()
-	_actions.visible = not actions.is_empty()
-	for action: Dictionary in actions:
-		var button := Button.new()
-		button.text = str(action.get("text", ""))
-		button.disabled = bool(action.get("disabled", false))
-		button.custom_minimum_size = Vector2(0, ACTION_HEIGHT)
-		UiKit.style_button(button, ACTION_FONT_SIZE)
-		if action.get("accent", false):
-			UiKit.accent_button(button)
-		var on_press: Callable = action.get("call", Callable())
-		if on_press.is_valid():
-			button.pressed.connect(on_press)
-		_actions.add_child(button)
-
-
-## 아래 버튼 글자들(실행 검사용).
-func action_texts() -> PackedStringArray:
-	var labels := PackedStringArray()
-	for button: Button in _actions.get_children():
-		labels.append(button.text)
-	return labels
-
-
-## 그 글자의 버튼(실행 검사용). 없으면 null.
-func action_button(text: String) -> Button:
-	for button: Button in _actions.get_children():
-		if button.text == text:
-			return button
-	return null
 
 
 ## 미리보기 효과 색: 액티브는 효과 종류 색, 패시브 · 변이 · 계승은 스킬 카드 색과 같다.

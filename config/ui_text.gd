@@ -98,7 +98,6 @@ const SKILL_TARGETS := {
 }
 ## 계수 줄 이름표
 const SKILL_ROW_TARGET := "대상"
-const SKILL_ROW_DAMAGE := "피해"
 const SKILL_ROW_HEAL := "회복"
 const SKILL_ROW_RADIUS := "범위"
 const SKILL_ROW_STUN := "기절"
@@ -111,10 +110,14 @@ const SKILL_ROW_STATS := "오른 능력치"
 const SKILL_ROW_BONUS := "보정"
 const SKILL_ROW_MIX := TERM_MIX
 const SKILL_ROW_INHERIT := "계승 스탯"
-## 계수 값: %d%% = 배율, (지금 n) = 이 코어의 지금 값 — 지금 값을 모르면(미리보기) 괄호를 뺀다
-const SKILL_POWER := "공격력 × %d%%"
-const SKILL_POWER_HITS := "공격력 × %d%% × %d번"
-const SKILL_HEAL_POWER := "회복력 × %d%%"
+## 피해 줄 이름표: 첫째 계수가 마나(충만)면 마법, 아니면 물리(사용자 결정 2026-10-03: 능력치마다 계수)
+const SKILL_ROW_PHYSICAL := "물리 피해"
+const SKILL_ROW_MAGIC := "마법 피해"
+## 계수 값: 능력치 이름 × %d%%를 " + "로 잇는다(예: 공격 × 180% + 명중 × 80%). 여러 번 때리면 뒤에 " × n번".
+## (지금 n) = 이 코어 · 주인공의 지금 값 — 지금 값을 모르면(미리보기) 괄호를 뺀다
+const SKILL_COEF_TERM := "%s × %d%%"
+const SKILL_COEF_JOIN := " + "
+const SKILL_HITS_SUFFIX := " × %d번"
 const SKILL_SHIELD_POWER := "최대 체력 × %d%% · %s초"
 const SKILL_NOW := "  (지금 %d)"
 const SKILL_NOW_EACH := "  (지금 %d씩)"
@@ -138,24 +141,39 @@ const JOB_POINTS := "스킬 포인트 %d"
 const JOB_CLOSE := "닫기"
 ## 직업 이름 아래: 역할 · 기본 무기
 const JOB_KIND := "%s · %s"
-## 왼쪽 능력치 표(이름표, 값 형식)
-const JOB_STAT_ROWS := [["체력", "%d"], ["공격", "%d"], ["공격 간격", "%s초"], ["사거리", "%d"]]
+## 왼쪽 능력치(사용자 결정 2026-10-03: 주인공도 코어와 같은 능력치 9종 — 장비가 이 값을 올린다): HP · MP + 9종 표, 아래 전투 값 한 줄
+const JOB_SHEET_HP := "HP"
+const JOB_SHEET_MP := "MP"
+const JOB_COMBAT_LINE := "공격력 %d · 공격 간격 %s초 · 사거리 %d"
 const JOB_MODS_LINE := "패시브 보정: %s"
 const JOB_SWITCH := "직업 바꾸기(개발용 · 출시 전엔 프롤로그에서 한 번 고름)"
 const JOB_SWITCH_ASK := "%s(으)로 바꿀까요?\n배운 스킬과 장착이 처음으로 돌아갑니다(개발용)."
 ## 직업 창 섹터 제목 · 오른쪽 작은 줄(장착 수 / 칸 수)
 const JOB_SECTION_TITLES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
 const JOB_SECTION_INFO := {"active": "장착 %d/%d · 스킬 칸 4~6", "passive": "장착 %d/%d · 칸은 Lv 10 · 30에 열림", "ultimate": "장착 %d/%d · 궁극기 칸"}
-const JOB_HINT := "스킬을 누르면 모션 · 설명 · 계수를 보고 배우기 · 장착 · 레벨 올리기"
+## 섹터 왼쪽 장착 칸 아래 글(%d = 칸 번호) · 아직 안 열린 칸
+const JOB_SLOT_CAPTION := "%d번 칸"
+const JOB_SLOT_ULTIMATE := "궁극기 칸"
+const JOB_SLOT_LOCKED := "Lv %d에 열림"
+## 장착한 궁극기 칸의 배지(액티브 · 패시브는 칸 번호)
+const JOB_EQUIPPED_BADGE := "장착"
+## 아래 행동 줄: 아무것도 안 골랐을 때 안내 · 고른 스킬의 상태 줄
+const JOB_HINT := "스킬을 누르면 여기서 배우기 · 장착 · 레벨 올리기(한 번 더 누르면 미리보기)"
+const JOB_STATUS_EQUIPPED := "%s · Lv %d/%d · %s에 장착"
+const JOB_STATUS_FREE := "%s · Lv %d/%d · 장착 안 함"
+const JOB_STATUS_LEARNABLE := "%s · 배울 수 있음(Lv %d 해금)"
+const JOB_STATUS_LOCKED := "%s · Lv %d에 배울 수 있음"
+const JOB_PICK_SLOT := "바꿀 칸을 누르세요"
 ## 스킬 칸 아래 작은 줄: 배운 스킬 레벨 / 배울 수 있음
 const JOB_TILE_LEVEL := "Lv %d/%d"
 const JOB_TILE_LEARNABLE := "배울 수 있음"
 ## 스킬 상세 창의 스킬 레벨 줄(레벨은 됐는데 안 배움)
 const JOB_LEVEL_LEARNABLE := "배울 수 있음(Lv %d 해금)"
-## 스킬 상세 창 아래 버튼(직업 스킬)
+## 직업 창 아래 행동 줄 버튼(스킬 상세 창은 보기 전용, 사용자 결정 2026-10-03)
+const JOB_ACT_PREVIEW := "미리보기"
 const JOB_ACT_LEARN := "배우기"
+const JOB_ACT_LOCKED := "Lv %d에 배움"
 const JOB_ACT_EQUIP := "장착"
-const JOB_ACT_EQUIP_AT := "%d번 칸에"
 const JOB_ACT_UNEQUIP := "해제"
 const JOB_ACT_LEVEL := "레벨 올리기 · 포인트 1"
 const JOB_ACT_NO_POINTS := "스킬 포인트 없음"
@@ -192,8 +210,8 @@ const JOB_BUFF_PARTS := {"attack": "공격 +%d%%", "speed": "공격 속도 +%d%%
 const JOB_SECONDS_SUFFIX := " · %s초"
 ## 패시브 보정 이름(값 = %d%%)
 const JOB_MOD_NAMES := {
-	"hp": "최대 체력 +%d%%", "damage_taken": "받는 피해 −%d%%", "attack": "공격 +%d%%", "attack_speed": "공격 속도 +%d%%",
-	"move_speed": "이동 속도 +%d%%", "range": "사거리 +%d%%", "ambush": "기습 배율 +%d%%", "heal_power": "회복 +%d%%",
+	"hp": "체력 +%d%%", "damage_taken": "받는 피해 −%d%%", "attack": "공격 +%d%%", "attack_speed": "공격 속도 +%d%%",
+	"move_speed": "이동 속도 +%d%%", "range": "사거리 +%d%%", "ambush": "기습 배율 +%d%%", "heal_power": "마나 +%d%%",
 	"tank_damage_taken": "탱커 헨치가 받는 피해 −%d%%", "party_hp": "파티 헨치 최대 체력 +%d%%", "buff_seconds": "버프 시간 +%d%%", "buff_power": "버프 효과 +%d%%",
 }
 const JOB_ROW_MOD := "보정"

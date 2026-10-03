@@ -95,8 +95,13 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/h_separation = 28
-theme_override_constants/v_separation = 6
+theme_override_constants/v_separation = 4
 columns = 2
+
+[node name="Combat" type="Label" parent="Margin/Rows/Body/Left"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3
 
 [node name="Mods" type="Label" parent="Margin/Rows/Body/Left"]
 unique_name_in_owner = true
@@ -125,7 +130,7 @@ layout_mode = 2
 [node name="Right" type="VBoxContainer" parent="Margin/Rows/Body"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="ActiveSection" type="PanelContainer" parent="Margin/Rows/Body/Right"]
 unique_name_in_owner = true
@@ -133,7 +138,7 @@ layout_mode = 2
 
 [node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows"]
 layout_mode = 2
@@ -145,60 +150,165 @@ size_flags_horizontal = 3
 [node name="Info" type="Label" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Header"]
 layout_mode = 2
 
-[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows"]
+[node name="Body" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
-[node name="Lower" type="HBoxContainer" parent="Margin/Rows/Body/Right"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PassiveSection" type="PanelContainer" parent="Margin/Rows/Body/Right/Lower"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection"]
+[node name="Slots" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Body"]
+custom_minimum_size = Vector2(232, 0)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows"]
+[node name="Line" type="VSeparator" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Body"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows/Header"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Body"]
 layout_mode = 2
 size_flags_horizontal = 3
+vertical_scroll_mode = 0
 
-[node name="Info" type="Label" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows/Header"]
-layout_mode = 2
-
-[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows"]
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Body/Scroll"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="UltimateSection" type="PanelContainer" parent="Margin/Rows/Body/Right/Lower"]
+[node name="PassiveSection" type="PanelContainer" parent="Margin/Rows/Body/Right"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection"]
+[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/PassiveSection"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
-[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows"]
+[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/PassiveSection/Rows"]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows/Header"]
+[node name="Title" type="Label" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Info" type="Label" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows/Header"]
+[node name="Info" type="Label" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Header"]
 layout_mode = 2
 
-[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows"]
+[node name="Body" type="HBoxContainer" parent="Margin/Rows/Body/Right/PassiveSection/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slots" type="HBoxContainer" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Body"]
+custom_minimum_size = Vector2(232, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Line" type="VSeparator" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Body"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_scroll_mode = 0
+
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/PassiveSection/Rows/Body/Scroll"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Hint" type="Label" parent="Margin/Rows/Body/Right"]
+[node name="UltimateSection" type="PanelContainer" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/UltimateSection"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/UltimateSection/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Header"]
+layout_mode = 2
+
+[node name="Body" type="HBoxContainer" parent="Margin/Rows/Body/Right/UltimateSection/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Slots" type="HBoxContainer" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Body"]
+custom_minimum_size = Vector2(232, 0)
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Line" type="VSeparator" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Body"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_scroll_mode = 0
+
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/UltimateSection/Rows/Body/Scroll"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="RightGap" type="Control" parent="Margin/Rows/Body/Right"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="ActionBar" type="PanelContainer" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 76)
+layout_mode = 2
+
+[node name="Bar" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActionBar"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Icon" type="TextureRect" parent="Margin/Rows/Body/Right/ActionBar/Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Texts" type="VBoxContainer" parent="Margin/Rows/Body/Right/ActionBar/Bar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="SelName" type="Label" parent="Margin/Rows/Body/Right/ActionBar/Bar/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Status" type="Label" parent="Margin/Rows/Body/Right/ActionBar/Bar/Texts"]
 unique_name_in_owner = true
 layout_mode = 2
 autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActionBar/Bar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Preview" type="Button" parent="Margin/Rows/Body/Right/ActionBar/Bar/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 48)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+
+[node name="Main" type="Button" parent="Margin/Rows/Body/Right/ActionBar/Bar/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 48)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0
+
+[node name="LevelUp" type="Button" parent="Margin/Rows/Body/Right/ActionBar/Bar/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 48)
+layout_mode = 2
+size_flags_vertical = 4
+focus_mode = 0

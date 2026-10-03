@@ -135,7 +135,7 @@ func is_equipped(id: String) -> bool:
 	return id != "" and (id in actives or id in passives or ultimate == id)
 
 
-## 장착한다. 액티브 · 패시브는 slot 칸에(다른 칸에 있었으면 옮김, 그 칸에 있던 스킬은 빠짐), 궁극기는 하나뿐인 칸에.
+## 장착한다. 액티브 · 패시브는 slot 칸에(그 칸에 있던 스킬은 빠진다. 장착한 스킬을 다른 칸으로 옮기면 두 칸이 자리를 바꾼다), 궁극기는 하나뿐인 칸에.
 ## 배우지 않았거나, 닫힌 패시브 칸이거나, 칸 번호가 틀리면 false.
 func equip(id: String, slot: int, player_level: int) -> bool:
 	var skill := JobDb.get_skill(id)
@@ -145,13 +145,11 @@ func equip(id: String, slot: int, player_level: int) -> bool:
 		"active":
 			if slot < 0 or slot >= actives.size():
 				return false
-			_remove_from(actives, id)
-			actives[slot] = id
+			_place(actives, id, slot)
 		"passive":
 			if slot < 0 or slot >= JobRules.passive_slot_count(player_level):
 				return false
-			_remove_from(passives, id)
-			passives[slot] = id
+			_place(passives, id, slot)
 		"ultimate":
 			ultimate = id
 	changed.emit()
@@ -167,6 +165,15 @@ func unequip(id: String) -> bool:
 		ultimate = ""
 	changed.emit()
 	return true
+
+
+## slot 칸에 넣는다. 이미 다른 칸에 있던 스킬이면 그 칸과 자리를 바꾼다.
+static func _place(slots: Array[String], id: String, slot: int) -> void:
+	var old := slots.find(id)
+	var displaced := slots[slot]
+	slots[slot] = id
+	if old >= 0 and old != slot:
+		slots[old] = displaced
 
 
 static func _remove_from(slots: Array[String], id: String) -> void:

@@ -2,10 +2,11 @@ class_name SkillSheet
 extends RefCounted
 ## 스킬 상세 창의 내용(순수 함수, 사용자 결정 2026-10-03: 롤처럼 스킬을 누르면 모션 미리보기 · 설명 · 계수).
 ## 헨치 고유 스킬은 종마다 액티브 1 + 패시브 1로 정해져 있다(기획서 4장 확정). 패시브는 믹스할 때 유산으로만 바뀐다.
-## 주인공 직업 스킬(job_skill)도 같은 모양으로 만든다 — 직업 창에서 이 창에 장착 · 레벨 올리기 버튼을 붙여 쓴다.
+## 주인공 직업 스킬(job_skill)도 같은 모양으로 만든다. 이 창은 보기 전용이다(장착 · 레벨 올리기는 직업 창 아래 줄, 사용자 결정 2026-10-03).
 ## 돌려주는 내용(Dictionary): title(이름) · tag(꼬리표) · description(설명) · rows([이름표, 값] 줄들) · motion(미리보기 종류) · note(작은 안내),
 ## 액티브는 미리보기에 쓰는 radius(범위, 땅 위 px) · hits(때리는 횟수) · amount(지금 한 번 값, 모르면 0)도.
-## 액티브 계수는 효과 종류(GameConfig.SKILL_KINDS) 값 그대로이고, stats(그 코어의 전투 능력치)를 주면 "지금 n"도 붙인다.
+## 피해 · 회복은 능력치마다 계수("공격 × 180% + 명중 × 80%", 기획서 4장 다중 스탯 계수 — 주인공도 같다).
+## stats(그 코어 · 주인공의 능력치, UnitStats.sheet)를 주면 "지금 n"도 붙인다.
 
 ## 미리보기 종류: 액티브는 효과 종류 이름 그대로(strike · flurry …), 그 밖에는 아래 셋.
 const MOTION_PASSIVE := "passive"
@@ -13,26 +14,20 @@ const MOTION_VARIANT := "variant"
 const MOTION_INHERIT := "inherit"
 
 
-## 고유 액티브. stats가 null이면(믹스 결과 미리보기 등) 지금 값은 빼고 배율만.
+## 고유 액티브. stats가 null이면(믹스 결과 미리보기 등) 지금 값은 빼고 계수만.
 static func active(species: HenchSpecies, stats: UnitStats = null) -> Dictionary:
 	var kind := species.skill
 	var config: Dictionary = GameConfig.SKILL_KINDS.get(kind, {})
+	var coefs := HenchSkill.skill_coefs(kind, species.active)
+	var heal := kind in HenchSkill.HEALS
+	var hits := int(config.get("hits", 1))
 	var rows := [[UiText.SKILL_ROW_TARGET, UiText.SKILL_TARGETS.get(kind, "")]]
-	var power := float(config.get("power", 0.0))
-	var percent := roundi(power * 100.0)
-	match kind:
-		"strike", "blast", "stun":
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, stats.attack * power if stats != null else 0.0)])
-		"flurry":
-			var hits := int(config.get("hits", 1))
-			var each := UiText.SKILL_NOW_EACH % roundi(stats.attack * power) if stats != null else ""
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER_HITS % [percent, hits] + each])
-		"heal", "heal_all":
-			rows.append([UiText.SKILL_ROW_HEAL, UiText.SKILL_HEAL_POWER % percent + _now(stats, heal_power(stats) * power if stats != null else 0.0)])
-		"taunt":
-			var share := float(config.get("shield", 0.0))
-			var shield := UiText.SKILL_SHIELD_POWER % [roundi(share * 100.0), seconds(float(config.get("shield_seconds", 0.0)))]
-			rows.append([UiText.SKILL_ROW_SHIELD, shield + _now(stats, stats.max_hp * share if stats != null else 0.0)])
+	if not coefs.is_empty():
+		rows.append(amount_row(coefs, stats, heal, hits))
+	if kind == "taunt":
+		var share := float(config.get("shield", 0.0))
+		var shield := UiText.SKILL_SHIELD_POWER % [roundi(share * 100.0), seconds(float(config.get("shield_seconds", 0.0)))]
+		rows.append([UiText.SKILL_ROW_SHIELD, shield + _now(stats, stats.max_hp * share if stats != null else 0.0)])
 	if config.has("radius"):
 		rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(config["radius"]))])
 	if config.has("stun"):
@@ -40,13 +35,10 @@ static func active(species: HenchSpecies, stats: UnitStats = null) -> Dictionary
 	rows.append([UiText.SKILL_ROW_COOLDOWN, UiText.SKILL_SECONDS % seconds(float(config.get("cooldown", 0.0)))])
 	var amount := 0
 	if stats != null:
-		match kind:
-			"strike", "blast", "stun", "flurry":
-				amount = roundi(stats.attack * power)
-			"heal", "heal_all":
-				amount = roundi(heal_power(stats) * power)
-			"taunt":
-				amount = roundi(stats.max_hp * float(config.get("shield", 0.0)))
+		if kind == "taunt":
+			amount = roundi(stats.max_hp * float(config.get("shield", 0.0)))
+		elif not coefs.is_empty():
+			amount = roundi(stats.skill_amount(coefs, heal))
 	var design := design_note(species.active)
 	if design != "":
 		rows.append([UiText.SKILL_ROW_DESIGN, design])
@@ -57,7 +49,7 @@ static func active(species: HenchSpecies, stats: UnitStats = null) -> Dictionary
 		"rows": rows,
 		"motion": kind,
 		"radius": float(config.get("radius", 0.0)),
-		"hits": int(config.get("hits", 1)),
+		"hits": hits,
 		"amount": amount,
 		"note": UiText.SKILL_NOTE_ACTIVE,
 	}
@@ -114,8 +106,8 @@ static func inherit(item: CoreItem) -> Dictionary:
 	}
 
 
-## 직업 스킬(기획서 3장). level = 스킬 레벨(0 = 아직 안 배움 → 1레벨 값으로 보여 줌), stats = 주인공 전투 능력치(없으면 지금 값 없이),
-## mods = 장착 패시브 보정(버프 · 회복이 커진다), player_level = 주인공 레벨(안 배운 스킬이 "배울 수 있음"인지 "Lv n에 배움"인지).
+## 직업 스킬(기획서 3장). level = 스킬 레벨(0 = 아직 안 배움 → 1레벨 값으로 보여 줌), stats = 주인공 능력치(없으면 지금 값 없이),
+## mods = 장착 패시브 보정(버프가 커진다), player_level = 주인공 레벨(안 배운 스킬이 "배울 수 있음"인지 "Lv n에 배움"인지).
 ## 액티브 · 궁극기는 효과마다 계수 줄, 패시브는 보정 줄.
 static func job_skill(skill: JobDb.Skill, level: int, stats: UnitStats = null, mods: Dictionary = {}, player_level := 0) -> Dictionary:
 	var job := JobDb.get_job(skill.job_id)
@@ -163,20 +155,15 @@ static func job_skill(skill: JobDb.Skill, level: int, stats: UnitStats = null, m
 ## 직업 스킬 효과 하나의 계수 줄들.
 static func _effect_rows(effect: Dictionary, stats: UnitStats) -> Array:
 	var rows := []
-	var power := float(effect.get("power", 0.0))
-	var percent := roundi(power * 100.0)
-	var attack := stats.attack if stats != null else 0.0
+	var coefs: Dictionary = effect.get("coefs", {})
 	match str(effect.get("type", "")):
 		"hit":
 			var hits := int(effect.get("hits", 1))
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["one"]])
-			if hits > 1:
-				rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER_HITS % [percent, hits] + (UiText.SKILL_NOW_EACH % roundi(attack * power) if stats != null else "")])
-			else:
-				rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append(amount_row(coefs, stats, false, hits))
 		"area":
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["target" if effect.get("at", "target") == "target" else "around"]])
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append(amount_row(coefs, stats))
 			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
 			if effect.has("stun"):
 				rows.append([UiText.SKILL_ROW_STUN, UiText.SKILL_SECONDS % seconds(float(effect["stun"]))])
@@ -190,24 +177,23 @@ static func _effect_rows(effect: Dictionary, stats: UnitStats) -> Array:
 			rows.append([UiText.SKILL_ROW_SHIELD, shield + _now(stats, stats.max_hp * share if stats != null else 0.0) + " · " + UiText.JOB_TARGETS[str(effect.get("who", "self"))]])
 		"dash":
 			rows.append([UiText.JOB_ROW_MOVE, UiText.JOB_DASH_VALUE % roundi(float(effect.get("range", 0.0)))])
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append(amount_row(coefs, stats))
 			if float(effect.get("radius", 0.0)) > 0.0:
 				rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect["radius"]))])
 		"retreat":
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append(amount_row(coefs, stats))
 			rows.append([UiText.JOB_ROW_MOVE, UiText.JOB_RETREAT_VALUE % roundi(float(effect.get("distance", 0.0)))])
 		"pierce":
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["line"]])
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER % percent + _now(stats, attack * power)])
+			rows.append(amount_row(coefs, stats))
 			rows.append([UiText.JOB_ROW_LENGTH, UiText.JOB_LENGTH_VALUE % [roundi(float(effect.get("length", 0.0))), roundi(float(effect.get("width", 0.0)))]])
 		"smoke":
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["around"]])
 			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
 			rows.append([UiText.JOB_ROW_SMOKE, UiText.JOB_SMOKE_VALUE % seconds(float(effect.get("seconds", 0.0)))])
 		"heal":
-			var heal := heal_power(stats) * power if stats != null else 0.0
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS[str(effect.get("who", "lowest"))]])
-			rows.append([UiText.SKILL_ROW_HEAL, UiText.SKILL_HEAL_POWER % percent + _now(stats, heal)])
+			rows.append(amount_row(coefs, stats, true))
 			if float(effect.get("radius", 0.0)) > 0.0:
 				rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect["radius"]))])
 			if effect.get("cleanse", false):
@@ -226,7 +212,7 @@ static func _effect_rows(effect: Dictionary, stats: UnitStats) -> Array:
 		"storm":
 			var hits := int(effect.get("hits", 1))
 			rows.append([UiText.JOB_ROW_TARGET, UiText.JOB_TARGETS["around"]])
-			rows.append([UiText.SKILL_ROW_DAMAGE, UiText.SKILL_POWER_HITS % [percent, hits] + (UiText.SKILL_NOW_EACH % roundi(attack * power) if stats != null else "")])
+			rows.append(amount_row(coefs, stats, false, hits))
 			rows.append([UiText.SKILL_ROW_RADIUS, UiText.SKILL_RADIUS_VALUE % roundi(float(effect.get("radius", 0.0)))])
 	return rows
 
@@ -249,13 +235,42 @@ static func job_motion(effect: Dictionary) -> String:
 static func _effect_amount(effect: Dictionary, stats: UnitStats) -> int:
 	if stats == null:
 		return 0
-	var power := float(effect.get("power", 0.0))
 	match str(effect.get("type", "")):
 		"heal":
-			return roundi(heal_power(stats) * power)
+			return roundi(stats.skill_amount(effect.get("coefs", {}), true))
 		"shield":
 			return roundi(stats.max_hp * float(effect.get("amount", 0.0)))
-	return roundi(stats.attack * power)
+	return roundi(stats.skill_amount(effect.get("coefs", {})))
+
+
+## 피해 · 회복 줄 하나: [이름표(물리 피해 · 마법 피해 · 회복), "계수( × n번)  (지금 n)"].
+static func amount_row(coefs: Dictionary, stats: UnitStats, heal := false, hits := 1) -> Array:
+	var label := UiText.SKILL_ROW_HEAL if heal else (UiText.SKILL_ROW_MAGIC if is_magic(coefs) else UiText.SKILL_ROW_PHYSICAL)
+	var text := coef_text(coefs)
+	if hits > 1:
+		text += UiText.SKILL_HITS_SUFFIX % hits
+	if stats != null:
+		text += (UiText.SKILL_NOW_EACH if hits > 1 else UiText.SKILL_NOW) % roundi(stats.skill_amount(coefs, heal))
+	return [label, text]
+
+
+## 계수 글: {mighty: 1.8, precise: 0.8} → "공격 × 180% + 명중 × 80%"(능력치 이름은 SuffixDb.stat_name).
+static func coef_text(coefs: Dictionary) -> String:
+	var parts := PackedStringArray()
+	for stat: String in coefs:
+		parts.append(UiText.SKILL_COEF_TERM % [SuffixDb.stat_name(stat), roundi(float(coefs[stat]) * 100.0)])
+	return UiText.SKILL_COEF_JOIN.join(parts)
+
+
+## 마법 피해인가: 가장 큰 계수가 마나(충만)면 마법, 아니면 물리(임시 구분 — 방어 · 저항 계산은 아직 없다).
+static func is_magic(coefs: Dictionary) -> bool:
+	var top := ""
+	var best := -1.0
+	for stat: String in coefs:
+		if float(coefs[stat]) > best:
+			best = float(coefs[stat])
+			top = stat
+	return top == "abundant"
 
 
 ## 도감 액티브 글의 괄호 안("매운 박치기 (공격 + 화상)" → "공격 + 화상"). 없으면 "".
@@ -264,11 +279,6 @@ static func design_note(active_text: String) -> String:
 	if open < 0 or not active_text.ends_with(")"):
 		return ""
 	return active_text.substr(open + 2, active_text.length() - open - 3)
-
-
-## 회복 스킬의 바탕 값: 회복력이 없으면 공격력(필드의 헨치와 같다).
-static func heal_power(stats: UnitStats) -> float:
-	return stats.heal if stats.heal > 0.0 else stats.attack
 
 
 ## 초를 짧게(8.0 → "8", 0.5 → "0.5").

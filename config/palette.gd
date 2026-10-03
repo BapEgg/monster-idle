@@ -211,6 +211,12 @@ const JOB_LEVEL_READY := Color(0.42, 0.45, 0.5, 0.95)
 const JOB_LEVEL_READY_TEXT := Color("7fe0d2")
 ## 직업 창 섹터(액티브 · 패시브 · 궁극기) 바탕
 const JOB_SECTION_BG := Color(1, 1, 1, 0.035)
+## 직업 창 섹터 왼쪽 장착 칸: 바탕(스킬 칸보다 조금 어둡게) · 테두리(점선 느낌으로 옅게)
+const JOB_SLOT_BG := Color(0, 0, 0, 0.25)
+const JOB_SLOT_BORDER := Color(1, 1, 1, 0.22)
+## 직업 창 아래 행동 줄 바탕 · "바꿀 칸을 누르세요" 글자
+const JOB_ACTION_BG := Color(1, 1, 1, 0.06)
+const JOB_PICK_TEXT := Color("7fe0d2")
 ## 스킬 상세 창 모션 미리보기(임시 도형): 바닥 · 범위 · 적 · 동료 · 그림자 · 체력 바 · 피해 숫자 · 회복 숫자
 const PREVIEW_BG := Color(0.16, 0.2, 0.17)
 const PREVIEW_RANGE := Color(1, 1, 1, 0.12)

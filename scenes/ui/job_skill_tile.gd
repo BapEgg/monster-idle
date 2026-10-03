@@ -3,18 +3,20 @@ extends Button
 ## 직업 창의 스킬 칸 하나(사용자 결정 2026-10-03: 네모 칸에 스킬 그림, 오른쪽 위에 레벨 배지).
 ## 위 = 네모 그림 칸(JobDb.icon, 그림 파일이 없으면 이름 첫 글자), 아래 = 스킬 이름 + 작은 줄(스킬 레벨 / 배울 수 있음).
 ## 오른쪽 위 배지: 배웠으면 없음, 주인공 레벨이 모자라면 빨간 "Lv n", 레벨은 됐는데 아직 안 배웠으면 회색 "Lv n".
-## 안 배운 칸은 그림을 흐리게. 장착한 칸은 흰 테두리 + 왼쪽 위에 칸 번호. 누르면 Button의 pressed(직업 창이 스킬 상세 창을 연다).
+## 안 배운 칸은 그림을 흐리게. 장착한 칸은 왼쪽 위에 칸 번호(청록). 고른 칸은 흰 테두리 + 체크(사용자 결정 2026-10-03: 고른 것 표시 통일).
+## 누르면 Button의 pressed(직업 창이 고르고, 고른 칸을 다시 누르면 미리보기).
 
 enum State { LEARNED, LEARNABLE, LOCKED }
 
 # 임시 UI 치수(px)
-const SIZE := Vector2(96, 128)
+const SIZE := Vector2(80, 112)
 const CORNER := 10
 const EDGE := 2
 const PAD := 4.0
 const NAME_FONT_SIZE := 14
 const SMALL_FONT_SIZE := 12
-const BADGE_FONT_SIZE := 13
+const BADGE_FONT_SIZE := 12
+const CHECK_RADIUS := 9.0
 const DIM_ALPHA := 0.4
 
 var skill: JobDb.Skill
@@ -23,14 +25,17 @@ var state := State.LOCKED
 var skill_level := 0
 ## 장착한 칸 표시(예: "1"). 비우면 장착 안 함.
 var slot_badge := ""
+## 직업 창에서 고른 칸(흰 테두리 + 체크)
+var selected := false
 
 
-static func create(of_skill: JobDb.Skill, of_state: State, of_level: int, of_slot: String) -> JobSkillTile:
+static func create(of_skill: JobDb.Skill, of_state: State, of_level: int, of_slot: String, is_selected := false) -> JobSkillTile:
 	var tile := JobSkillTile.new()
 	tile.skill = of_skill
 	tile.state = of_state
 	tile.skill_level = of_level
 	tile.slot_badge = of_slot
+	tile.selected = is_selected
 	tile.name = of_skill.id
 	return tile
 
@@ -58,9 +63,8 @@ func _draw() -> void:
 	var box := StyleBoxFlat.new()
 	box.bg_color = Palette.CHIP_BG_HOVER if is_hovered() else Palette.CHIP_BG
 	box.set_corner_radius_all(CORNER)
-	var equipped := slot_badge != ""
-	box.border_color = Palette.CARD_SELECTED_BORDER if equipped else Palette.CARD_BORDER
-	box.set_border_width_all(EDGE if equipped else 1)
+	box.border_color = Palette.CARD_SELECTED_BORDER if selected else Palette.CARD_BORDER
+	box.set_border_width_all(EDGE if selected else 1)
 	draw_style_box(box, box_rect)
 	var inner := box_rect.grow(-PAD - EDGE)
 	var picture := JobDb.icon(skill)
@@ -76,9 +80,11 @@ func _draw() -> void:
 	# 오른쪽 위 레벨 배지: 레벨이 모자라면 빨강, 됐는데 안 배웠으면 회색
 	if state != State.LEARNED:
 		UiKit.draw_badge(self, Vector2(box_rect.end.x - 3.0, 3.0), Vector2(1, 0), badge_text(), Palette.JOB_LEVEL_SHORT if state == State.LOCKED else Palette.JOB_LEVEL_READY, BADGE_FONT_SIZE)
-	# 왼쪽 위 장착 칸 번호
-	if equipped:
+	# 왼쪽 위 장착 칸 번호 · 오른쪽 아래 고른 칸 체크
+	if slot_badge != "":
 		UiKit.draw_badge(self, Vector2(3.0, 3.0), Vector2.ZERO, slot_badge, Palette.BADGE_PARTY, BADGE_FONT_SIZE)
+	if selected:
+		UiKit.draw_check(self, box_rect.end - Vector2.ONE * (CHECK_RADIUS + 3.0), CHECK_RADIUS)
 	# 아래: 이름 + 작은 줄
 	var name_color := Palette.TEXT if state == State.LEARNED else Palette.TEXT_LABEL
 	var shown := UiKit.fit_text(font, skill.name, size.x, NAME_FONT_SIZE)
