@@ -98,6 +98,9 @@ const MIX_FLASH_FAIL := Color(0.85, 0.15, 0.15)
 const MIX_NEW := Color("ffd84a")
 const MIX_MASTERY_BAR := Color("b98cff")
 const MIX_GO_BG := Color(1, 0.85, 0.3, 0.16)
+## 결과 카드에서 하나만 강조하는 버튼(파티에 넣기): 파티 배지와 같은 청록
+const MIX_ACCENT_BG := Color("2a9d8f")
+const MIX_ACCENT_BORDER := Color("7fe0d2")
 const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")
@@ -110,6 +113,10 @@ const BADGE_VARIANT := Color("9b5de5")
 const BADGE_LOCK := Color(0.45, 0.45, 0.5, 0.95)
 const BADGE_PARTY := Color("2a9d8f")
 const BADGE_TEXT := Color(1, 1, 1)
+## 믹스 재료로 고를 수 없는 까닭 배지(같은 성별 · 잠금 · 변이 …)
+const BADGE_BLOCKED := Color(0.55, 0.2, 0.22, 0.95)
+## 고른 칸 체크 표시(흰 동그라미 안의 체크)
+const CHECK_MARK := Color("1b1d24")
 ## 초상화 틀 바탕
 const PORTRAIT_BG := Color(1, 1, 1, 0.06)
 ## 믹스창: 힌트(실루엣) 색 / 실패 경고 글자 / 성공 글자

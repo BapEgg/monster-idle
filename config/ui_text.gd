@@ -153,6 +153,8 @@ const MIX_SUB := "보조 " + TERM_CORE
 const MIX_SLOT_EMPTY := "아래에서\n고르세요"
 ## 성별 기호(CoreItem.Gender 순서)
 const GENDER_SYMBOLS := ["♀", "♂"]
+## 정보창 성별 배지: 기호 + 이름(♀ 암컷)
+const GENDER_BADGE := "%s %s"
 ## 공식 한 줄: 주 쪽 → 보조 쪽 → 결과. 한쪽은 "성별 기호 이름"
 const MIX_FORMULA := "%s  +  %s  →  %s"
 const MIX_FORMULA_SIDE := "%s %s"
@@ -164,6 +166,10 @@ const MIX_SECRET := "?"
 ## 힌트일 때 종류 줄: ??? · 종족
 const MIX_HINT_KIND := "??? · %s"
 const MIX_SWAP := "주 ↔ 보조"
+## 주·보조를 바꾸면 나올 결과(공개 공식이면 이름, 아니면 ?)
+const MIX_SWAP_RESULT := "바꾸면 → %s"
+## 주·보조 칸 아래 한 줄: Lv · 접미사 · 성별 기호
+const MIX_SLOT_DETAIL := "Lv %d · %s · %s"
 ## 숙련도: 단계 / 다음 단계까지 경험치
 const MIX_MASTERY := TERM_MIX + " 숙련 %d단계"
 const MIX_MASTERY_EXP := "%d/%d"
@@ -180,6 +186,8 @@ const MIX_PREVIEW_GENDER := "♀ %d%% · ♂ %d%%"
 const MIX_PREVIEW_UNKNOWN := "?"
 const MIX_KEEP_OWN := "자기 패시브\n%s"
 const MIX_KEEP_LEGACY := "유산 (주 " + TERM_CORE + ")\n%s"
+## 유산 패시브 카드에서 고른 쪽 앞에 붙는 체크
+const MIX_CHOSEN := "✓ %s"
 ## 성공 확률(합) / 내역: 기본 + 숙련 + 마크
 const MIX_CHANCE := "성공 확률 %s"
 const MIX_CHANCE_PARTS := "기본 %d%% + 숙련 %d%% + 마크 %d%%"
@@ -201,8 +209,18 @@ const MIX_RESULT_SUCCESS := TERM_MIX + " 성공!"
 ## Lv · 나이 · 성별
 const MIX_RESULT_INFO := "LV %d · %s · %s"
 const MIX_MASTERY_UP := TERM_MIX + " 숙련 %d단계로 올랐어요!"
+## 고른 패시브: 이름 (자기 패시브 / 유산 · 어느 종에게서)
+const MIX_RESULT_PASSIVE := "패시브: %s (%s)"
+const MIX_RESULT_PASSIVE_OWN := "자기 패시브"
+const MIX_RESULT_PASSIVE_LEGACY := "%s의 유산"
+## 얻은 숙련 경험치(지금 / 다음 단계까지)
+const MIX_RESULT_EXP := TERM_MIX + " 숙련 경험치 +%d (%s)"
 const MIX_FAIL_TITLE := TERM_MIX + " 실패…"
 const MIX_FAIL_INFO := "재료 둘이 사라졌습니다"
+## 실패 카드: 잃은 재료 줄
+const MIX_FAIL_LOST := "잃은 재료: %s · %s"
+## 실패 카드에서 잃은 재료 칸에 붙는 배지
+const MIX_LOST_BADGE := "사라짐"
 const BTN_TO_PARTY := "파티에 넣기"
 const BTN_SHOW_INFO := "정보 보기"
 const BTN_MIX_AGAIN := "계속 " + TERM_MIX

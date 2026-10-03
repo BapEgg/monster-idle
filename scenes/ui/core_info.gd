@@ -140,7 +140,7 @@ func refresh() -> void:
 	_kind.text = UiText.INFO_KIND % [tribe.name, UiText.ROLE_NAMES.get(species.role, species.role), UiText.GRADE_NAMES.get(species.grade, species.grade)]
 	var badges := [
 		[UiText.AGE_NAMES[item.age], Palette.BADGE_AGE],
-		[UiText.GENDER_NAMES[item.gender], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE],
+		[UiText.GENDER_BADGE % [UiText.GENDER_SYMBOLS[item.gender], UiText.GENDER_NAMES[item.gender]], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE],
 	]
 	if item.variant:
 		badges.append([UiText.VARIANT, Palette.BADGE_VARIANT])

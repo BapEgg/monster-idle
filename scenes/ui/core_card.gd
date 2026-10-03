@@ -1,7 +1,7 @@
 class_name CoreCard
 extends Button
-## 가방 칸 하나(믹스마스터식): 종족 색 보석 아이콘 + 이름, 모서리 배지(나이 · 성별 · 변이 · 잠금/파티).
-## 칸 테두리 뜻(사용자 결정 2026-10-03): 노랑 = 빛나는 코어, 흰색 = 고른 칸, 보라 반짝임 = 변이.
+## 가방 칸 하나(믹스마스터식): 종족 색 보석 아이콘 + 이름, 모서리 배지(나이 · 성별 ♀♂ · 변이 · 잠금/파티).
+## 칸 테두리 뜻(사용자 결정 2026-10-03): 노랑 = 빛나는 코어, 흰색 + 체크 = 고른 칸, 보라 반짝임 = 변이.
 ## 겹치면 바깥 테두리가 앞의 것(고른 칸 > 빛나는 > 변이)이고, 나머지는 안쪽 고리로 함께 보인다.
 ## 누르면 Button의 pressed 신호. 아이콘은 종족 그림(TribeDb.icon, data/tribes.json 경로)이고, 파일이 없으면 보석 도형.
 
@@ -14,6 +14,14 @@ const ICON_CENTER_RATIO := 0.4
 const NAME_BASELINE_RATIO := 0.8
 const NAME_FONT_RATIO := 0.13
 const BADGE_FONT_RATIO := 0.1
+## 성별 배지(♀ · ♂ 기호)는 크게
+const GENDER_FONT_RATIO := 0.16
+## 고를 수 없는 칸: 아이콘을 이만큼만 보이게(이름은 그대로 읽히게 둔다) · 까닭 배지 가운데 높이(칸 높이 비율)
+const BLOCKED_ICON_ALPHA := 0.3
+const REASON_CENTER_RATIO := 0.6
+## 고른 칸의 체크 동그라미 반지름(칸 폭 비율) · 체크 선 굵기
+const CHECK_RADIUS_RATIO := 0.11
+const CHECK_WIDTH := 3.0
 const CORNER := 10
 const INSET := 5.0
 const EDGE := 3
@@ -26,12 +34,12 @@ const SPARKLE_LAPS := 0.5
 const SPARKLE_RADIUS := 3.5
 
 var item: CoreItem
-## 고를 수 없는 까닭(믹스창 재료 목록). 비어 있지 않으면 칸을 어둡게 덮고 까닭을 가운데에 쓴다.
+## 고를 수 없는 까닭(믹스창 재료 목록). 비어 있지 않으면 칸을 흐리게 하고(이름은 그대로) 까닭을 작은 배지로 단다.
 var block_reason := "":
 	set(value):
 		block_reason = value
 		queue_redraw()
-## 고른 칸인가(흰 테두리).
+## 고른 칸인가(흰 테두리 + 체크).
 var selected := false:
 	set(value):
 		selected = value
@@ -45,6 +53,13 @@ static func create(of_item: CoreItem, card_size := SIZE) -> CoreCard:
 	card.item = of_item
 	card._card_size = card_size
 	return card
+
+
+## 칸 크기를 바꾼다(믹스창 재료 목록이 화면 크기에 맞춰 칸을 키울 때).
+func resize_to(card_size: Vector2) -> void:
+	_card_size = card_size
+	custom_minimum_size = card_size
+	queue_redraw()
 
 
 func _ready() -> void:
@@ -66,6 +81,7 @@ func _draw() -> void:
 	if item == null:
 		return
 	var rect := Rect2(Vector2.ZERO, size)
+	var blocked := block_reason != ""
 	var edges := _edge_colors()
 	var box := StyleBoxFlat.new()
 	box.bg_color = Palette.CARD_SELECTED_BG if selected else Palette.CARD_BG
@@ -82,20 +98,29 @@ func _draw() -> void:
 	var species := item.species()
 	var icon_size := _card_size * ICON_RATIO
 	var center := Vector2(size.x * 0.5, size.y * ICON_CENTER_RATIO)
-	if item.shining:
+	if item.shining and not blocked:
 		var glow := Palette.CORE_SHINE
 		glow.a = 0.3
 		draw_circle(center, size.x * SHINE_RADIUS_RATIO, glow, true, -1.0, true)
 	var picture := TribeDb.icon(species.tribe)
 	if picture != null:
-		draw_texture_rect(picture, Rect2(center - icon_size * 0.5, icon_size), false)
+		draw_texture_rect(picture, Rect2(center - icon_size * 0.5, icon_size), false, Color(1, 1, 1, BLOCKED_ICON_ALPHA if blocked else 1.0))
 	else:
 		CoreDrop.draw_gem(self, center, TribeDb.get_tribe(species.tribe).color, item.shining)
+	if blocked:
+		var shade := StyleBoxFlat.new()
+		shade.bg_color = Palette.CARD_BLOCKED_SHADE
+		shade.set_corner_radius_all(CORNER)
+		draw_style_box(shade, rect)
 
+	# 이름: 흐린 칸에서도 그대로 읽히게 덮개 위에 쓴다
 	var font := ThemeDB.fallback_font
 	var name_size := roundi(size.x * NAME_FONT_RATIO)
+	var name_color := Palette.CORE_SHINE if item.shining else Palette.TEXT
+	if blocked:
+		name_color = Palette.TEXT_LABEL
 	var width := font.get_string_size(species.name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x
-	draw_string(font, Vector2((size.x - width) * 0.5, size.y * NAME_BASELINE_RATIO), species.name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, Palette.CORE_SHINE if item.shining else Palette.TEXT)
+	draw_string(font, Vector2((size.x - width) * 0.5, size.y * NAME_BASELINE_RATIO), species.name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, name_color)
 
 	var badge_size := roundi(size.x * BADGE_FONT_RATIO)
 	var top_left := Vector2(INSET, INSET)
@@ -103,28 +128,25 @@ func _draw() -> void:
 	var bottom_left := Vector2(INSET, size.y - INSET)
 	var bottom_right := Vector2(size.x - INSET, size.y - INSET)
 	UiKit.draw_badge(self, top_left, Vector2.ZERO, UiText.AGE_NAMES[item.age], Palette.BADGE_AGE, badge_size)
-	UiKit.draw_badge(self, top_right, Vector2(1, 0), UiText.GENDER_SHORT[item.gender], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE, badge_size)
+	UiKit.draw_badge(self, top_right, Vector2(1, 0), UiText.GENDER_SYMBOLS[item.gender], Palette.BADGE_FEMALE if item.gender == CoreItem.Gender.FEMALE else Palette.BADGE_MALE, roundi(size.x * GENDER_FONT_RATIO))
 	if item.variant:
 		UiKit.draw_badge(self, bottom_left, Vector2(0, 1), UiText.VARIANT, Palette.BADGE_VARIANT, badge_size)
 	if item.in_party():
 		UiKit.draw_badge(self, bottom_right, Vector2.ONE, UiText.BADGE_PARTY, Palette.BADGE_PARTY, badge_size)
 	elif item.locked:
 		UiKit.draw_badge(self, bottom_right, Vector2.ONE, UiText.BADGE_LOCK, Palette.BADGE_LOCK, badge_size)
-	if block_reason != "":
-		_draw_blocked(rect, name_size)
+	elif selected:
+		_draw_check(bottom_right - Vector2.ONE * size.x * CHECK_RADIUS_RATIO)
+	if blocked:
+		UiKit.draw_badge(self, Vector2(size.x * 0.5, size.y * REASON_CENTER_RATIO), Vector2(0.5, 0.5), block_reason, Palette.BADGE_BLOCKED, badge_size)
 
 
-## 고를 수 없는 칸: 어둡게 덮고 까닭을 가운데에.
-func _draw_blocked(rect: Rect2, font_size: int) -> void:
-	var shade := StyleBoxFlat.new()
-	shade.bg_color = Palette.CARD_BLOCKED_SHADE
-	shade.set_corner_radius_all(CORNER)
-	draw_style_box(shade, rect)
-	var font := ThemeDB.fallback_font
-	var width := font.get_string_size(block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	var at := Vector2((size.x - width) * 0.5, size.y * 0.5 + font_size * 0.35)
-	draw_string_outline(font, at, block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 4, Palette.TEXT_OUTLINE)
-	draw_string(font, at, block_reason, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Palette.TEXT)
+## 고른 칸 표시: 흰 동그라미 + 체크.
+func _draw_check(at: Vector2) -> void:
+	var radius := size.x * CHECK_RADIUS_RATIO
+	draw_circle(at, radius, Palette.CARD_SELECTED_BORDER, true, -1.0, true)
+	var mark := PackedVector2Array([at + Vector2(-0.5, 0.0) * radius, at + Vector2(-0.12, 0.38) * radius, at + Vector2(0.5, -0.35) * radius])
+	draw_polyline(mark, Palette.CHECK_MARK, CHECK_WIDTH, true)
 
 
 ## 테두리 색들(바깥부터): 고른 칸 = 흰색, 빛나는 = 노랑, 변이 = 보라 반짝임. 아무것도 아니면 빈 배열(얇은 기본 테두리).

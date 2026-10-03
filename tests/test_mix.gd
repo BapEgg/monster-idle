@@ -125,6 +125,7 @@ func test_mastery() -> void:
 	var mastery := MixMastery.new()
 	expect_true(mastery.level == 1 and mastery.success_bonus() == 0.0, "1단계 = 보너스 없음")
 	var need := mastery.exp_to_next()
+	expect_true(mastery.exp_for(true) == GameConfig.MIX_MASTERY_EXP_PER_MIX and mastery.exp_for(false) == roundi(GameConfig.MIX_MASTERY_EXP_PER_MIX * GameConfig.MIX_MASTERY_FAIL_EXP_RATE), "얻는 경험치: 성공 %d · 실패 %d" % [mastery.exp_for(true), mastery.exp_for(false)])
 	var fails := 0
 	while mastery.level == 1:
 		mastery.gain(false)
@@ -133,7 +134,7 @@ func test_mastery() -> void:
 	expect_near(mastery.success_bonus(), GameConfig.MIX_MASTERY_BONUS_PER_LEVEL, "2단계 = +2%")
 	for i in 1000:
 		mastery.gain(true)
-	expect_true(mastery.is_max() and mastery.level == GameConfig.MIX_MASTERY_MAX_LEVEL and mastery.progress() == 1.0 and not mastery.gain(true), "9단계에서 멈춘다")
+	expect_true(mastery.is_max() and mastery.level == GameConfig.MIX_MASTERY_MAX_LEVEL and mastery.progress() == 1.0 and not mastery.gain(true) and mastery.exp_for(true) == 0, "9단계에서 멈춘다(더 얻는 경험치 0)")
 	var copy := MixMastery.new()
 	copy.load_dict(mastery.to_dict())
 	expect_true(copy.level == mastery.level, "저장해도 단계가 남는다")

@@ -8,14 +8,21 @@ var level := 1
 var exp_points := 0
 
 
+## 믹스 한 번에 얻는 경험치(성공 100% · 실패 50%). 마지막 단계면 0.
+func exp_for(success: bool) -> int:
+	if is_max():
+		return 0
+	var amount := GameConfig.MIX_MASTERY_EXP_PER_MIX
+	if not success:
+		amount = roundi(amount * GameConfig.MIX_MASTERY_FAIL_EXP_RATE)
+	return amount
+
+
 ## 믹스 한 번의 경험치를 더한다. 단계가 올랐으면 true.
 func gain(success: bool) -> bool:
 	if is_max():
 		return false
-	var amount := GameConfig.MIX_MASTERY_EXP_PER_MIX
-	if not success:
-		amount = roundi(amount * GameConfig.MIX_MASTERY_FAIL_EXP_RATE)
-	exp_points += amount
+	exp_points += exp_for(success)
 	var leveled := false
 	while not is_max() and exp_points >= exp_to_next():
 		exp_points -= exp_to_next()

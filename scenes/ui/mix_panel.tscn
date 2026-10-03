@@ -108,12 +108,29 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 150)
 layout_mode = 2
 
-[node name="Swap" type="Button" parent="Frame/Margin/Rows/Body/Left/Pair"]
+[node name="MainDetail" type="Label" parent="Frame/Margin/Rows/Body/Left/Pair/MainBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="SwapBox" type="VBoxContainer" parent="Frame/Margin/Rows/Body/Left/Pair"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 6
+
+[node name="Swap" type="Button" parent="Frame/Margin/Rows/Body/Left/Pair/SwapBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(130, 56)
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_horizontal = 4
 focus_mode = 0
+
+[node name="SwapResult" type="Label" parent="Frame/Margin/Rows/Body/Left/Pair/SwapBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="SubBox" type="VBoxContainer" parent="Frame/Margin/Rows/Body/Left/Pair"]
 layout_mode = 2
@@ -127,6 +144,11 @@ horizontal_alignment = 1
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 150)
 layout_mode = 2
+
+[node name="SubDetail" type="Label" parent="Frame/Margin/Rows/Body/Left/Pair/SubBox"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
 
 [node name="MaterialBar" type="HBoxContainer" parent="Frame/Margin/Rows/Body/Left"]
 layout_mode = 2
@@ -301,10 +323,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -250.0
-offset_right = 300.0
-offset_bottom = 250.0
+offset_left = -310.0
+offset_top = -300.0
+offset_right = 310.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -325,9 +347,15 @@ unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 
+[node name="CardLost" type="HBoxContainer" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
 [node name="CardPortrait" type="TextureRect" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(130, 130)
+custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 size_flags_horizontal = 4
 expand_mode = 1
@@ -338,7 +366,18 @@ unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1
 
+[node name="CardKind" type="Label" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
 [node name="CardInfo" type="Label" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CardPassive" type="Label" parent="ResultLayer/ResultCard/CardMargin/CardRows"]
 unique_name_in_owner = true
 layout_mode = 2
 horizontal_alignment = 1

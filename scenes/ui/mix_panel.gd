@@ -2,13 +2,15 @@ class_name MixPanel
 extends Control
 ## 믹스창(화면 전체 + 뒤를 어둡게, 사용자 정리 2026-10-03 · 기획서 4장 믹스 세부 규칙).
 ## 위: 공식 한 줄(♀ 고추룡 + ♂ 깡통거북 → 돌구아나) + 숙련도 막대 + 닫기.
-## 왼쪽 위: 주 · 보조 코어 칸(크게) + 주↔보조 버튼. 칸을 누르면 비운다.
-## 왼쪽 아래: 재료 목록(종족 필터 · 정렬). 고를 수 없는 코어(주 코어 자신 · 같은 성별 · 잠금 · 파티 · 변이)는 흐리게 + 까닭.
+## 왼쪽 위: 주 · 보조 코어 칸(크게, 아래에 Lv · 접미사 · 성별) + 주↔보조 버튼(아래에 "바꾸면 → 결과"). 칸을 누르면 비운다.
+## 왼쪽 아래: 재료 목록(종족 필터 · 정렬, 남은 높이에 2~3줄이 들어가게 칸을 키운다).
+##   고를 수 없는 코어(주 코어 자신 · 같은 성별 · 잠금 · 파티 · 변이)는 흐리게(이름은 그대로) + 까닭 배지. 고른 칸은 흰 테두리 + 체크.
 ##   빈 칸부터 채운다(주 코어가 비었으면 주 코어, 아니면 보조 코어).
 ## 오른쪽: 결과 미리보기(초상화 · 종족·역할·등급 · 예상 레벨 · 접미사 계승 확률 · 계승 스탯 · 나이 · 성별 확률),
 ##   유산 패시브 카드 두 장, 성공 확률 내역(기본 + 숙련 + 마크), 비용, 실패 경고, 큰 믹스하기 버튼.
-## 빛나는 코어나 높은 레벨 재료를 쓰면 한 번 더 묻는다. 성공하면 번쩍임 + NEW 결과 카드(파티에 넣기 / 정보 보기 / 계속 믹스),
-## 실패하면 붉은 번쩍임 + 흔들리는 실패 카드. 실제 처리는 Workshop.mix(숙련도 · 도감도 함께).
+## 빛나는 코어나 높은 레벨 재료를 쓰면 한 번 더 묻는다. 성공하면 번쩍임 + NEW 결과 카드(이름 · 종족·역할·등급 · 고른 패시브 ·
+## 얻은 숙련 경험치, 파티에 넣기(강조) / 정보 보기 / 계속 믹스), 실패하면 붉은 번쩍임 + 같은 모양의 흔들리는 실패 카드
+## (잃은 재료 · 얻은 숙련 경험치). 실제 처리는 Workshop.mix(숙련도 · 도감도 함께).
 ## 결과 초상화는 종족 그림(TribeDb.portrait)이고, 힌트는 같은 그림을 검게 칠한 실루엣 + 종족 이름이다.
 ## 자리·크기는 mix_panel.tscn을 에디터에서 열어 바꾼다. 연출 시간 등 수치는 GameConfig.MIX_*.
 
@@ -30,6 +32,14 @@ const BUTTON_FONT_SIZE := 19
 const GO_FONT_SIZE := 26
 const SECRET_FONT_SIZE := 64
 const SLOT_CARD_SIZE := Vector2(144, 144)
+## 재료 목록 칸 크기(최소 ~ 최대 px): 재료가 모두 들어가는 가장 큰 크기로 키운다. 다 안 들어가면 MATERIAL_ROWS줄이 보이는 크기로
+## 두고 굴려 본다. 세로 스크롤 막대 자리(px)
+const MATERIAL_ROWS := 3
+const MATERIAL_CARD_MIN := 96.0
+const MATERIAL_CARD_MAX := 150.0
+const SCROLL_BAR_ROOM := 14.0
+## 실패 카드의 잃은 재료 칸 크기
+const LOST_CARD_SIZE := Vector2(110, 110)
 const PORTRAIT_BORDER := 2
 const CHOICE_CORNER := 8
 
@@ -46,6 +56,11 @@ var _workshop: Workshop
 var _confirm: ConfirmBox
 var _preview_values: Array[Label] = []
 var _busy := false  # 연출 중에는 누름을 받지 않는다
+var _material_side := CoreCard.SIZE.x  # 재료 칸 한 변(px, _layout_materials가 정한다)
+var _own_passive := ""
+var _legacy_passive := ""
+var _mixed_main: CoreItem  # 마지막 믹스에 쓴 재료(실패 카드의 잃은 재료)
+var _mixed_sub: CoreItem
 
 @onready var _dim: ColorRect = %Dim
 @onready var _frame: PanelContainer = %Frame
@@ -58,7 +73,10 @@ var _busy := false  # 연출 중에는 누름을 받지 않는다
 @onready var _sub_label: Label = %SubLabel
 @onready var _main_slot: CenterContainer = %MainSlot
 @onready var _sub_slot: CenterContainer = %SubSlot
+@onready var _main_detail: Label = %MainDetail
+@onready var _sub_detail: Label = %SubDetail
 @onready var _swap: Button = %Swap
+@onready var _swap_result: Label = %SwapResult
 @onready var _material_title: Label = %MaterialTitle
 @onready var _tribe_filter: OptionButton = %TribeFilter
 @onready var _sort: OptionButton = %Sort
@@ -83,9 +101,12 @@ var _busy := false  # 연출 중에는 누름을 받지 않는다
 @onready var _result_dim: ColorRect = %ResultDim
 @onready var _result_card: PanelContainer = %ResultCard
 @onready var _new_badge: Label = %NewBadge
+@onready var _card_lost: HBoxContainer = %CardLost
 @onready var _card_portrait: TextureRect = %CardPortrait
 @onready var _card_title: Label = %CardTitle
+@onready var _card_kind: Label = %CardKind
 @onready var _card_info: Label = %CardInfo
+@onready var _card_passive: Label = %CardPassive
 @onready var _card_mastery: Label = %CardMastery
 @onready var _card_party: HBoxContainer = %CardParty
 @onready var _to_party: Button = %ToParty
@@ -103,8 +124,9 @@ func _ready() -> void:
 	_title.text = UiText.MIX_TITLE
 	UiKit.style_label(_formula, FORMULA_FONT_SIZE, Palette.TEXT)
 	UiKit.style_caption(_mastery_label, SMALL_FONT_SIZE)
-	for label: Label in [_main_label, _sub_label, _material_title]:
+	for label: Label in [_main_label, _sub_label, _material_title, _main_detail, _sub_detail]:
 		UiKit.style_caption(label, SMALL_FONT_SIZE)
+	UiKit.style_label(_swap_result, SMALL_FONT_SIZE, Palette.TEXT)
 	_main_label.text = UiText.MIX_MAIN
 	_sub_label.text = UiText.MIX_SUB
 	_material_title.text = UiText.MIX_MATERIALS
@@ -143,12 +165,21 @@ func _ready() -> void:
 	_new_badge.text = UiText.MIX_RESULT_NEW
 	UiKit.style_label(_card_title, RESULT_NAME_FONT_SIZE, Palette.TEXT)
 	_card_title.add_theme_font_override("font", UiKit.bold_font())
+	UiKit.style_caption(_card_kind, TEXT_FONT_SIZE)
 	UiKit.style_label(_card_info, TEXT_FONT_SIZE, Palette.TEXT)
+	UiKit.style_label(_card_passive, TEXT_FONT_SIZE, Palette.TEXT)
 	UiKit.style_label(_card_mastery, SMALL_FONT_SIZE, Palette.MIX_MASTERY_BAR)
+	# 결과 카드에서는 "파티에 넣기"만 강조색
+	var accent := _choice_box(Palette.MIX_ACCENT_BG, Palette.MIX_ACCENT_BORDER)
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		_to_party.add_theme_stylebox_override(state, accent)
+	_to_party.add_theme_color_override("font_color", Palette.TEXT)
+	_to_party.add_theme_color_override("font_hover_color", Palette.TEXT)
+	_to_party.add_theme_font_override("font", UiKit.bold_font())
 	_close.pressed.connect(_on_close)
 	_swap.pressed.connect(_on_swap)
 	_go.pressed.connect(_on_go)
-	_material_scroll.resized.connect(_fit_columns)
+	_material_scroll.resized.connect(func() -> void: _layout_materials(_materials.get_child_count()))
 	_tribe_filter.item_selected.connect(func(_index: int) -> void: _rebuild_materials())
 	_sort.item_selected.connect(func(_index: int) -> void: _rebuild_materials())
 	_to_party.pressed.connect(_on_to_party)
@@ -183,26 +214,30 @@ func _build_preview() -> void:
 		_preview_values.append(value)
 
 
-## 유산 패시브 카드 두 장: 둘 중 하나만 눌리는 버튼(고른 쪽은 금빛 테두리).
+## 유산 패시브 카드 두 장: 둘 중 하나만 눌리는 버튼. 고른 쪽은 흰 테두리 + 체크(노랑은 빛나는 코어 전용, 사용자 결정 2026-10-03).
 func _build_choices() -> void:
 	for choice: Button in [_keep_own, _keep_legacy]:
 		var off := _choice_box(Palette.CARD_BG, Palette.CARD_BORDER)
-		var on := _choice_box(Palette.CARD_SELECTED_BG, Palette.CORE_SHINE)
+		var on := _choice_box(Palette.CARD_SELECTED_BG, Palette.CARD_SELECTED_BORDER)
 		for state: String in ["normal", "hover", "focus", "disabled"]:
 			choice.add_theme_stylebox_override(state, off)
 		for state: String in ["pressed", "hover_pressed"]:
 			choice.add_theme_stylebox_override(state, on)
-		choice.add_theme_color_override("font_pressed_color", Palette.CORE_SHINE)
-		choice.add_theme_color_override("font_hover_pressed_color", Palette.CORE_SHINE)
+		choice.add_theme_color_override("font_color", Palette.TEXT_LABEL)
+		choice.add_theme_color_override("font_hover_color", Palette.TEXT_LABEL)
+		choice.add_theme_color_override("font_pressed_color", Palette.TEXT)
+		choice.add_theme_color_override("font_hover_pressed_color", Palette.TEXT)
 	var group := ButtonGroup.new()
 	_keep_own.button_group = group
 	_keep_legacy.button_group = group
 	_keep_own.toggled.connect(func(on: bool) -> void:
 		if on:
-			keep_legacy = false)
+			keep_legacy = false
+			_label_passives())
 	_keep_legacy.toggled.connect(func(on: bool) -> void:
 		if on:
-			keep_legacy = true)
+			keep_legacy = true
+			_label_passives())
 
 
 ## 재료 목록 위: 종족 필터(전체 + 종족 8개) · 정렬(레벨 · 등급 · 빛나는).
@@ -285,9 +320,12 @@ func refresh() -> void:
 		sub_core = null
 	_show_slot(_main_slot, main_core, true)
 	_show_slot(_sub_slot, sub_core, false)
+	_main_detail.text = _slot_detail(main_core)
+	_sub_detail.text = _slot_detail(sub_core)
 	var has_pair := main_core != null and sub_core != null
 	var result := Mix.result_id(main_core, sub_core) if has_pair else ""
 	var reveal := Mix.reveal_of(result)
+	_swap_result.text = UiText.MIX_SWAP_RESULT % _swapped_outcome() if has_pair else ""
 	_formula.text = UiText.MIX_FORMULA % [_side(main_core, UiText.MIX_MAIN), _side(sub_core, UiText.MIX_SUB), _outcome(result, reveal, has_pair)]
 	_show_mastery()
 	_show_result(result, reveal, has_pair)
@@ -305,6 +343,26 @@ static func _side(item: CoreItem, empty_name: String) -> String:
 	if item == null:
 		return UiText.MIX_FORMULA_EMPTY % empty_name
 	return UiText.MIX_FORMULA_SIDE % [UiText.GENDER_SYMBOLS[item.gender], item.species().name]
+
+
+## 주·보조 칸 아래 한 줄: Lv · 접미사 · 성별 기호(빈 칸이면 "").
+static func _slot_detail(item: CoreItem) -> String:
+	if item == null:
+		return ""
+	return UiText.MIX_SLOT_DETAIL % [item.level, SuffixDb.display_name(item.suffix_id), UiText.GENDER_SYMBOLS[item.gender]]
+
+
+## 주·보조를 바꾸면 나올 결과: 공개 공식이면 이름, 아니면(힌트 · 비밀 · 공식 없음) ?
+func _swapped_outcome() -> String:
+	var swapped := Mix.result_id(sub_core, main_core)
+	if swapped == "" or Mix.reveal_of(swapped) != Mix.Reveal.OPEN:
+		return UiText.MIX_SECRET
+	return HenchDb.get_species(swapped).name
+
+
+## 주·보조를 바꾸면 나올 결과 글자(실행 검사용).
+func swap_result_text() -> String:
+	return _swap_result.text
 
 
 ## 공식의 결과 쪽: 공개 = 이름, 힌트 = ???, 비밀 · 공식 없음 · 재료가 덜 참 = ?
@@ -373,11 +431,18 @@ func _show_preview(result: String, reveal: Mix.Reveal) -> void:
 
 ## 유산 패시브 카드: 자기 패시브(공개일 때만 이름) / 주 코어의 지금 패시브.
 func _show_passives(result: String, reveal: Mix.Reveal) -> void:
-	var own := HenchDb.get_species(result).passive if result != "" and reveal == Mix.Reveal.OPEN else UiText.MIX_HINT_NAME
-	var legacy := HenchDb.get_species(main_core.passive_owner_id()).passive if main_core != null else UiText.MIX_HINT_NAME
-	_keep_own.text = UiText.MIX_KEEP_OWN % own
-	_keep_legacy.text = UiText.MIX_KEEP_LEGACY % legacy
+	_own_passive = HenchDb.get_species(result).passive if result != "" and reveal == Mix.Reveal.OPEN else UiText.MIX_HINT_NAME
+	_legacy_passive = HenchDb.get_species(main_core.passive_owner_id()).passive if main_core != null else UiText.MIX_HINT_NAME
 	_keep_legacy.disabled = main_core == null
+	_label_passives()
+
+
+## 유산 패시브 카드 글자: 고른 쪽 앞에 체크.
+func _label_passives() -> void:
+	var own := UiText.MIX_KEEP_OWN % _own_passive
+	var legacy := UiText.MIX_KEEP_LEGACY % _legacy_passive
+	_keep_own.text = own if keep_legacy else UiText.MIX_CHOSEN % own
+	_keep_legacy.text = UiText.MIX_CHOSEN % legacy if keep_legacy else legacy
 
 
 ## 성공 확률(합)과 내역(기본 + 숙련 + 마크), 비용. 비밀 공식은 확률을 ?로 둔다.
@@ -424,18 +489,42 @@ func _rebuild_materials() -> void:
 		if tribe_index <= 0 or item.species().tribe == HenchSpecies.TRIBES[tribe_index - 1]:
 			list.append(item)
 	list.sort_custom(_sorter(maxi(_sort.selected, 0) as Sort))
+	_layout_materials(list.size())
 	for item in list:
-		var card := CoreCard.create(item)
+		var card := CoreCard.create(item, Vector2.ONE * _material_side)
 		card.block_reason = _material_reason(item)
 		card.selected = item == main_core or item == sub_core
 		card.pressed.connect(choose.bind(item))
 		_materials.add_child(card)
 
 
-## 재료 목록의 열 수를 목록 폭에 맞춘다(휴대폰이 길면 한 줄에 더 많이).
-func _fit_columns() -> void:
-	var step := CoreCard.SIZE.x + _materials.get_theme_constant("h_separation")
-	_materials.columns = maxi(1, floori((_material_scroll.size.x + _materials.get_theme_constant("h_separation")) / step))
+## 재료 목록 칸 크기와 열 수를 남은 자리에 맞춘다: count개가 스크롤 없이 모두 들어가는 가장 큰 칸(2~3줄로 왼쪽 아래를 채운다).
+## 너무 많아 다 안 들어가면 MATERIAL_ROWS줄이 보이는 크기로 두고 굴린다. 휴대폰이 길면 한 줄에 더 많이.
+func _layout_materials(count: int) -> void:
+	var gap := float(_materials.get_theme_constant("h_separation"))
+	var width := _material_scroll.size.x - SCROLL_BAR_ROOM
+	var height := _material_scroll.size.y
+	if width <= 0.0 or height <= 0.0:
+		return
+	var side := clampf((height - gap * (MATERIAL_ROWS - 1)) / MATERIAL_ROWS, MATERIAL_CARD_MIN, MATERIAL_CARD_MAX)
+	var biggest := MATERIAL_CARD_MAX
+	while biggest > side:
+		var fit_columns := maxi(1, floori((width + gap) / (biggest + gap)))
+		var rows := ceili(float(maxi(count, 1)) / fit_columns)
+		if rows * (biggest + gap) - gap <= height:
+			side = biggest
+			break
+		biggest -= 2.0
+	side = floorf(minf(side, width))
+	_material_side = side
+	_materials.columns = maxi(1, floori((width + gap) / (side + gap)))
+	for card: CoreCard in _materials.get_children():
+		card.resize_to(Vector2.ONE * side)
+
+
+## 재료 칸 한 변(px, 실행 검사용).
+func material_side() -> float:
+	return _material_side
 
 
 ## 재료 칸에 붙일 까닭(고를 수 있으면 "").
@@ -505,6 +594,8 @@ func _start_mix() -> void:
 
 
 func _finish_mix() -> void:
+	_mixed_main = main_core
+	_mixed_sub = sub_core
 	last_born = _workshop.mix(main_core, sub_core, keep_legacy)
 	main_core = null
 	sub_core = null
@@ -521,7 +612,9 @@ func _flash_screen(color: Color) -> void:
 	create_tween().tween_property(_flash, "color:a", 0.0, GameConfig.MIX_FX_FLASH_SECONDS)
 
 
-## 결과 카드: 성공 = (NEW) + 초상화 + 이름 + LV·나이·성별 + 계승 스탯 + 버튼 셋, 실패 = 실패 글자 + 흔들림 + 계속 믹스.
+## 결과 카드(성공 · 실패 같은 모양): 이름 + 종족·역할·등급 + 내용 + 패시브 + 얻은 숙련 경험치 + 버튼.
+## 성공 = (NEW) 초상화 · LV·나이·성별 · 계승 스탯 · 고른 패시브, 버튼 셋(파티에 넣기만 강조).
+## 실패 = 잃은 재료 두 칸 · "재료 둘이 사라졌습니다", 흔들림, 계속 믹스만.
 func _show_result_card() -> void:
 	_result_layer.visible = true
 	_card_party.visible = false
@@ -529,23 +622,36 @@ func _show_result_card() -> void:
 	var success := born != null
 	_new_badge.visible = success and _workshop.last_mix_new
 	_card_portrait.visible = success
+	_card_lost.visible = not success
+	_card_passive.visible = success
 	_to_party.visible = success
 	_show_info.visible = success
-	_card_mastery.text = (UiText.MIX_MASTERY_UP % _workshop.mastery.level) if _workshop.last_mix_level_up else ""
+	var mastery := _workshop.mastery
+	var exp_text := UiText.MIX_MASTERY_MAX if mastery.is_max() else UiText.MIX_MASTERY_EXP % [mastery.exp_points, mastery.exp_to_next()]
+	_card_mastery.text = UiText.MIX_RESULT_EXP % [_workshop.last_mix_exp, exp_text]
+	if _workshop.last_mix_level_up:
+		_card_mastery.text += "\n" + UiText.MIX_MASTERY_UP % mastery.level
 	_result_card.pivot_offset = _result_card.size * 0.5
 	if success:
 		var species := born.species()
+		var tribe := TribeDb.get_tribe(species.tribe)
 		_card_portrait.texture = TribeDb.portrait(species.tribe)
 		_card_title.text = born.title()
 		_card_title.add_theme_color_override("font_color", Palette.TEXT)
-		_card_info.text = UiText.MIX_RESULT_INFO % [born.level, UiText.AGE_NAMES[born.age], UiText.GENDER_NAMES[born.gender]]
+		_card_kind.text = UiText.INFO_KIND % [tribe.name, UiText.ROLE_NAMES.get(species.role, species.role), UiText.GRADE_NAMES.get(species.grade, species.grade)]
+		_card_info.text = UiText.MIX_RESULT_INFO % [born.level, UiText.AGE_NAMES[born.age], UiText.GENDER_BADGE % [UiText.GENDER_SYMBOLS[born.gender], UiText.GENDER_NAMES[born.gender]]]
 		_card_info.text += "\n" + UiText.INFO_INHERIT % [SuffixDb.stat_name(born.inherit_stat), born.inherit_value]
+		var passive_from := born.passive_owner_id()
+		var from := UiText.MIX_RESULT_PASSIVE_OWN if passive_from == born.species_id else UiText.MIX_RESULT_PASSIVE_LEGACY % HenchDb.get_species(passive_from).name
+		_card_passive.text = UiText.MIX_RESULT_PASSIVE % [HenchDb.get_species(passive_from).passive, from]
 		_result_card.scale = Vector2.ONE * 0.6
 		create_tween().tween_property(_result_card, "scale", Vector2.ONE, GameConfig.MIX_FX_POP_SECONDS).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	else:
 		_card_title.text = UiText.MIX_FAIL_TITLE
 		_card_title.add_theme_color_override("font_color", Palette.TEXT_WARNING)
-		_card_info.text = UiText.MIX_FAIL_INFO
+		_card_kind.text = UiText.MIX_FAIL_INFO
+		_card_info.text = UiText.MIX_FAIL_LOST % [_mixed_main.title(), _mixed_sub.title()]
+		_show_lost_cards()
 		_result_card.scale = Vector2.ONE
 		var home := _result_card.position
 		var shake := create_tween()
@@ -554,6 +660,23 @@ func _show_result_card() -> void:
 			var offset := GameConfig.MIX_FX_SHAKE_PIXELS * (1.0 - i / 5.0) * (1.0 if i % 2 == 0 else -1.0)
 			shake.tween_property(_result_card, "position:x", home.x + offset, step)
 		shake.tween_property(_result_card, "position:x", home.x, step)
+
+
+## 실패 카드의 잃은 재료 두 칸(흐리게 + "사라짐" 배지, 누를 수 없음).
+func _show_lost_cards() -> void:
+	for child in _card_lost.get_children():
+		_card_lost.remove_child(child)
+		child.queue_free()
+	for item: CoreItem in [_mixed_main, _mixed_sub]:
+		var card := CoreCard.create(item, LOST_CARD_SIZE)
+		card.block_reason = UiText.MIX_LOST_BADGE
+		_card_lost.add_child(card)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 칸이 _ready에서 정한 값을 덮어쓴다
+
+
+## 결과 카드 글자들(실행 검사용): 제목 · 종류 줄 · 내용 · 패시브 · 숙련 경험치.
+func result_card_texts() -> PackedStringArray:
+	return PackedStringArray([_card_title.text, _card_kind.text, _card_info.text, _card_passive.text, _card_mastery.text])
 
 
 ## 결과 카드가 떠 있나(실행 검사용).

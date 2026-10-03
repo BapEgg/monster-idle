@@ -325,6 +325,13 @@ func _run(main: Node) -> void:
 	_expect(mixer.sub_core == kkang and result_name.text == "돌구아나", "보조 칸 = 깡통거북, 결과 미리보기 = 돌구아나(공개)")
 	_expect(mixer.formula_text() == UiText.MIX_FORMULA % ["♀ 고추룡", "♂ 깡통거북", "돌구아나"], "공식 한 줄: %s" % mixer.formula_text())
 	_expect(chance.text == UiText.MIX_CHANCE % (UiText.PERCENT % 85), "성공 확률 85%(하급→중급 기본, 숙련 1단계)")
+	var main_detail := mixer.find_child("MainDetail", true, false) as Label
+	_expect(main_detail.text == UiText.MIX_SLOT_DETAIL % [gochu.level, SuffixDb.display_name(gochu.suffix_id), "♀"], "주 칸 아래: %s" % main_detail.text)
+	var swapped_name := "기관코끼리" if Mix.reveal_of("gigwankokkiri") == Mix.Reveal.OPEN else UiText.MIX_SECRET
+	_expect(mixer.swap_result_text() == UiText.MIX_SWAP_RESULT % swapped_name, "주↔보조 옆: %s" % mixer.swap_result_text())
+	_expect(mixer.material_side() > CoreCard.SIZE.x and mixer.material_card(kkang).selected, "재료 칸을 남은 자리에 맞게 키움(%d px), 고른 칸 표시" % mixer.material_side())
+	var keep_own := mixer.find_child("KeepOwn", true, false) as Button
+	_expect(keep_own.button_pressed and keep_own.text.begins_with(UiText.MIX_CHOSEN % ""), "유산 패시브: 고른 쪽(자기 패시브)에 체크")
 	await _save_shot("mix")
 	await _seconds(0.2)
 	# 종족 필터: 용족만
@@ -351,11 +358,29 @@ func _run(main: Node) -> void:
 	_expect(wallet.gold == gold_before - Mix.gold_cost("gigwankokkiri") and workshop.mastery.exp_points > 0, "골드가 비용만큼 나가고 숙련 경험치가 오름")
 	await _save_shot("mix_result")
 	await _seconds(0.2)
+	var card_texts := mixer.result_card_texts()
+	_expect(workshop.last_mix_exp > 0 and card_texts[4].contains("+%d" % workshop.last_mix_exp), "결과 카드: 얻은 숙련 경험치 (%s)" % card_texts[4].replace("\n", " / "))
 	if born != null:
 		_expect(born.species_id == "gigwankokkiri" and mixer.find_child("NewBadge", true, false).visible and born.inherit_stat == "mighty", "성공: NEW · 도감 등록, 계승 스탯 = 보조(고추룡) 접미사의 공격")
+		_expect(card_texts[1].contains(UiText.ROLE_NAMES[born.species().role]) and card_texts[3].contains(born.species().passive), "성공 카드: 종족·역할·등급(%s), 고른 패시브(%s)" % [card_texts[1], card_texts[3]])
+		# 실패 카드도 같은 모양인지 본다(연출 확인용으로 실패 카드를 한 번 띄운다)
+		mixer.last_born = null
+		mixer.call("_show_result_card")
+		await _physics_frames(3)
+		card_texts = mixer.result_card_texts()
+		var lost_row := mixer.find_child("CardLost", true, false) as HBoxContainer
+		_expect(lost_row.visible and lost_row.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()] and not (mixer.find_child("ToParty", true, false) as Button).visible, "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치, 계속 믹스만")
+		await _seconds(GameConfig.MIX_FX_SHAKE_SECONDS + 0.1)
+		await _save_shot("mix_fail")
+		await _seconds(0.2)
+		mixer.last_born = born
+		mixer.call("_show_result_card")
+		await _seconds(GameConfig.MIX_FX_POP_SECONDS + 0.1)
 		await _tap(_center_of(mixer, "ShowInfo"))
 		_expect(not mixer.visible and info.item == born and (info.find_child("Bonus", true, false) as Label).visible, "정보 보기 → 가방 창에서 태어난 코어(계승 줄)")
 	else:
+		var lost_cards := mixer.find_child("CardLost", true, false) as HBoxContainer
+		_expect(lost_cards.visible and lost_cards.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()], "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치")
 		await _tap(_center_of(mixer, "Again"))
 		_expect(mixer.visible and not mixer.is_showing_result(), "실패 → 계속 믹스 → 믹스창으로")
 		await _tap(_center_of(mixer, "Close"))

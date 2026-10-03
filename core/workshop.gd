@@ -13,8 +13,9 @@ var wallet: Wallet
 var mastery := MixMastery.new()
 var codex := Codex.new()
 var rng := RandomNumberGenerator.new()
-## 마지막 믹스 결과: 태어난 종이 도감에 처음 등록됐나 / 숙련도 단계가 올랐나(결과 카드에 보인다)
+## 마지막 믹스 결과: 태어난 종이 도감에 처음 등록됐나 / 얻은 숙련 경험치 / 숙련도 단계가 올랐나(결과 카드에 보인다)
 var last_mix_new := false
+var last_mix_exp := 0
 var last_mix_level_up := false
 
 
@@ -45,6 +46,7 @@ func mix(main: CoreItem, secondary: CoreItem, keep_legacy: bool) -> CoreItem:
 	if born != null:
 		last_mix_new = codex.register(born.species_id)
 		bag.add(born)
+	last_mix_exp = mastery.exp_for(born != null)
 	last_mix_level_up = mastery.gain(born != null)
 	acted.emit()
 	return born
