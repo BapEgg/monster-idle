@@ -4,6 +4,9 @@ extends RefCounted
 ## 규칙(확률·비용·공식)은 Mix가 정하고, 여기서는 재료를 없애고 골드를 내는 일까지 한다.
 ## 사용자 결정(2026-10-02): 믹스는 성공 확률이 있고, 실패하면 두 재료 코어가 모두 사라진다.
 
+## 믹스 · 분해 · 잠금을 실제로 했을 때(저장을 앞당기는 데 쓴다).
+signal acted
+
 var bag: Bag
 var wallet: Wallet
 var rng := RandomNumberGenerator.new()
@@ -34,6 +37,7 @@ func mix(main: CoreItem, secondary: CoreItem, keep_legacy: bool) -> CoreItem:
 	bag.remove(secondary)
 	if born != null:
 		bag.add(born)
+	acted.emit()
 	return born
 
 
@@ -49,9 +53,11 @@ func dismantle(item: CoreItem) -> int:
 	var shards := Mix.dismantle_shards(item)
 	bag.remove(item)
 	wallet.add_shards(shards)
+	acted.emit()
 	return shards
 
 
 func toggle_lock(item: CoreItem) -> void:
 	item.locked = not item.locked
 	bag.changed.emit()
+	acted.emit()

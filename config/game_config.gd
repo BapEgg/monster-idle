@@ -60,7 +60,7 @@ const DOUBLE_TAP_SECONDS := 0.35
 const HP_TRAIL_SPEED := 0.6
 
 # ─── 사냥 방식 / 손대면 수동 ───────────────────────
-## 처음 켤 때의 사냥 방식(풀오토 · 세미오토 · 수동, 오토 버튼으로 바꾼다). 저장 기능이 생기면 마지막 선택을 기억한다.
+## 처음 켤 때의 사냥 방식(풀오토 · 세미오토 · 수동, 오토 버튼으로 바꾼다). 그 뒤로는 마지막 선택을 저장해 기억한다.
 const START_CONTROL_MODE := AutoControl.Mode.FULL_AUTO
 ## 손을 뗀 뒤 몇 초 지나면 자동으로 돌아오나. 0 = 손 떼는 즉시 자동.
 ## 사용자 결정(2026-10-02): 바로 자동으로 돌아온다(기획서의 3·5·10초 대기 대신 0).
@@ -232,6 +232,16 @@ const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2
 const DISMANTLE_SHARDS_VARIANT_BONUS := 4
 
+# ─── 저장 (나중에 Firebase로 갈아 끼운다, 코드 규칙 9) ──────
+## 기기 안 저장 파일. user:// = Godot가 게임마다 따로 주는 사용자 데이터 폴더
+## (에디터 메뉴 "프로젝트 → 사용자 데이터 폴더 열기"로 열린다. 이 파일을 지우면 처음부터 시작).
+const SAVE_PATH := "user://save.json"
+## 묶어서 저장하기(기획서 9장: 처치마다 저장하면 서버 비용이 폭증한다).
+## 바뀐 것이 생기면 이 시간(초) 뒤에 한 번에 저장한다(임시). 처치·골드·코어 줍기가 여기에 묶인다.
+const SAVE_INTERVAL_SECONDS := 30.0
+## 사용자가 직접 한 일(믹스 · 분해 · 잠금 · 파티 편성 · 사냥 방식)은 이 시간(초) 뒤에 저장한다(임시). 연달아 하면 한 번에 묶인다.
+const SAVE_SOON_SECONDS := 2.0
+
 # ─── 개발 확인용 ──────────────────────────────────
-## 켜면 게임을 켤 때마다 data/dev_starter.json의 코어와 골드를 가방에 넣는다(아직 저장이 없어서). 출시 전에 끈다.
+## 켜면 저장이 없을 때(처음 켤 때) data/dev_starter.json의 코어와 골드를 가방에 넣는다. 출시 전에 끈다.
 const DEV_STARTER_BAG := true

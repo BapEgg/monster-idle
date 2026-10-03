@@ -1,6 +1,6 @@
 extends SceneTree
 ## 메인 장면을 실제로 띄워 키보드·조이스틱(터치·마우스) 이동, 손대면 수동, 오토 버튼·공격 버튼,
-## 몹을 눌러 대상 지정, 선공 감지·기습, 자동 사냥이 되는지 확인한다.
+## 몹을 눌러 대상 지정, 선공 감지·기습, 자동 사냥, 가방·믹스, 저장하고 다시 켜기가 되는지 확인한다.
 ## 실행: <Godot 콘솔> --path <프로젝트> --script res://tests/smoke_main.gd [-- --shot=<png 경로>]
 ## 창이 30초쯤 떴다 닫힌다(자동 사냥은 시간을 4배로 돌린다).
 ## --shot 을 주면 싸우는 장면을 그 경로에, 대상을 지정한 장면을 "<이름>_target.png",
@@ -9,6 +9,9 @@ extends SceneTree
 
 ## 한 번에 걷는 물리 프레임 수(60프레임 = 1초).
 const WALK_FRAMES := 30
+const MAIN_SCENE := "res://scenes/main/main.tscn"
+## 실행 검사 전용 저장 파일(사용자의 진짜 저장 user://save.json을 건드리지 않는다). 시작할 때 지워 처음 켠 상태로 시작한다.
+const SMOKE_SAVE_PATH := "user://smoke_save.json"
 
 var _failures := PackedStringArray()
 var _joystick_down := false
@@ -19,7 +22,10 @@ func _initialize() -> void:
 	# 마우스는 창을 통과하고(왼쪽 위 1px만 남김), 창은 키보드 포커스를 받지 않는다.
 	DisplayServer.window_set_mouse_passthrough(PackedVector2Array([Vector2.ZERO, Vector2(1, 0), Vector2(0, 1)]))
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
-	var main: Node = load("res://scenes/main/main.tscn").instantiate()
+	var store := LocalSaveStore.new(SMOKE_SAVE_PATH)
+	store.erase()
+	var main: Node = load(MAIN_SCENE).instantiate()
+	main.set("save_store", store)
 	root.add_child(main)
 	_run.call_deferred(main)
 
@@ -291,6 +297,10 @@ func _run(main: Node) -> void:
 		_expect(info.item != null and info.item.species_id == "dolguana" and info.item.main_parent_gender == CoreItem.Gender.FEMALE and birth.visible, "태어난 돌구아나: 주 코어(암컷) 능력치 경향이 정보창에 보임")
 	await _tap(_center_of(hud.confirm_box, "Yes"))
 	_expect(not hud.confirm_box.visible and hud.bag_panel.visible, "알림 확인 → 가방 창으로 돌아옴")
+	# 직접 한 일(믹스)은 잠깐 뒤 저장된다(묶어서 저장 · 앞당김)
+	await _seconds(GameConfig.SAVE_SOON_SECONDS + 0.5)
+	var saved := LocalSaveStore.new(SMOKE_SAVE_PATH).load_data()
+	_expect(saved.get("cores", []).size() == bag.count() and int(saved.get("gold", -1)) == wallet.gold, "믹스하고 %.0f초 뒤 저장됨 (코어 %d개 · 골드 %d)" % [GameConfig.SAVE_SOON_SECONDS, bag.count(), wallet.gold])
 	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.
 	var on_panel := hud.bag_panel.get_global_rect().position + Vector2(40, 70)
 	start = player.position
@@ -332,6 +342,40 @@ func _run(main: Node) -> void:
 	for hench: Hench in main.get("party"):
 		var near := Iso.ground_distance(hench.position, player.position) <= GameConfig.PARTY_LEASH
 		_expect(near or not hench.is_alive(), "%s: 주인공 곁에 있음" % hench.display_name)
+
+	# 10) 저장 → 다시 켜기: 가방(코어 하나하나) · 골드 · 코어 조각 · 파티 · 사냥 방식이 그대로
+	var keep := _find_core(bag, "jinjuryong", CoreItem.Gender.FEMALE)
+	main.call("assign_party", keep, 2)
+	player.control.mode = AutoControl.Mode.SEMI_AUTO
+	wallet.add_gold(1)  # 아직 저장 안 된 변화
+	var expected := []
+	for item in bag.cores:
+		expected.append(item.to_dict())
+	var gold_saved := wallet.gold
+	var shards_saved := wallet.shards
+	main.propagate_notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)  # 창 닫기(X)를 눌렀을 때 오는 알림
+	var on_close := LocalSaveStore.new(SMOKE_SAVE_PATH).load_data()
+	_expect(int(on_close.get("gold", -1)) == gold_saved and on_close.get("cores", []).size() == expected.size(), "창을 닫으면(X) 기다리지 않고 바로 저장")
+	main.queue_free()
+	await process_frame
+	var again: Node = load(MAIN_SCENE).instantiate()
+	again.set("save_store", LocalSaveStore.new(SMOKE_SAVE_PATH))
+	root.add_child(again)
+	await _physics_frames(5)
+	var bag_again: Bag = again.get("bag")
+	var restored := []
+	for item in bag_again.cores:
+		restored.append(item.to_dict())
+	_expect(restored == expected, "다시 켜면 가방이 그대로 (코어 %d개, 시작 가방을 다시 넣지 않음)" % restored.size())
+	var wallet_again: Wallet = again.get("wallet")
+	_expect(wallet_again.gold == gold_saved and wallet_again.shards == shards_saved, "골드 %d · 코어 조각 %d 그대로" % [gold_saved, shards_saved])
+	var party_again: Array = again.get("party")
+	var healer := party_again[2] as Hench
+	_expect(healer.species.id == "jinjuryong" and is_equal_approx(healer.stats.max_hp, UnitStats.from_core(keep).max_hp), "파티 3번 자리 = 진주룡 코어(능력치까지) 그대로")
+	var player_again: Player = again.get_node("Field/Objects/Player")
+	var hud_again: Hud = again.get_node("HUD")
+	_expect(player_again.control.mode == AutoControl.Mode.SEMI_AUTO and hud_again.auto_button.mode == AutoControl.Mode.SEMI_AUTO, "사냥 방식(세미오토)을 기억함")
+	LocalSaveStore.new(SMOKE_SAVE_PATH).erase()
 
 	for failure in _failures:
 		printerr("실패: ", failure)
