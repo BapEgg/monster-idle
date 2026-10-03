@@ -3,7 +3,8 @@ extends Button
 ## 가방 칸 하나(믹스마스터식): 종족 색 보석 아이콘 + 이름, 모서리 배지(나이 · 성별 ♀♂ · 변이 · 잠금/파티).
 ## 칸 테두리 뜻(사용자 결정 2026-10-03): 노랑 = 빛나는 코어, 흰색 + 체크 = 고른 칸, 보라 반짝임 = 변이.
 ## 겹치면 바깥 테두리가 앞의 것(고른 칸 > 빛나는 > 변이)이고, 나머지는 안쪽 고리로 함께 보인다.
-## 누르면 Button의 pressed 신호. 아이콘은 종족 그림(TribeDb.icon, data/tribes.json 경로)이고, 파일이 없으면 보석 도형.
+## 누르면 Button의 pressed 신호. 길게 누르면(GameConfig.LONG_PRESS_SECONDS) long_pressed — 그때는 떼어도 받는 쪽이 고르지 않게
+## long_press_fired를 보고 넘긴다(믹스창 재료 서랍: 길게 누르면 정보 카드). 아이콘은 종족 그림(TribeDb.icon, data/tribes.json 경로)이고, 파일이 없으면 보석 도형.
 
 # 임시 UI 치수(px): 믹스창 칸 / 가방 칸(휴대폰 가로 화면 기준으로 크게)
 const SIZE := Vector2(108, 108)
@@ -46,6 +47,12 @@ var selected := false:
 		queue_redraw()
 
 var _card_size := SIZE
+## 길게 누르기가 일어났나(받는 쪽이 pressed를 넘기고 되돌린다)
+var long_press_fired := false
+var _hold_left := -1.0
+
+## 길게 눌렀을 때
+signal long_pressed
 
 
 static func create(of_item: CoreItem, card_size := SIZE) -> CoreCard:
@@ -70,10 +77,22 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	for state: String in ["normal", "hover", "pressed", "hover_pressed", "focus", "disabled"]:
 		add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	set_process(item != null and item.variant)  # 변이 칸만 반짝이느라 매 프레임 다시 그린다
+	set_process(item != null and item.variant)  # 변이 칸만 반짝이느라 매 프레임 다시 그린다(누르고 있는 동안도)
+	button_down.connect(func() -> void:
+		_hold_left = GameConfig.LONG_PRESS_SECONDS
+		long_press_fired = false
+		set_process(true))
+	button_up.connect(func() -> void:
+		_hold_left = -1.0
+		set_process(item != null and item.variant))
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _hold_left > 0.0:
+		_hold_left -= delta
+		if _hold_left <= 0.0:
+			long_press_fired = true
+			long_pressed.emit()
 	queue_redraw()
 
 

@@ -111,6 +111,8 @@ const MIX_WARNING_BG := Color(0.55, 0.12, 0.12, 0.35)
 const MIX_WARNING_BORDER := Color("ff8a7a")
 ## 확률 내역 말풍선 바탕 · 숙련 표에서 지금 단계 줄 · 레시피 창에서 재료가 있는 공식
 const MIX_TIP_BG := Color(0.18, 0.2, 0.26, 0.98)
+## 서랍이 열렸을 때 그 뒤(연성 장치)를 살짝 가리는 덮개. 누르면 서랍이 닫힌다.
+const MIX_DRAWER_SHADE := Color(0, 0, 0, 0.35)
 const MIX_TABLE_NOW := Color(1, 1, 1, 0.12)
 const MIX_RECIPE_READY := Color("8ee28e")
 ## 주인공 경험치 막대(왼쪽 위): 바탕 · 찬 부분, 레벨업 글자

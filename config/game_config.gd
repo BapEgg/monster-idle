@@ -310,6 +310,10 @@ const MIX_FX_SHAKE_PIXELS := 14.0
 const MIX_WARNING_BIG_TIMES := 3
 ## 성공 확률을 눌렀을 때 내역 말풍선이 떠 있는 시간(초)
 const MIX_TIP_SECONDS := 3.0
+## 믹스창 서랍(재료 · 정보 카드)이 미끄러져 열리고 닫히는 시간(초)
+const MIX_DRAWER_SECONDS := 0.18
+## 길게 누르기로 보는 시간(초): 재료 서랍 안의 코어를 이만큼 누르고 있으면 그 코어 정보 카드
+const LONG_PRESS_SECONDS := 0.45
 ## 분해하면 얻는 코어 조각(임시): 기본 + 빛나는 코어 · 변이 코어 덤
 const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2

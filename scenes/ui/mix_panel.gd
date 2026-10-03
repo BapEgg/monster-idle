@@ -1,13 +1,14 @@
 class_name MixPanel
 extends Control
-## 믹스창(화면 전체 + 뒤를 어둡게, 사용자 결정 2026-10-03: 정보를 버리지 않고 단계로 나눈 3단 배치).
-## 왼쪽 = 재료 그리드(종족 필터 · 정렬). 고를 수 없는 코어(주 코어 자신 · 같은 성별 · 잠금 · 파티 · 변이)는 흐리게 + 까닭 배지,
-##   고른 칸은 흰 테두리 + 체크. 누르면 오른쪽에 그 코어 상세를 보여 주고, 고를 수 있으면 빈 칸부터 채운다(주 → 보조).
-## 가운데 = 연성 장치(플라스크 도형, MixFlasks): 주 · 보조 칸(누르면 비움), 그 사이 ⇄ + "바꾸면 → ○○",
+## 믹스창(화면 전체 + 뒤를 어둡게, 서랍형 — 사용자 결정 2026-10-03).
+## 기본 화면 = 가운데 연성 장치만 크게(플라스크 도형, MixFlasks): 주 · 보조 칸, 그 사이 ⇄ + "바꾸면 → ○○",
 ##   결과 칸(공개 = 그림 + 이름, 힌트 = 실루엣, 비밀 = ?), 성공 확률 숫자(누르면 숫자 위에 내역 말풍선), 비용(늘 보임), 큰 "믹스하기",
 ##   실패 경고(처음 GameConfig.MIX_WARNING_BIG_TIMES번은 크게, 그 뒤로는 버튼 아래 작게), "숙련 n단계 ⓘ"(숙련 창) · "레시피"(레시피 창).
-## 오른쪽 = 정보창(가방 창의 CoreInfo를 버튼 없이 재사용, 맨 위 작은 제목 "재료 정보" / "결과 미리보기").
-##   결과 칸을 누르면 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률).
+## 왼쪽 재료 서랍: 주 또는 보조 칸을 누르면 밀려 나온다(그 칸에 넣을 재료, 종족 필터 · 정렬). 고를 수 없는 코어는 흐리게 + 까닭 배지,
+##   지금 그 칸의 코어는 흰 테두리 + 체크. 재료를 고르면 그 칸에 넣고 서랍이 닫힌다. 서랍 밖을 누르면 닫힌다.
+##   믹스창을 열 때 주 코어가 비어 있으면 서랍을 바로 연다.
+## 오른쪽 정보 카드(가방 창의 CoreInfo를 버튼 없이 재사용): 결과 칸을 누르면 "결과 미리보기"(예상 레벨 · 접미사 확률 · 계승 스탯 ·
+##   나이 · 성별 확률 · 고유 스킬), 서랍 안의 코어를 길게 누르면 "재료 정보". 서랍은 짧게 미끄러지며 열리고 닫힌다(GameConfig.MIX_DRAWER_SECONDS).
 ## 믹스하기: 빛나는 코어나 높은 레벨 재료면 한 번 더 묻는다. 성공하면 두 재료가 결과 플라스크로 모이는 연출 → 번쩍임 →
 ## 성공 카드(이름 · 종족·역할·등급 · LV·나이·성별 · 계승 스탯 · 패시브 고르기(자기 / 유산, 자기가 먼저 골라져 있고 나중에 못 바꿈) · 얻은 숙련 경험치,
 ## 파티에 넣기(강조) / 정보 보기 / 계속 믹스). 실패하면 붉은 번쩍임 + 같은 모양의 실패 카드(잃은 재료 · 얻은 숙련 경험치).
@@ -20,6 +21,8 @@ signal party_requested(item: CoreItem, slot: int)
 
 ## 재료 정렬(UiText.MIX_SORTS 순서)
 enum Sort { LEVEL, GRADE, SHINING }
+## 재료 서랍이 채울 칸
+enum Slot { MAIN, SUB }
 
 const TITLE_FONT_SIZE := 26
 const TEXT_FONT_SIZE := 18
@@ -32,7 +35,8 @@ const BUTTON_FONT_SIZE := 19
 const GO_FONT_SIZE := 26
 const SWAP_FONT_SIZE := 26
 const SECRET_FONT_SIZE := 56
-const SLOT_CARD_SIZE := Vector2(100, 100)
+const SLOT_CARD_SIZE := Vector2(112, 112)
+const SLOT_EMPTY_FONT_SIZE := 17
 const CHOICE_CORNER := 8
 ## 재료 목록 칸 크기(최소 ~ 최대 px): 재료가 모두 들어가는 가장 큰 크기로 키운다. 다 안 들어가면 MATERIAL_ROWS줄이 보이는 크기로
 ## 두고 굴려 본다. 세로 스크롤 막대 자리(px)
@@ -60,12 +64,12 @@ var _mixed_main: CoreItem  # 마지막 믹스에 쓴 재료(모이는 연출 · 
 var _mixed_sub: CoreItem
 var _legacy_owner := ""  # 마지막 믹스의 주 코어 패시브 주인(성공 카드에서 유산으로 고를 때)
 var _tip_left := 0.0
+var _drawer_target := Slot.MAIN  # 재료 서랍이 채울 칸
 
 @onready var _dim: ColorRect = %Dim
 @onready var _frame: PanelContainer = %Frame
 @onready var _title: Label = %Title
 @onready var _close: Button = %Close
-@onready var _material_title: Label = %MaterialTitle
 @onready var _tribe_filter: OptionButton = %TribeFilter
 @onready var _sort: OptionButton = %Sort
 @onready var _materials: GridContainer = %Materials
@@ -73,8 +77,10 @@ var _tip_left := 0.0
 @onready var _flasks: MixFlasks = %Flasks
 @onready var _main_label: Label = %MainLabel
 @onready var _sub_label: Label = %SubLabel
-@onready var _main_slot: CenterContainer = %MainSlot
-@onready var _sub_slot: CenterContainer = %SubSlot
+@onready var _main_slot: Button = %MainSlot
+@onready var _sub_slot: Button = %SubSlot
+@onready var _main_empty: Label = %MainEmpty
+@onready var _sub_empty: Label = %SubEmpty
 @onready var _swap: Button = %Swap
 @onready var _swap_result: Label = %SwapResult
 @onready var _result_slot: Button = %ResultSlot
@@ -91,6 +97,14 @@ var _tip_left := 0.0
 @onready var _mastery_button: Button = %MasteryButton
 @onready var _recipe_button: Button = %RecipeButton
 @onready var _info: CoreInfo = %CoreInfo
+@onready var _drawer_shade: ColorRect = %DrawerShade
+@onready var _material_drawer: PanelContainer = %MaterialDrawer
+@onready var _info_drawer: PanelContainer = %InfoDrawer
+@onready var _drawer_title: Label = %DrawerTitle
+@onready var _drawer_clear: Button = %DrawerClear
+@onready var _drawer_close: Button = %DrawerClose
+@onready var _drawer_problem: Label = %DrawerProblem
+@onready var _info_close: Button = %InfoClose
 @onready var _flash: ColorRect = %Flash
 @onready var _fx_layer: Control = %FxLayer
 @onready var _chance_tip: PanelContainer = %ChanceTip
@@ -133,13 +147,18 @@ var _tip_left := 0.0
 func _ready() -> void:
 	for dim: ColorRect in [_dim, _result_dim, _popup_dim]:
 		dim.color = Palette.MIX_DIM
-	for panel: PanelContainer in [_frame, _result_card, _mastery_window, _recipe_window]:
+	for panel: PanelContainer in [_frame, _result_card, _mastery_window, _recipe_window, _material_drawer, _info_drawer]:
 		panel.add_theme_stylebox_override("panel", UiKit.panel_box())
+	_drawer_shade.color = Palette.MIX_DRAWER_SHADE
+	UiKit.style_label(_drawer_title, TEXT_FONT_SIZE, Palette.TEXT)
+	_drawer_title.add_theme_font_override("font", UiKit.bold_font())
+	UiKit.style_label(_drawer_problem, SMALL_FONT_SIZE, Palette.TEXT_WARNING)
+	for empty: Label in [_main_empty, _sub_empty]:
+		UiKit.style_caption(empty, SLOT_EMPTY_FONT_SIZE)
+		empty.text = UiText.MIX_SLOT_PICK
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
 	_title.add_theme_font_override("font", UiKit.bold_font())
 	_title.text = UiText.MIX_TITLE
-	UiKit.style_caption(_material_title, SMALL_FONT_SIZE)
-	_material_title.text = UiText.MIX_MATERIALS
 	for label: Label in [_main_label, _sub_label]:
 		UiKit.style_caption(label, SLOT_CAPTION_FONT_SIZE)
 	_main_label.text = UiText.MIX_MAIN
@@ -161,7 +180,7 @@ func _ready() -> void:
 	_warning_big.add_theme_stylebox_override("panel", _choice_box(Palette.MIX_WARNING_BG, Palette.MIX_WARNING_BORDER))
 	UiKit.style_label(_warning_small, SMALL_FONT_SIZE - 2, Palette.TEXT_WARNING)
 	_warning_small.text = UiText.MIX_WARNING
-	for button: BaseButton in [_close, _recipe_button, _mastery_close, _recipe_close, _to_party, _show_info, _again, _tribe_filter, _sort, _keep_own, _keep_legacy]:
+	for button: BaseButton in [_close, _recipe_button, _mastery_close, _recipe_close, _to_party, _show_info, _again, _tribe_filter, _sort, _keep_own, _keep_legacy, _drawer_clear, _drawer_close, _info_close]:
 		UiKit.style_button(button, BUTTON_FONT_SIZE)
 	UiKit.style_button(_swap, SWAP_FONT_SIZE)
 	UiKit.style_button(_mastery_button, SMALL_FONT_SIZE)
@@ -170,6 +189,9 @@ func _ready() -> void:
 	_accent(_go, Palette.MIX_GO_BG, Palette.CORE_SHINE, Palette.CORE_SHINE)
 	_accent(_to_party, Palette.MIX_ACCENT_BG, Palette.MIX_ACCENT_BORDER, Palette.TEXT)  # 결과 카드에서는 "파티에 넣기"만 강조색
 	_close.text = UiText.BAG_CLOSE
+	_drawer_close.text = UiText.BAG_CLOSE
+	_info_close.text = UiText.BAG_CLOSE
+	_drawer_clear.text = UiText.MIX_DRAWER_CLEAR
 	_mastery_close.text = UiText.BAG_CLOSE
 	_recipe_close.text = UiText.BAG_CLOSE
 	_swap.text = UiText.MIX_SWAP
@@ -206,6 +228,14 @@ func _ready() -> void:
 	_card_passive_note.text = UiText.MIX_PASSIVE_FINAL
 	UiKit.style_label(_card_mastery, SMALL_FONT_SIZE, Palette.MIX_MASTERY_BAR)
 	_close.pressed.connect(_on_close)
+	_main_slot.pressed.connect(func() -> void: open_material_drawer(Slot.MAIN))
+	_sub_slot.pressed.connect(func() -> void: open_material_drawer(Slot.SUB))
+	_drawer_close.pressed.connect(close_drawers)
+	_drawer_clear.pressed.connect(_clear_target)
+	_info_close.pressed.connect(close_drawers)
+	_drawer_shade.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed:
+			close_drawers())
 	_swap.pressed.connect(_on_swap)
 	_go.pressed.connect(_on_go)
 	_result_slot.pressed.connect(show_result_preview)
@@ -296,40 +326,77 @@ static func _choice_box(fill: Color, border: Color) -> StyleBoxFlat:
 	return box
 
 
-## 그 코어를 주 코어로 열고, 보조 칸은 비운다. 오른쪽 정보창은 그 코어.
+## 그 코어를 주 코어로 열고, 보조 칸은 비운다. 서랍은 닫고 열지만, 주 코어가 비어 있으면 재료 서랍을 바로 연다.
 func open(main: CoreItem) -> void:
 	main_core = main
 	sub_core = null
 	_result_layer.visible = false
 	_close_popups()
 	_chance_tip.visible = false
+	close_drawers(true)
 	visible = true
-	_show_material_info(main)
+	if main != null:
+		_show_material_info(main)
 	refresh()
+	if main_core == null:
+		open_material_drawer(Slot.MAIN)
 
 
-## 재료 목록에서 그 코어를 누른 것처럼: 오른쪽에 상세를 보이고, 고를 수 있으면 빈 칸부터 채운다. 실행 검사에서도 쓴다.
+## 재료 서랍에서 그 코어를 누른 것처럼: 고를 수 있으면 서랍이 채우는 칸에 넣고 서랍을 닫는다.
+## 고를 수 없으면 서랍 위에 까닭을 보이고 그대로 둔다. 지금 그 칸의 코어를 다시 누르면 그대로 닫는다. 실행 검사에서도 쓴다.
 func choose(item: CoreItem) -> void:
 	if _busy:
 		return
-	_show_material_info(item)
-	if item == main_core or item == sub_core:
+	if item == _target_core():
+		close_drawers()
 		return
-	var problem := Mix.material_problem(item, _partner())
+	var other := _other_core()
+	if item == other:
+		_drawer_problem.text = UiText.MIX_IN_OTHER_SLOT % (UiText.MIX_SUB if _drawer_target == Slot.MAIN else UiText.MIX_MAIN)
+		return
+	var problem := Mix.material_problem(item, other)
 	if problem != Mix.Problem.NONE:
-		_problem.text = UiText.MIX_PROBLEMS[problem]
+		_drawer_problem.text = UiText.MIX_PROBLEMS[problem]
 		return
-	if main_core == null:
+	if _drawer_target == Slot.MAIN:
 		main_core = item
 	else:
 		sub_core = item
+	_show_material_info(item)
+	close_drawers()
 	refresh()
 
 
-## 오른쪽 정보창에 그 코어(작은 제목 "재료 정보").
+## 서랍이 채우는 칸의 코어 / 다른 칸의 코어.
+func _target_core() -> CoreItem:
+	return main_core if _drawer_target == Slot.MAIN else sub_core
+
+
+func _other_core() -> CoreItem:
+	return sub_core if _drawer_target == Slot.MAIN else main_core
+
+
+## 서랍 머리의 "비우기": 그 칸을 비운다(서랍은 열어 둔다).
+func _clear_target() -> void:
+	if _busy:
+		return
+	if _drawer_target == Slot.MAIN:
+		main_core = null
+	else:
+		sub_core = null
+	refresh()
+
+
+## 오른쪽 정보 카드의 내용을 그 코어로(작은 제목 "재료 정보"). 카드를 열지는 않는다.
 func _show_material_info(item: CoreItem) -> void:
 	_info.heading = UiText.MIX_INFO_MATERIAL
 	_info.show_core(item)
+
+
+## 그 코어의 정보 카드를 연다(서랍 안의 코어를 길게 눌렀을 때).
+func show_core_info(item: CoreItem) -> void:
+	_show_material_info(item)
+	_slide(_info_drawer, true)
 
 
 ## 재료 목록에서 그 코어의 칸(실행 검사용). 없으면 null.
@@ -343,11 +410,6 @@ func material_card(item: CoreItem) -> CoreCard:
 ## 오른쪽 정보창(실행 검사용).
 func info() -> CoreInfo:
 	return _info
-
-
-## 재료가 짝지어질 상대: 주 코어, 없으면 보조 코어.
-func _partner() -> CoreItem:
-	return main_core if main_core != null else sub_core
 
 
 func refresh() -> void:
@@ -373,8 +435,10 @@ func refresh() -> void:
 	_warning_big.visible = big
 	_warning_small.visible = not big
 	_mastery_button.text = UiText.MIX_MASTERY_BUTTON % _workshop.mastery.level
+	_drawer_title.text = UiText.MIX_DRAWER_TITLE % (UiText.MIX_MAIN if _drawer_target == Slot.MAIN else UiText.MIX_SUB)
+	_drawer_clear.visible = _target_core() != null
 	if _info.previewing:
-		show_result_preview()
+		_update_preview()
 	_rebuild_materials()
 
 
@@ -469,8 +533,16 @@ func _process(delta: float) -> void:
 			_chance_tip.visible = false
 
 
-## 결과 칸을 누름: 오른쪽 정보창에 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률).
+## 결과 칸을 누름: 오른쪽 정보 카드를 열어 미리보기(예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률 · 고유 스킬).
 func show_result_preview() -> void:
+	if _busy:
+		return
+	_update_preview()
+	_slide(_info_drawer, true)
+
+
+## 정보 카드의 미리보기 내용(재료가 바뀌면 다시 쓴다).
+func _update_preview() -> void:
 	var has_pair := main_core != null and sub_core != null
 	var result := Mix.result_id(main_core, sub_core) if has_pair else ""
 	var reveal := Mix.reveal_of(result)
@@ -506,23 +578,26 @@ func show_result_preview() -> void:
 			_info.show_preview(name_text, UiText.MIX_HINT_KIND % tribe.name, TribeDb.portrait(species.tribe), true, rows, null)
 
 
-## 주 · 보조 칸: 코어가 있으면 크게 보이고, 누르면 그 칸을 비운다. 비었으면 비커만.
-func _show_slot(holder: CenterContainer, item: CoreItem, is_main: bool) -> void:
+## 주 · 보조 칸: 코어가 있으면 크게, 비었으면 "눌러서 고르기". 칸을 누르면 그 칸의 재료 서랍이 열린다(칸 자체가 버튼).
+func _show_slot(holder: Button, item: CoreItem, _is_main: bool) -> void:
 	for child in holder.get_children():
-		holder.remove_child(child)
-		child.queue_free()
+		if child is CoreCard:
+			holder.remove_child(child)
+			child.queue_free()
+	(_main_empty if holder == _main_slot else _sub_empty).visible = item == null
 	if item == null:
 		return
 	var card := CoreCard.create(item, SLOT_CARD_SIZE)
-	card.pressed.connect(func() -> void:
-		if _busy:
-			return
-		if is_main:
-			main_core = null
-		else:
-			sub_core = null
-		refresh())
 	holder.add_child(card)
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE  # 누름은 칸(버튼)이 받는다
+
+
+## 칸에 들어 있는 코어 그림(없으면 null).
+static func _slot_card(holder: Button) -> CoreCard:
+	for child in holder.get_children():
+		if child is CoreCard:
+			return child
+	return null
 
 
 ## 재료 목록: 종족 필터 · 정렬을 따르고, 고를 수 없는 코어는 흐리게 + 까닭. 고른 코어는 흰 테두리 + 체크.
@@ -540,8 +615,13 @@ func _rebuild_materials() -> void:
 	for item in list:
 		var card := CoreCard.create(item, Vector2.ONE * _material_side)
 		card.block_reason = _material_reason(item)
-		card.selected = item == main_core or item == sub_core
-		card.pressed.connect(choose.bind(item))
+		card.selected = item == _target_core()
+		card.pressed.connect(func() -> void:
+			if card.long_press_fired:  # 길게 눌러 정보 카드를 열었으면 고르지 않는다
+				card.long_press_fired = false
+				return
+			choose(item))
+		card.long_pressed.connect(func() -> void: show_core_info(item))
 		_materials.add_child(card)
 
 
@@ -574,13 +654,14 @@ func material_side() -> float:
 	return _material_side
 
 
-## 재료 칸에 붙일 까닭(고를 수 있으면 "").
+## 재료 칸에 붙일 까닭(고를 수 있으면 ""): 서랍이 채우는 칸 기준. 다른 칸에 든 코어는 "주 코어" / "보조 코어".
 func _material_reason(item: CoreItem) -> String:
-	if item == main_core:
-		return UiText.MIX_MATERIAL_REASONS[Mix.Problem.SAME_CORE]
-	if item == sub_core:
+	if item == _target_core():
 		return ""
-	return UiText.MIX_MATERIAL_REASONS[Mix.material_problem(item, _partner())]
+	var other := _other_core()
+	if item == other:
+		return UiText.MIX_SUB if _drawer_target == Slot.MAIN else UiText.MIX_MAIN
+	return UiText.MIX_MATERIAL_REASONS[Mix.material_problem(item, other)]
 
 
 ## 정렬 비교 함수: 레벨 높은 순 / 등급 높은 순(같으면 레벨) / 빛나는 먼저(같으면 레벨).
@@ -725,6 +806,7 @@ func use_recipe(main_id: String, sub_id: String) -> bool:
 	main_core = pair[0]
 	sub_core = pair[1]
 	_close_popups()
+	close_drawers()
 	_show_material_info(main_core)
 	refresh()
 	return true
@@ -779,6 +861,7 @@ func _on_go() -> void:
 func _start_mix() -> void:
 	if _busy:
 		return
+	close_drawers(true)
 	_busy = true
 	_go.disabled = true
 	_chance_tip.visible = false
@@ -789,10 +872,10 @@ func _start_mix() -> void:
 	var tween := create_tween().set_parallel()
 	if last_born != null:
 		var target := _result_slot.get_global_rect().get_center()
-		for slot: CenterContainer in [_main_slot, _sub_slot]:
-			if slot.get_child_count() == 0:
+		for slot: Button in [_main_slot, _sub_slot]:
+			var original := _slot_card(slot)
+			if original == null:
 				continue
-			var original := slot.get_child(0) as CoreCard
 			var flying := CoreCard.create(original.item, SLOT_CARD_SIZE)
 			_fx_layer.add_child(flying)
 			flying.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -803,7 +886,7 @@ func _start_mix() -> void:
 			tween.tween_property(flying, "scale", Vector2.ONE * 0.3, GameConfig.MIX_FX_GATHER_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 			tween.tween_property(flying, "modulate:a", 0.2, GameConfig.MIX_FX_GATHER_SECONDS)
 	else:
-		for slot: CenterContainer in [_main_slot, _sub_slot]:
+		for slot: Button in [_main_slot, _sub_slot]:
 			tween.tween_property(slot, "modulate:a", 0.15, GameConfig.MIX_FX_GATHER_SECONDS)
 	tween.chain().tween_callback(_finish_mix)
 
@@ -813,7 +896,7 @@ func _finish_mix() -> void:
 		child.queue_free()
 	main_core = null
 	sub_core = null
-	for slot: CenterContainer in [_main_slot, _sub_slot]:
+	for slot: Button in [_main_slot, _sub_slot]:
 		slot.modulate.a = 1.0
 	_busy = false
 	if last_born != null:
@@ -961,7 +1044,74 @@ func _on_show_info() -> void:
 	core_shown.emit(last_born)
 
 
-## 계속 믹스: 결과 카드만 닫고 빈 칸으로 다시 고른다.
+## 계속 믹스: 결과 카드만 닫고 빈 칸으로 다시 고른다(주 코어 칸의 재료 서랍을 연다).
 func _close_result() -> void:
 	_result_layer.visible = false
 	refresh()
+	if main_core == null:
+		open_material_drawer(Slot.MAIN)
+
+
+# ─── 서랍 (재료 · 정보 카드) ─────────────────────────────
+
+## 재료 서랍을 연다: 그 칸(주 · 보조)에 넣을 재료. 정보 카드는 닫는다.
+func open_material_drawer(target: Slot) -> void:
+	if _busy:
+		return
+	_drawer_target = target
+	_drawer_problem.text = ""
+	_chance_tip.visible = false
+	refresh()
+	_slide(_info_drawer, false)
+	_slide(_material_drawer, true)
+
+
+## 서랍을 모두 닫는다(서랍 밖을 누름 · 재료를 고름 · 닫기). instant면 연출 없이 바로.
+func close_drawers(instant := false) -> void:
+	_slide(_material_drawer, false, instant)
+	_slide(_info_drawer, false, instant)
+
+
+## 서랍을 화면 밖 ↔ 안으로 짧게 민다(왼쪽 서랍은 왼쪽에서, 정보 카드는 오른쪽에서). 열린 서랍이 있으면 뒤를 덮개로 가린다.
+func _slide(drawer: PanelContainer, open_it: bool, instant := false) -> void:
+	var margin := _material_drawer.offset_top
+	var inside := margin if drawer == _material_drawer else size.x - drawer.size.x - margin
+	var outside := -drawer.size.x - margin if drawer == _material_drawer else size.x + margin
+	drawer.set_meta("open", open_it)
+	if open_it:
+		_chance_tip.visible = false
+	_drawer_shade.visible = is_drawer_open(_material_drawer) or is_drawer_open(_info_drawer)
+	if drawer.has_meta("tween"):
+		var old: Tween = drawer.get_meta("tween")
+		if old != null and old.is_valid():
+			old.kill()
+	if instant:
+		drawer.position.x = inside if open_it else outside
+		drawer.visible = open_it
+		return
+	if open_it and not drawer.visible:
+		drawer.position.x = outside
+	drawer.visible = true
+	var tween := create_tween()
+	tween.tween_property(drawer, "position:x", inside if open_it else outside, GameConfig.MIX_DRAWER_SECONDS).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if not open_it:
+		tween.tween_callback(func() -> void: drawer.visible = false)
+	drawer.set_meta("tween", tween)
+
+
+## 서랍이 열렸나(실행 검사용: 재료 서랍 · 정보 카드).
+func is_drawer_open(drawer: PanelContainer) -> bool:
+	return drawer.get_meta("open", false)
+
+
+func is_material_drawer_open() -> bool:
+	return is_drawer_open(_material_drawer)
+
+
+func is_info_drawer_open() -> bool:
+	return is_drawer_open(_info_drawer)
+
+
+## 재료 서랍이 채우는 칸(실행 검사용, 0 = 주 · 1 = 보조).
+func drawer_target() -> int:
+	return _drawer_target

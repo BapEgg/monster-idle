@@ -229,7 +229,11 @@ const MIX_EMPTY_KIND := "재료 둘을 고르면 결과가 보입니다"
 ## 성공 카드의 패시브 고르기
 const MIX_PASSIVE_PICK := "패시브 고르기"
 const MIX_PASSIVE_FINAL := "선택은 나중에 바꿀 수 없어요"
-const MIX_MATERIALS := "재료 고르기"
+## 재료 서랍: 머리(그 칸에 넣을 재료) · 비우기 · 다른 칸에 이미 있는 코어를 눌렀을 때 · 빈 칸 안내
+const MIX_DRAWER_TITLE := "%s에 넣을 재료"
+const MIX_DRAWER_CLEAR := "비우기"
+const MIX_IN_OTHER_SLOT := "이미 %s 칸에 있어요(⇄로 바꿀 수 있어요)"
+const MIX_SLOT_PICK := "눌러서\n고르기"
 const MIX_FILTER_ALL := "전체 종족"
 ## 재료 정렬(MixPanel.Sort 순서)
 const MIX_SORTS := ["레벨 높은 순", "등급 높은 순", "빛나는 먼저"]
