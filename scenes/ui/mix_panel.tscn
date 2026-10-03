@@ -220,13 +220,6 @@ layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 
-[node name="SwapResult" type="Label" parent="Frame/Margin/Rows/Lab/Bench/Pair/SwapBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-horizontal_alignment = 1
-autowrap_mode = 3
-
 [node name="SubBox" type="VBoxContainer" parent="Frame/Margin/Rows/Lab/Bench/Pair"]
 layout_mode = 2
 theme_override_constants/separation = 10

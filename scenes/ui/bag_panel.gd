@@ -1,6 +1,7 @@
 class_name BagPanel
 extends PanelContainer
 ## 코어 가방 창(믹스마스터식, 사용자 결정 2026-10-03): 왼쪽은 고른 코어의 정보창, 오른쪽은 5열 칸(새로 얻은 것이 앞).
+## 둘 사이는 띄우고 세로 경계선을 긋는다. 가진 코어 수는 제목 옆이 아니라 오른쪽 칸 위에 작게(사용자 결정 2026-10-03).
 ## 코어 칸 아래에 코어 조각 칸(종마다 "코어 조각 n/12", 덜 모이면 흑백으로 흐리게 — 다 모이면 눌러서 그 종 코어를 만든다, 임시).
 ## 화면 세로를 꽉 채운다. 재화(골드 · 경험치 조각)는 메인 화면 오른쪽 위로 옮겼다(사용자 결정 2026-10-03).
 ## 사냥 기록(하루 처치 수 측정)은 디버그 화면으로 옮겼다.
@@ -26,6 +27,8 @@ var _shard_snapshot := {}  # 조각 칸을 마지막으로 만든 때의 지갑 
 
 @onready var _title: Label = %Title
 @onready var _close: Button = %Close
+@onready var _count: Label = %Count
+@onready var _divider: VSeparator = %Divider
 @onready var _grid: GridContainer = %Grid
 @onready var _shard_title: Label = %ShardTitle
 @onready var _shard_grid: GridContainer = %ShardGrid
@@ -38,6 +41,13 @@ func _ready() -> void:
 	UiKit.style_label(_title, TITLE_FONT_SIZE, Palette.TEXT)
 	_title.add_theme_font_override("font", UiKit.bold_font())
 	UiKit.style_caption(_shard_title, SHARD_TITLE_FONT_SIZE)
+	UiKit.style_caption(_count, SHARD_TITLE_FONT_SIZE)
+	_title.text = UiText.BAG_TITLE
+	var line := StyleBoxLine.new()
+	line.vertical = true
+	line.color = Palette.PANEL_DIVIDER
+	line.thickness = 1
+	_divider.add_theme_stylebox_override("separator", line)
 	_shard_title.text = UiText.SHARD_SECTION % GameConfig.CORE_SHARDS_PER_CORE
 	UiKit.style_caption(_empty, TEXT_FONT_SIZE)
 	UiKit.style_button(_close, TEXT_FONT_SIZE)
@@ -129,7 +139,7 @@ func _rebuild() -> void:
 		var card := CoreCard.create(_bag.cores[i], CoreCard.BAG_SIZE)
 		card.pressed.connect(select.bind(card.item))
 		_grid.add_child(card)
-	_title.text = UiText.BAG_TITLE % _bag.count()
+	_count.text = UiText.BAG_COUNT % _bag.count()
 	_rebuild_shards(true)
 	_empty.visible = _bag.count() == 0 and _shard_grid.get_child_count() == 0
 	if _shown_shards == "":

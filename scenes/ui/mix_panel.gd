@@ -4,7 +4,7 @@ extends Control
 ## 연성 장치(플라스크 도형, MixFlasks): 위 = 결과 플라스크(공개 = 그림, 힌트 = 실루엣, 비밀 = ?) — 마우스를 대면 흔들리고,
 ##   누르면 믹스한다(재료가 덜 찼으면 비어 있는 칸의 재료 서랍이 열린다). 그 아래 결과 이름 ⓘ(누르면 오른쪽 정보 카드 "결과 미리보기"),
 ##   실패 경고 글자(처음 GameConfig.MIX_WARNING_BIG_TIMES번은 크게, 그 뒤 작게). 아래 = 주 · 보조 비커(빈 칸은 "눌러서 고르기"가
-##   커졌다 작아지며 비커가 깜빡여 누르라고 알림) + 사이 ⇄ · "바꾸면 → ○○", 성공 확률 숫자(누르면 숫자 위에 내역), 비용, 숙련 ⓘ · 레시피.
+##   커졌다 작아지며 비커가 깜빡여 누르라고 알림) + 사이 ⇄(주 · 보조 바꾸기), 성공 확률 숫자(누르면 숫자 위에 내역), 비용, 숙련 ⓘ · 레시피.
 ## 왼쪽 재료 서랍: 주 또는 보조 칸을 누르면 밀려 나온다(종족 필터 · 정렬, 흐린 재료 + 까닭 배지, 지금 칸의 코어는 흰 테두리 + 체크).
 ##   고르면 그 칸에 들어가고 서랍이 닫힌다. 서랍 밖을 누르면 닫힌다. 믹스창을 열 때 주 코어가 비어 있으면 서랍을 바로 연다.
 ## 오른쪽 정보 카드(가방 창의 CoreInfo를 버튼 없이 재사용): 결과 이름 ⓘ = "결과 미리보기", 서랍 안 코어를 길게 누르면 "재료 정보".
@@ -86,7 +86,6 @@ var _result_plain := ""  # 결과 이름(ⓘ 빼고)
 @onready var _main_empty: Label = %MainEmpty
 @onready var _sub_empty: Label = %SubEmpty
 @onready var _swap: Button = %Swap
-@onready var _swap_result: Label = %SwapResult
 @onready var _result_slot: Button = %ResultSlot
 @onready var _result_portrait: TextureRect = %ResultPortrait
 @onready var _result_secret: Label = %ResultSecret
@@ -166,7 +165,6 @@ func _ready() -> void:
 		UiKit.style_caption(label, SLOT_CAPTION_FONT_SIZE)
 	_main_label.text = UiText.MIX_MAIN
 	_sub_label.text = UiText.MIX_SUB
-	UiKit.style_label(_swap_result, SMALL_FONT_SIZE - 1, Palette.TEXT_LABEL)
 	UiKit.style_button(_result_name, RESULT_NAME_FONT_SIZE)
 	_result_name.add_theme_font_override("font", UiKit.bold_font())
 	_result_name.add_theme_color_override("font_color", Palette.TEXT)
@@ -430,7 +428,6 @@ func refresh() -> void:
 	_flasks.main_liquid = _liquid(main_core)
 	_flasks.sub_liquid = _liquid(sub_core)
 	_flasks.brewing = has_pair and result != ""
-	_swap_result.text = UiText.MIX_SWAP_RESULT % _swapped_outcome() if has_pair else ""
 	_show_result_slot(result, reveal, has_pair)
 	_show_chance(result, reveal, has_pair)
 	var problem := _workshop.mix_problem(main_core, sub_core)
@@ -458,19 +455,6 @@ func refresh() -> void:
 ## 비커 액체 색: 그 칸 코어의 종족 색(비었으면 투명).
 static func _liquid(item: CoreItem) -> Color:
 	return TribeDb.get_tribe(item.species().tribe).color if item != null else Color.TRANSPARENT
-
-
-## 주·보조를 바꾸면 나올 결과: 공개 공식이면 이름, 아니면(힌트 · 비밀 · 공식 없음) ?
-func _swapped_outcome() -> String:
-	var swapped := Mix.result_id(sub_core, main_core)
-	if swapped == "" or Mix.reveal_of(swapped) != Mix.Reveal.OPEN:
-		return UiText.MIX_SECRET
-	return HenchDb.get_species(swapped).name
-
-
-## 주·보조를 바꾸면 나올 결과 글자(실행 검사용).
-func swap_result_text() -> String:
-	return _swap_result.text
 
 
 ## 결과 칸: 공개 = 그림 + 이름, 힌트 = 실루엣 + ???, 비밀 · 공식 없음 · 재료가 덜 참 = ?

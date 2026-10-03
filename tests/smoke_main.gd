@@ -276,6 +276,10 @@ func _run(main: Node) -> void:
 	await _tap(hud.bag_button.global_position)
 	await process_frame
 	_expect(hud.bag_panel.visible and hud.bag_panel.card_count() == bag.count(), "가방 버튼 → 가방 창, 코어 %d칸" % bag.count())
+	var bag_title := hud.bag_panel.find_child("Title", true, false) as Label
+	var bag_count := hud.bag_panel.find_child("Count", true, false) as Label
+	var divider := hud.bag_panel.find_child("Divider", true, false) as Control
+	_expect(bag_title.text == UiText.BAG_TITLE and bag_count.text == UiText.BAG_COUNT % bag.count() and bag_count.global_position.x > divider.global_position.x and divider.visible, "가방 제목 옆에는 개수 없음, 개수는 오른쪽 칸 위(%s), 정보창과 칸 사이 경계선" % bag_count.text)
 	# 가방 칸 → 오른쪽 정보창, 잠금, 파티 편성, 분해, 믹스(프로토타입 5). 시작 가방(data/dev_starter.json)의 코어로 한다.
 	var info := hud.bag_panel.info()
 	var gochu := _find_core(bag, "gochuryong", CoreItem.Gender.FEMALE)
@@ -416,8 +420,7 @@ func _run(main: Node) -> void:
 	_hover(Vector2(4, 4))
 	await _seconds(0.1)
 	_expect(wobble > 0.001, "플라스크에 마우스를 대면 흔들림 (%.1f도)" % rad_to_deg(wobble))
-	var swapped_name := "기관코끼리" if Mix.reveal_of("gigwankokkiri") == Mix.Reveal.OPEN else UiText.MIX_SECRET
-	_expect(mixer.swap_result_text() == UiText.MIX_SWAP_RESULT % swapped_name, "⇄ 옆: %s" % mixer.swap_result_text().replace("\n", " "))
+	_expect(mixer.find_child("SwapResult", true, false) == null, "⇄ 옆에 \"바꾸면 → …\" 글 없음")
 	_expect(mixer.material_side() >= 92.0, "재료 칸 %d px" % mixer.material_side())
 	var workshop: Workshop = main.get("workshop")
 	_expect((mixer.find_child("WarningBig", true, false) as Control).visible and not (mixer.find_child("WarningSmall", true, false) as Control).visible, "처음에는 실패 경고가 크게")

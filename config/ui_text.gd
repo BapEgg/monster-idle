@@ -146,7 +146,9 @@ const PICKUP := "+%s " + TERM_CORE
 ## 가방 버튼. %d = 코어 수
 const BAG_BUTTON := "가방 %d"
 ## 가방 창 제목. %d = 코어 수
-const BAG_TITLE := TERM_CORE + " 가방 · %d개"
+const BAG_TITLE := TERM_CORE + " 가방"
+## 가방 오른쪽 칸 위: 가진 코어 수(사용자 결정 2026-10-03: 제목 옆이 아니라 오른쪽 칸에서)
+const BAG_COUNT := "보유 %d개"
 const BAG_CLOSE := "닫기"
 const BAG_EMPTY := "아직 비어 있습니다. 몹을 쓰러뜨리면 " + TERM_CORE + "가 떨어집니다."
 ## 코어 칸 둘째 줄: 접미사 · 나이
@@ -240,9 +242,8 @@ const MIX_HINT_NAME := "???"
 const MIX_SECRET := "?"
 ## 힌트일 때 종류 줄: ??? · 종족
 const MIX_HINT_KIND := "??? · %s"
-## 주 · 보조 칸 사이 버튼과, 바꾸면 나올 결과(공개 공식이면 이름, 아니면 ?)
+## 주 · 보조 칸 사이 버튼(사용자 결정 2026-10-03: "바꾸면 → ○○" 글은 뺌)
 const MIX_SWAP := "⇄"
-const MIX_SWAP_RESULT := "바꾸면 →\n%s"
 ## 숙련 경험치: 지금 / 다음 단계까지(마지막 단계면 "최고")
 const MIX_MASTERY_EXP := "%d/%d"
 const MIX_MASTERY_MAX := "최고"

@@ -72,6 +72,8 @@ const CORE_SHINE := Color("ffd84a")
 ## 가방 창: 바탕 / 테두리 / 코어 칸 / 빛나는 코어 칸 테두리 / 흐린 글자
 const PANEL_BG := Color(0.1, 0.11, 0.14, 0.98)
 const PANEL_BORDER := Color(1, 1, 1, 0.25)
+## 창 안을 나누는 경계선(가방 창: 정보창 | 코어 칸)
+const PANEL_DIVIDER := Color(1, 1, 1, 0.14)
 const CARD_BG := Color(1, 1, 1, 0.08)
 const CARD_BORDER := Color(1, 1, 1, 0.15)
 const TEXT_DIM := Color(1, 1, 1, 0.65)
