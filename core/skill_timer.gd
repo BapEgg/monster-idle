@@ -4,6 +4,8 @@ extends RefCounted
 
 ## 화면에 보일 스킬 이름
 var title := ""
+## 스킬 그림(메인 화면 스킬 칸의 바탕). 없으면 칸이 주인 색 + 이름으로 대신 그린다.
+var icon: Texture2D
 var cooldown := 0.0
 ## 다시 쓰기까지 남은 시간(초). 0이면 쓸 수 있다.
 var left := 0.0

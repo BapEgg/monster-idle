@@ -35,6 +35,9 @@ const KILLS := "처치 %d"
 # ─── 전투 표시 ────────────────────────────────────
 ## 기습 첫 타 숫자. %d = 피해량
 const AMBUSH_NUMBER := "기습! %d"
+## 치명타 숫자 · 기습이면서 치명타. %d = 피해량
+const CRIT_NUMBER := "치명! %d"
+const AMBUSH_CRIT_NUMBER := "기습 치명! %d"
 ## 머리 위 표시: 알아채고 덤빌 때·맞고 반격할 때 / 추격을 포기할 때
 const MARK_ALERT := "!"
 const MARK_GIVE_UP := "?"
@@ -163,6 +166,9 @@ const JOB_CLOSE := "닫기"
 const JOB_KIND := "%s · %s"
 ## 왼쪽 능력치(사용자 결정 2026-10-03: 주인공도 코어와 같은 능력치 9종 — 장비가 이 값을 올린다): HP · MP + 9종 표, 아래 전투 값 한 줄
 const JOB_SHEET_HP := "HP"
+## 능력치 표의 치명타 두 줄(UnitStats.CRIT_STATS 순서)과 값(%d = 퍼센트)
+const STAT_CRIT_NAMES := {"crit_chance": "치명 확률", "crit_damage": "치명 피해"}
+const STAT_PERCENT := "%d%%"
 const JOB_SHEET_MP := "MP"
 const JOB_COMBAT_LINE := "공격력 %d · 공격 간격 %s초 · 사거리 %d"
 const JOB_MODS_LINE := "패시브 보정: %s"

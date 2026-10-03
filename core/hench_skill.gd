@@ -25,6 +25,7 @@ static func for_species(species: HenchSpecies) -> HenchSkill:
 	var s := HenchSkill.new()
 	s.kind = species.skill
 	s.title = skill_title(species.active)
+	s.icon = HenchDb.skill_icon(species.id)
 	s.cooldown = s.value("cooldown")
 	s.coefs = skill_coefs(species.skill, species.active)
 	return s

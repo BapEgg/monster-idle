@@ -122,14 +122,16 @@ func _ready() -> void:
 	show_core(null)
 
 
-## 능력치 표: 칸마다 이름(왼쪽, 연한 회색) + 숫자(오른쪽, 흰색 굵게). 2열이라 9개가 5줄로 들어간다.
+## 능력치 표: 칸마다 이름(왼쪽, 연한 회색) + 숫자(오른쪽, 흰색 굵게). 2열에 9종 + 치명 확률 · 치명 피해(6줄).
 func _build_stat_table() -> void:
-	for stat in SuffixDb.ids():
+	var ids := SuffixDb.ids()
+	ids.append_array(UnitStats.CRIT_STATS)
+	for stat in ids:
 		var cell := HBoxContainer.new()
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var stat_name := Label.new()
 		UiKit.style_caption(stat_name, STAT_FONT_SIZE)
-		stat_name.text = SuffixDb.stat_name(stat)
+		stat_name.text = UiText.STAT_CRIT_NAMES.get(stat, SuffixDb.stat_name(stat))
 		stat_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var number := Label.new()
 		UiKit.style_number(number, STAT_NUMBER_FONT_SIZE)
@@ -251,12 +253,13 @@ func refresh() -> void:
 		_exp_bar.show_value(UiText.INFO_EXP, UiText.LEVEL_MAX, Palette.LEVEL_BAR_FILL, 1.0)
 	else:
 		_exp_bar.show_value(UiText.INFO_EXP, UiText.INFO_EXP_VALUE % [item.exp_points, need], Palette.LEVEL_BAR_FILL, float(item.exp_points) / need)
+	var combat := UnitStats.from_core(item)
 	for stat: String in _stat_values:
 		var accent := stat == item.suffix_id
-		(_stat_values[stat] as Label).text = str(stats.get(stat, 0))
+		(_stat_values[stat] as Label).text = combat.crit_text(stat) if UnitStats.CRIT_STATS.has(stat) else str(stats.get(stat, 0))
 		(_stat_values[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT)
 		(_stat_names[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT_LABEL)
-	_show_chips(species, HenchDb.get_species(item.passive_owner_id()), item, UnitStats.from_core(item))
+	_show_chips(species, HenchDb.get_species(item.passive_owner_id()), item, combat)
 	_party.text = UiText.BTN_PARTY_LEAVE if item.in_party() else UiText.BTN_PARTY
 	_lock.text = UiText.BTN_UNLOCK if item.locked else UiText.BTN_LOCK
 	_dismantle.disabled = item.locked or item.in_party()

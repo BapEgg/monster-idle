@@ -24,6 +24,10 @@ const FLASH_SECONDS := 0.12
 ## 강화 · 약화 종류: attack = 공격 +, speed = 공격 속도 +, guard = 받는 피해 −, vulnerable = 받는 피해 +
 const BOOST_KINDS := ["attack", "speed", "guard", "vulnerable"]
 
+## 치명타 굴림 고정(실행 검사가 정확한 피해를 잴 때): -1 = 굴린다, 0 = 늘 아님, 1 = 늘 치명.
+static var crit_override := -1
+static var _crit_rng := _seeded_rng()
+
 var team := Team.PARTY
 ## 머리 위 이름표. 비우면 이름표를 안 그린다.
 var display_name := ""
@@ -264,6 +268,19 @@ func try_attack(target: Unit) -> bool:
 	return true
 
 
+## 이번 타격이 치명타인가(확률 chance). 씨앗을 고정한 굴림이라 측정(tools/measure_hunt.gd)이 늘 같은 결과를 낸다.
+static func roll_crit(chance: float) -> bool:
+	if crit_override >= 0:
+		return crit_override == 1
+	return Combat.is_crit(chance, _crit_rng.randf())
+
+
+static func _seeded_rng() -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = GameConfig.FIELD_SEED + 3
+	return rng
+
+
 ## 몸으로 부딪치는 연출(근접 공격 · 스킬).
 func lunge() -> void:
 	_lunge_left = LUNGE_SECONDS
@@ -330,12 +347,15 @@ func try_heal(target: Unit) -> bool:
 
 ## from은 이미 사라졌으면 null일 수 있다. 기습이면 피해가 세지고 숫자가 "기습!"으로 뜬다.
 ## 보호막이 있으면 보호막이 먼저 받는다(다 막으면 숫자 대신 "막음").
-func take_damage(amount: float, from: Unit) -> void:
+## 피해를 받는다. from = 때린 쪽(치명타 · 기습을 본다). can_crit = false면 치명타를 굴리지 않는다(섬의 왕 장판처럼 체력 비율 피해).
+func take_damage(amount: float, from: Unit, can_crit := true) -> void:
 	if not is_alive():
 		return
 	var ambush := is_instance_valid(from) and _is_ambushed_by(from)
 	var bonus := from.ambush_bonus if ambush else 0.0
-	var after := Combat.absorb(shield, Combat.hit_damage(amount, ambush, bonus) * damage_taken_factor())
+	var crit := can_crit and is_instance_valid(from) and roll_crit(from.stats.crit_chance)
+	var hit := Combat.crit_hit(Combat.hit_damage(amount, ambush, bonus), crit, from.stats.crit_damage if crit else 1.0)
+	var after := Combat.absorb(shield, hit * damage_taken_factor())
 	var blocked := shield - after.y
 	amount = after.x
 	shield = after.y
@@ -344,7 +364,9 @@ func take_damage(amount: float, from: Unit) -> void:
 	if amount <= 0.0 and blocked > 0.0:
 		field.show_number(_number_point(), UiText.SHIELD_BLOCK, Palette.SHIELD_BAR)
 	elif ambush:
-		field.show_number(_number_point(), UiText.AMBUSH_NUMBER % roundi(amount), Palette.NUMBER_AMBUSH)
+		field.show_number(_number_point(), (UiText.AMBUSH_CRIT_NUMBER if crit else UiText.AMBUSH_NUMBER) % roundi(amount), Palette.NUMBER_AMBUSH)
+	elif crit:
+		field.show_number(_number_point(), UiText.CRIT_NUMBER % roundi(amount), Palette.NUMBER_CRIT)
 	else:
 		var color := Palette.NUMBER_DEALT if team == Team.WILD else Palette.NUMBER_TAKEN
 		field.show_number(_number_point(), str(roundi(amount)), color)

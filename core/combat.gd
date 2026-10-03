@@ -31,6 +31,16 @@ static func hit_damage(damage: float, ambush: bool, bonus := 0.0) -> float:
 	return damage * (GameConfig.AMBUSH_SCALE + bonus if ambush else 1.0)
 
 
+## 치명타인가: roll(0~1 균등)이 치명 확률보다 작으면.
+static func is_crit(chance: float, roll: float) -> bool:
+	return roll < clampf(chance, 0.0, 1.0)
+
+
+## 치명타면 치명 피해 배율만큼(배율이 1보다 작아도 줄지는 않는다).
+static func crit_hit(damage: float, crit: bool, scale: float) -> float:
+	return damage * maxf(scale, 1.0) if crit else damage
+
+
 ## 스킬 피해 · 회복(기획서 4장 "스킬별 다중 스탯 계수"): Σ 계수 × 능력치 × 환산값(GameConfig.SKILL_DAMAGE_PER_STAT / SKILL_HEAL_PER_STAT).
 ## coefs = {능력치 id: 계수}, stats = {능력치 id: 값}(코어 · 주인공 능력치 9종). 없는 능력치는 0.
 static func skill_amount(coefs: Dictionary, stats: Dictionary, heal := false) -> float:

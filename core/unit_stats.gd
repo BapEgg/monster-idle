@@ -14,6 +14,9 @@ var heal := 0.0
 var heal_interval := 1.0
 ## 이동 속력(px/초, 화면 가로 기준).
 var speed := 0.0
+## 치명 확률(0~1) · 치명 피해 배율(1.5 = 150%). 지금은 모두 기본값(GameConfig.CRIT_*), 장비 · 패시브 단계에서 더해진다.
+var crit_chance := GameConfig.CRIT_CHANCE
+var crit_damage := GameConfig.CRIT_DAMAGE
 ## 능력치 9종 + hp · mp(코어 = CoreStats.compute, 주인공 = JobRules.player_sheet). 스킬 계수가 읽는다(Unit.stat_value). 표에서 만들면 {}.
 var sheet := {}
 
@@ -61,6 +64,16 @@ static func from_core(item: CoreItem) -> UnitStats:
 	if s.heal > 0.0:
 		s.heal = float(core["abundant"]) * GameConfig.CORE_COMBAT_HEAL_PER_ABUNDANT
 	return s
+
+
+## 능력치 표에 9종 다음으로 보이는 치명타 두 줄(UiText.STAT_CRIT_NAMES).
+const CRIT_STATS := ["crit_chance", "crit_damage"]
+
+
+## 치명타 줄의 값 글자("5%" · "150%").
+func crit_text(stat_id: String) -> String:
+	var value := crit_chance if stat_id == "crit_chance" else crit_damage
+	return UiText.STAT_PERCENT % roundi(value * 100.0)
 
 
 ## 능력치 하나(9종). 능력치 표가 없으면(야생 · 코어 없는 헨치) 전투 값에서 거꾸로 셈한다(강력 ← 공격력, 충만 ← 회복력, 나머지 0).

@@ -1,7 +1,10 @@
 extends SceneTree
-## 직업 스킬 임시 아이콘(96×96 PNG)을 만든다: 둥근 네모 바탕 + 효과 종류를 나타내는 흰 도형(칼 · 터짐 · 방패 · 십자 …).
-## 바탕 색: 액티브 = 직업 색, 패시브 = 차분한 회청색(안쪽 고리), 궁극기 = 자홍 + 금테.
-## data/jobs.json의 icon_path 틀(art/skills/<직업>/<스킬>.png)에 저장한다. 진짜 그림이 생기면 같은 이름으로 덮어쓰고 이 스크립트는 다시 돌리지 않는다.
+## 스킬 임시 아이콘(96×96 PNG)을 만든다: 둥근 네모 바탕 + 효과 종류를 나타내는 흰 도형(칼 · 터짐 · 방패 · 십자 …).
+## - 직업 스킬: 바탕 = 액티브는 직업 색, 패시브는 차분한 회청색(안쪽 고리), 궁극기는 자홍 + 금테.
+##   data/jobs.json의 icon_path 틀(art/skills/<직업>/<스킬>.png)에 저장한다.
+## - 헨치 고유 스킬(종마다 하나): 바탕 = 그 종의 색, 테두리 = 종족 색, 도형 = 효과 종류(도감의 skill).
+##   data/henches.json의 skill_icon_path 틀(art/skills/hench/<종>.png)에 저장한다. 메인 화면 스킬 칸 1~3의 바탕이 된다.
+## 이미 있는 파일은 건너뛴다(진짜 그림을 같은 이름으로 덮어쓴 뒤 다시 돌려도 지워지지 않게). 다시 만들려면 -- --force.
 ## 실행: <Godot> --headless --path . --script res://tools/make_skill_icons.gd  → 그다음 --import
 
 const SIZE := 96
@@ -18,23 +21,39 @@ const MOD_GLYPHS := {
 	"attack_speed": "dash", "move_speed": "dash", "range": "eye", "ambush": "hit", "heal_power": "heal",
 	"buff_seconds": "buff", "buff_power": "buff",
 }
+## 헨치 고유 스킬 효과 종류(GameConfig.SKILL_KINDS) → 도형
+const HENCH_GLYPHS := {
+	"strike": "hit", "flurry": "flurry", "blast": "area", "stun": "stun", "taunt": "taunt", "heal": "heal", "heal_all": "heal_all",
+}
+
+var _force := false
+var _made := 0
 
 
 func _initialize() -> void:
+	_force = OS.get_cmdline_user_args().has("--force")
 	for id in JobDb.ids():
 		var job := JobDb.get_job(id)
 		for skill in job.skills:
-			if skill.icon_path == "":
-				continue
-			_save(_icon(skill, job.color), skill.icon_path)
-		print("아이콘: ", id)
+			if skill.icon_path != "" and _wanted(skill.icon_path):
+				_save(_icon(skill, job.color), skill.icon_path)
+	for species: HenchSpecies in HenchDb.all().values():
+		var path := HenchDb.skill_icon_path(species.id)
+		if path != "" and HENCH_GLYPHS.has(species.skill) and _wanted(path):
+			_save(_hench_icon(species), path)
+	print("아이콘 %d개를 만듦" % _made)
 	quit()
+
+
+func _wanted(path: String) -> bool:
+	return _force or not FileAccess.file_exists(path)
 
 
 func _save(image: Image, path: String) -> void:
 	image.resize(SIZE, SIZE, Image.INTERPOLATE_LANCZOS)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path.get_base_dir()))
 	image.save_png(ProjectSettings.globalize_path(path))
+	_made += 1
 
 
 func _icon(skill: JobDb.Skill, job_color: Color) -> Image:
@@ -60,6 +79,19 @@ func _icon(skill: JobDb.Skill, job_color: Color) -> Image:
 	if skill.type == "ultimate":
 		for at: Vector2 in [Vector2(0.2, 0.2), Vector2(0.8, 0.78)]:
 			_star(img, at * s, s * 0.07, ULTIMATE_RIM)
+	return img
+
+
+## 헨치 고유 스킬: 종족 색 테두리 + 종 색 바탕 + 효과 종류 도형.
+func _hench_icon(species: HenchSpecies) -> Image:
+	var s := float(SIZE * SCALE)
+	var img := Image.create(int(s), int(s), false, Image.FORMAT_RGBA8)
+	var tribe := TribeDb.get_tribe(species.tribe)
+	var rim := tribe.color if tribe != null else species.color.darkened(0.35)
+	_round_rect(img, Rect2(0.0, 0.0, 1.0, 1.0), rim.darkened(0.15), s)
+	_round_rect(img, Rect2(0.06, 0.06, 0.88, 0.88), species.color.darkened(0.2), s)
+	_polygon(img, _scaled([Vector2(0.12, 0.1), Vector2(0.88, 0.1), Vector2(0.88, 0.22), Vector2(0.12, 0.32)], s), Color(1, 1, 1, 0.12))
+	_glyph(img, HENCH_GLYPHS[species.skill], s)
 	return img
 
 

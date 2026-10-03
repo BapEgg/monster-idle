@@ -64,3 +64,22 @@ func test_ambush_damage() -> void:
 	expect_near(GameConfig.AMBUSH_SCALE, 1.5, "기습 배율 1.5")
 	expect_near(Combat.hit_damage(12.0, true), 18.0, "기습이면 12 → 18")
 	expect_near(Combat.hit_damage(12.0, false), 12.0, "기습이 아니면 그대로")
+
+
+## 사용자 결정(2026-10-03): 능력치에 치명 확률 · 치명 피해. 기본값(임시)에서 시작하고 기본 공격 · 스킬 피해 모두 치명타가 난다.
+func test_crit() -> void:
+	expect_true(Combat.is_crit(0.05, 0.049), "굴림이 확률보다 작으면 치명")
+	expect_true(not Combat.is_crit(0.05, 0.05), "굴림이 확률 이상이면 치명 아님")
+	expect_true(not Combat.is_crit(0.0, 0.0), "확률 0이면 치명 없음")
+	expect_true(Combat.is_crit(1.5, 0.999), "확률이 1을 넘어도 늘 치명(1로 자름)")
+	expect_near(Combat.crit_hit(20.0, true, 1.5), 30.0, "치명이면 20 → 30(150%)")
+	expect_near(Combat.crit_hit(20.0, false, 1.5), 20.0, "치명이 아니면 그대로")
+	expect_near(Combat.crit_hit(20.0, true, 0.8), 20.0, "치명 배율이 1보다 작아도 줄지 않음")
+	var stats := UnitStats.for_hench("melee", true)
+	expect_near(stats.crit_chance, GameConfig.CRIT_CHANCE, "야생도 기본 치명 확률")
+	expect_near(UnitStats.from_core(CoreItem.from_dict({"species": "gochuryong", "suffix": "mighty", "level": 5})).crit_damage, GameConfig.CRIT_DAMAGE, "코어 헨치도 기본 치명 피해")
+	expect_near(JobRules.player_stats("rogue", 10).crit_chance, GameConfig.CRIT_CHANCE, "주인공도 기본 치명 확률(장비 · 패시브는 그 단계에서)")
+	expect_true(stats.crit_text("crit_chance") == "%d%%" % roundi(GameConfig.CRIT_CHANCE * 100.0), "치명 확률 글자 %s" % stats.crit_text("crit_chance"))
+	expect_true(stats.crit_text("crit_damage") == "%d%%" % roundi(GameConfig.CRIT_DAMAGE * 100.0), "치명 피해 글자 %s" % stats.crit_text("crit_damage"))
+	# 치명 기대 피해가 너무 크지 않게(하루 처치 수를 크게 흔들지 않게): 1 + 확률 × (배율 − 1)
+	expect_true(1.0 + GameConfig.CRIT_CHANCE * (GameConfig.CRIT_DAMAGE - 1.0) < 1.1, "기본 치명타의 평균 피해 증가는 10% 미만")

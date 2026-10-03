@@ -24,6 +24,7 @@ func _initialize() -> void:
 	# 마우스는 창을 통과하고(왼쪽 위 1px만 남김), 창은 키보드 포커스를 받지 않는다.
 	DisplayServer.window_set_mouse_passthrough(PackedVector2Array([Vector2.ZERO, Vector2(1, 0), Vector2(0, 1)]))
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
+	Unit.crit_override = 0  # 피해량을 정확히 재는 검사가 많아서 치명타는 끈다(치명타 검사에서만 켠다)
 	var store := LocalSaveStore.new(SMOKE_SAVE_PATH)
 	store.erase()
 	var main: Node = load(MAIN_SCENE).instantiate()
@@ -211,6 +212,13 @@ func _run(main: Node) -> void:
 			break
 	lost = wild.stats.max_hp - wild.hp
 	_expect(is_equal_approx(lost, hit), "풀오토: 알아채기 전이어도 첫 타는 보통 (%.0f)" % lost)
+	# 치명타(사용자 결정 2026-10-03): 치명이 나면 치명 피해 배율만큼, 떠오르는 숫자는 "치명! n"
+	Unit.crit_override = 1
+	var hp_before := wild.hp
+	wild.take_damage(hit, player)  # 주인공의 기본 공격 한 번(풀오토라 기습 없음)
+	var crit_hit := hp_before - wild.hp
+	_expect(is_equal_approx(crit_hit, hit * GameConfig.CRIT_DAMAGE) and _has_number(main, UiText.CRIT_NUMBER % roundi(crit_hit)), "치명타: 피해 %d%%(%.0f → %.0f), 숫자 \"치명!\"" % [roundi(GameConfig.CRIT_DAMAGE * 100.0), hit, crit_hit])
+	Unit.crit_override = 0
 	_remove(wild)
 	_set_party_paused(main, false)
 
@@ -239,6 +247,7 @@ func _run(main: Node) -> void:
 	await _tap(hud.skill_slot(1).global_position)
 	await _physics_frames(3)
 	_expect(shooter.skill_casts == 1 and not shooter.skill.is_ready() and hud.skill_slot(1).skill.left > 0.0, "%s 칸을 누름 → %s, 칸에 대기 시간" % [shooter.species.name, shooter.skill.title])
+	_expect(hud.skill_slot(1).shows_gray() and hud.skill_slot(2).shows_picture() and not hud.skill_slot(2).shows_gray() and hud.skill_slot(3).shows_picture(), "스킬 칸 바탕 = 스킬 그림(헨치 · 직업), 대기 중인 칸은 흑백 + 남은 초")
 	_remove(wild)
 	# 기절: 돌구아나(꼬리 내려찍기 = 기절) 코어를 1번 자리에 넣고, 멀리 있는 몹에게 눌러 쓰면 다가가서 쓴다
 	var stunner := _find_core(main.get("bag"), "dolguana", CoreItem.Gender.MALE)
@@ -353,6 +362,7 @@ func _run(main: Node) -> void:
 	_expect(not skill_window.visible, "닫기 → 스킬 상세 창 닫힘")
 	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
 	_expect(info.stat_value_label(gochu.suffix_id).get_theme_color("font_color") == Palette.STAT_ACCENT and info.stat_value_label(other_stat).get_theme_color("font_color") == Palette.TEXT, "정보창 능력치 표: 접미사로 강한 능력치만 강조색")
+	_expect(info.stat_value_label("crit_chance").text == UnitStats.from_core(gochu).crit_text("crit_chance") and info.stat_value_label("crit_damage").text == UnitStats.from_core(gochu).crit_text("crit_damage"), "정보창 능력치 표 끝에 치명 확률 %s · 치명 피해 %s" % [info.stat_value_label("crit_chance").text, info.stat_value_label("crit_damage").text])
 	await _tap(_center_of(info, "Party"))
 	await _physics_frames(2)
 	party = main.get("party")
@@ -721,6 +731,8 @@ func _run(main: Node) -> void:
 	await _physics_frames(2)
 	var sheet_now := JobRules.player_sheet("warrior", 20, job.mods(20))
 	_expect(panel.current_tab() == "stats" and not sections[0].is_visible_in_tree() and panel.stat_text("mighty") == str(sheet_now["mighty"]) and panel.stat_text("tough") == str(sheet_now["tough"]) and panel.stat_text("hp") == str(sheet_now["hp"]), "능력치 탭: 능력치 9종 + HP · MP(공격 %s · 체력 %s)" % [panel.stat_text("mighty"), panel.stat_text("tough")])
+	var player_stats := JobRules.player_stats("warrior", 20, job.mods(20))
+	_expect(panel.stat_text("crit_chance") == player_stats.crit_text("crit_chance") and panel.stat_text("crit_damage") == player_stats.crit_text("crit_damage") and not (panel.find_child("Points", true, false) as Label).visible and (panel.find_child("Stats", true, false) as GridContainer).get_child_count() == 13 and SuffixDb.ids().size() == 9, "능력치 탭: 치명 확률 %s · 치명 피해 %s, 스킬 포인트는 안 보임" % [panel.stat_text("crit_chance"), panel.stat_text("crit_damage")])
 	await _save_shot("job_stats")
 	await _seconds(0.2)
 	await _tap(panel.tab_button("gear").get_global_rect().get_center())
@@ -1073,6 +1085,14 @@ func _spawn_wild(main: Node, id: String, offset: Vector2, look: Vector2) -> Henc
 func _remove(unit: Unit) -> void:
 	unit.remove_from_group(Unit.group_name(unit.team))
 	unit.queue_free()
+
+
+## 필드에 그 글자의 떠오르는 숫자가 떠 있나.
+func _has_number(main: Node, text: String) -> bool:
+	for node in (main.get_node("Field") as Field).effects.get_children():
+		if node is FloatingNumber and (node as FloatingNumber).text == text:
+			return true
+	return false
 
 
 func _set_party_paused(main: Node, stop: bool) -> void:

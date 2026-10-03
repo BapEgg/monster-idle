@@ -8,6 +8,8 @@ const PATH := "res://data/henches.json"
 static var _cache := {}
 static var _recipe_index := {}  # "주 코어 id|보조 코어 id" → 결과 id
 static var _draft_keys := {}  # 초안 공식의 열쇠
+static var _icon_template := ""  # 고유 스킬 그림 경로 틀(henches.json의 skill_icon_path)
+static var _skill_icons := {}
 
 
 ## id로 종을 찾는다. 없으면 null.
@@ -18,8 +20,27 @@ static func get_species(id: String) -> HenchSpecies:
 ## 모든 종 { id: HenchSpecies }.
 static func all() -> Dictionary:
 	if _cache.is_empty():
-		_cache = parse(FileAccess.get_file_as_string(PATH))
+		var text := FileAccess.get_file_as_string(PATH)
+		_cache = parse(text)
+		var root: Variant = JSON.parse_string(text)
+		_icon_template = str(root.get("skill_icon_path", "")) if root is Dictionary else ""
 	return _cache
+
+
+## 그 종의 고유 스킬 그림 경로(henches.json의 skill_icon_path 틀, 종마다 하나). 틀이 없으면 "".
+static func skill_icon_path(species_id: String) -> String:
+	all()
+	return _icon_template.format({"species": species_id}) if _icon_template != "" else ""
+
+
+## 그 종의 고유 스킬 그림(메인 화면 스킬 칸 바탕). 지금은 tools/make_skill_icons.gd가 만든 임시 그림이고, 같은 이름으로 덮어쓰면 바뀐다. 없으면 null.
+static func skill_icon(species_id: String) -> Texture2D:
+	var path := skill_icon_path(species_id)
+	if path == "":
+		return null
+	if not _skill_icons.has(path):
+		_skill_icons[path] = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	return _skill_icons[path]
 
 
 ## 믹스 공식으로 태어날 종 id(주 코어 종, 보조 코어 종). 기획서 공식과 초안 공식을 함께 찾는다. 없으면 "".

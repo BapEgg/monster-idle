@@ -3,7 +3,8 @@ class_name SkillSlot
 extends TouchScreenButton
 ## 스킬 칸 하나(사용자 결정 2026-10-02: 공격 버튼 옆 6칸). 1~3번 = 파티 헨치 1~3의 고유 액티브,
 ## 4~6번 = 주인공 직업 액티브, 따로 하나 = 궁극기 칸. 누르면 그 스킬을 쓴다(풀오토가 아니어도).
-## 그림은 주인(헨치 · 직업) 색 바탕 + 스킬 이름(두 줄)으로 대체한다. 대기 중에는 이름 대신 어두운 부채꼴과 남은 초가 보인다.
+## 칸 바탕 = 스킬 그림(SkillTimer.icon: 헨치 고유 스킬은 종마다, 직업 스킬은 스킬마다 — 사용자 결정 2026-10-03: 이름 대신 그림으로 구분).
+## 대기 중에는 그림이 흑백으로 바뀌고(꺼진 느낌) 어두운 부채꼴 + 남은 초가 보인다. 그림이 없으면 주인 색 바탕 + 스킬 이름(두 줄).
 ## 아직 배우지 않은 궁극기 칸은 locked_text("Lv 25")를 보여 준다(레벨이 모자라면 빨강, 됐으면 회색 — 직업 창과 같은 뜻).
 ## 테두리: 쓸 수 있으면 금빛, 눌러서 쓰려고 기다리는 중이면 흰색.
 ## 원점 = 칸 가운데. 크기는 shape(RectangleShape2D)의 크기를 따른다(여섯 칸이 같은 shape를 함께 써서 한 번에 바뀐다).
@@ -18,7 +19,7 @@ const OUTLINE := 4
 const TINT_ALPHA := 0.45
 const PIE_POINTS := 32
 
-## 보여 줄 스킬(없으면 빈 칸). HUD가 매 프레임 넣어 준다.
+## 보여 줄 스킬(없으면 빈 칸). HUD가 매 프레임 넣어 준다. 실행 검사용: shows_picture() · shows_gray().
 var skill: SkillTimer
 ## 빈 칸일 때 보일 글자(예: 궁극기 칸 "Lv 25")와 색(레벨이 모자라면 빨강, 레벨은 됐는데 안 배웠으면 회색)
 var locked_text := ""
@@ -44,8 +45,9 @@ func _draw() -> void:
 	if box_shape == null:
 		return
 	var rect := Rect2(-box_shape.size * 0.5, box_shape.size)
+	var picture := skill.icon if skill != null else null
 	var box := StyleBoxFlat.new()
-	box.bg_color = Palette.SKILL_SLOT if skill == null else Color(tint, TINT_ALPHA)
+	box.bg_color = Palette.SKILL_SLOT if skill == null or picture != null else Color(tint, TINT_ALPHA)
 	box.border_color = Palette.SKILL_SLOT_BORDER
 	box.set_border_width_all(BORDER)
 	box.set_corner_radius_all(CORNER)
@@ -55,13 +57,21 @@ func _draw() -> void:
 	elif skill != null and skill.is_ready():
 		box.border_color = Palette.SKILL_SLOT_READY
 		box.set_border_width_all(READY_BORDER)
+	if picture != null:
+		# 바탕 → 그림(대기 중이면 흑백) → 테두리만
+		var back := box.duplicate() as StyleBoxFlat
+		back.set_border_width_all(0)
+		draw_style_box(back, rect)
+		draw_texture_rect(picture if skill.is_ready() else UiKit.gray_texture(picture), rect.grow(-1.0), false)
+		box.draw_center = false
 	draw_style_box(box, rect)
 	if skill == null:
 		if locked_text != "":
 			_draw_centered(locked_text, FONT_SIZE, FONT_SIZE * 0.35, locked_color)
 		return
 	if skill.is_ready():
-		_draw_title(skill.title)
+		if picture == null:
+			_draw_title(skill.title)
 	else:
 		_draw_cooldown(rect, skill.wait_ratio())
 		_draw_centered(str(ceili(skill.left)), SECONDS_FONT_SIZE, SECONDS_FONT_SIZE * 0.35)
@@ -107,3 +117,13 @@ func _draw_centered(text: String, font_size: int, baseline: float, color := Pale
 	var at := Vector2(-width * 0.5, baseline)
 	draw_string_outline(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, OUTLINE, Palette.TEXT_OUTLINE)
 	draw_string(font, at, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+
+## 스킬 그림을 바탕으로 그리는 중인가(실행 검사용).
+func shows_picture() -> bool:
+	return skill != null and skill.icon != null
+
+
+## 대기 중이라 그림이 흑백인가(실행 검사용).
+func shows_gray() -> bool:
+	return shows_picture() and not skill.is_ready()

@@ -63,6 +63,8 @@ const NUMBER_TAKEN := Color("ff7a6b")
 const NUMBER_HEAL := Color("7dff8a")
 ## 기습 첫 타 숫자
 const NUMBER_AMBUSH := Color("ffa53d")
+## 치명타 숫자
+const NUMBER_CRIT := Color("ff5ad0")
 
 # ─── 코어 · 가방 ──────────────────────────────────
 ## 코어(임시 도형: 종 색 보석): 테두리 / 반짝이는 면 / 빛나는 코어의 금빛

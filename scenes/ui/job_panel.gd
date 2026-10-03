@@ -157,6 +157,8 @@ func show_tab(tab: String) -> void:
 	_tab = tab
 	if tab != "skills":
 		_picking = false
+	# 스킬 포인트는 스킬 탭에서만(능력치 탭은 장비 · 패시브로 바뀐 능력치를 보는 곳이지 포인트를 나누는 곳이 아니다 — 사용자 결정 2026-10-03)
+	_points.visible = tab == "skills"
 	for each: String in _tabs:
 		var on := each == tab
 		(_tabs[each][1] as Control).visible = on
@@ -234,10 +236,11 @@ func refresh() -> void:
 
 # ─── 왼쪽: 능력치 ─────────────────────────────────
 
-## 능력치 표: HP · MP 다음 9종(코어 정보창과 같은 이름 · 순서). 칸마다 이름(회색) + 숫자(흰색 굵게, 패시브로 오른 값은 초록).
+## 능력치 표: HP · MP 다음 9종(코어 정보창과 같은 이름 · 순서), 끝에 치명 확률 · 치명 피해. 칸마다 이름(회색) + 숫자(흰색 굵게, 패시브로 오른 값은 초록).
 func _build_stat_table() -> void:
 	var ids := PackedStringArray(["hp", "mp"])
 	ids.append_array(SuffixDb.ids())
+	ids.append_array(UnitStats.CRIT_STATS)
 	for stat in ids:
 		var cell := HBoxContainer.new()
 		cell.name = stat
@@ -251,7 +254,7 @@ func _build_stat_table() -> void:
 			"mp":
 				caption.text = UiText.JOB_SHEET_MP
 			_:
-				caption.text = SuffixDb.stat_name(stat)
+				caption.text = UiText.STAT_CRIT_NAMES.get(stat, SuffixDb.stat_name(stat))
 		var number := Label.new()
 		number.name = "Value"
 		UiKit.style_number(number, STAT_FONT_SIZE)
@@ -273,12 +276,12 @@ func _show_stats(sheet: Dictionary, stats: UnitStats, mods: Dictionary) -> void:
 		boosted["mp"] = true
 	for cell: Control in _stats.get_children():
 		var value := cell.get_node("Value") as Label
-		value.text = str(int(sheet.get(cell.name, 0)))
+		value.text = stats.crit_text(cell.name) if UnitStats.CRIT_STATS.has(str(cell.name)) else str(int(sheet.get(cell.name, 0)))
 		value.add_theme_color_override("font_color", Palette.STAT_BOOSTED if boosted.has(str(cell.name)) else Palette.TEXT)
 	_combat.text = UiText.JOB_COMBAT_LINE % [roundi(stats.attack), SkillSheet.seconds(snappedf(stats.attack_interval, 0.01)), roundi(stats.attack_range)]
 
 
-## 그 능력치의 숫자 글자(실행 검사용, hp · mp · 9종 id).
+## 그 능력치의 숫자 글자(실행 검사용, hp · mp · 9종 · 치명타 id).
 func stat_text(stat: String) -> String:
 	var cell := _stats.get_node_or_null(stat)
 	return (cell.get_node("Value") as Label).text if cell != null else ""

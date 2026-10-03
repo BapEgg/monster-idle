@@ -1,5 +1,6 @@
 {
   "about": "헨치 도감 데이터. 기획서 5~6장 표 64종을 옮긴 것(이름·수치는 초안). aggressive = 선공(빨간 이름표, 기획서 4장 초안: 하급은 종족당 근접딜러 1종, 중급은 종족당 1종, 상급·왕은 선공). recipes = 믹스 공식 [주 코어, 보조 코어] 쌍(기획서 표의 \"A + B\" = 주 A · 보조 B). 같은 두 종이라도 어느 쪽이 주 코어냐에 따라 다른 공식이다(사용자 결정 2026-10-03). draft_recipes = 기획서에 없는 반대 방향(주 B · 보조 A) 공식의 초안: 주 코어 종족의 같은 등급 종(같은 역할이 있으면 그 종). 임시라서 고쳐도 된다. 왕의 공식은 비밀이라 비어 있다. skill = 고유 액티브의 효과 종류(임시 분류: strike 강타 · flurry 연타 · blast 범위 · stun 기절 · taunt 도발+보호막 · heal 회복 · heal_all 범위 회복, 수치는 GameConfig.SKILL_KINDS). 원작 설명(active)의 화상·혼란 같은 덧붙은 효과는 스킬 기초 단계에서 아직 없다. 왕은 미정이라 비어 있다. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다.",
+  "skill_icon_path": "res://art/skills/hench/{species}.png",
   "henches": [
     {
       "id": "sotmabaem",

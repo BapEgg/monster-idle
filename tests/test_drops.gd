@@ -131,3 +131,9 @@ func _wild(id: String, age: CoreItem.Age, variant: bool) -> CoreItem:
 	item.level = 7
 	item.variant = variant
 	return item
+
+
+func test_suffix_ids_are_a_copy() -> void:
+	var ids := SuffixDb.ids()
+	ids.append("crit_chance")
+	expect_true(SuffixDb.ids().size() == 9, "받은 접미사 목록을 늘려도 도감의 목록은 그대로(9종)")

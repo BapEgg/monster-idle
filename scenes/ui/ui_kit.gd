@@ -14,6 +14,7 @@ const CHECK_WIDTH := 3.0
 const BOLD_EMBOLDEN := 0.7
 
 static var _bold: FontVariation
+static var _gray := {}  # 그림 → 흑백 그림(한 번 만든 것은 다시 쓴다)
 
 
 ## 굵은 글꼴(숫자용).
@@ -123,3 +124,24 @@ static func draw_lock(canvas: CanvasItem, at: Vector2, width: float, color: Colo
 	canvas.draw_style_box(box, body)
 	canvas.draw_arc(at + Vector2(0, -width * 0.15), width * 0.32, PI, TAU, 16, color, maxf(width * 0.13, 2.0), true)
 	canvas.draw_circle(body.get_center() + Vector2(0, -width * 0.04), width * 0.1, Palette.CHECK_MARK, true, -1.0, true)
+
+
+## 그림을 흑백으로(스킬 칸이 대기 중일 때 "꺼진" 느낌). dim = 밝기 배율. 그림마다 한 번만 만든다.
+static func gray_texture(texture: Texture2D, dim := 0.65) -> Texture2D:
+	if texture == null:
+		return null
+	var key := texture.get_instance_id()
+	if not _gray.has(key):
+		var image := texture.get_image()
+		if image == null:
+			return texture
+		if image.is_compressed():
+			image.decompress()
+		image.convert(Image.FORMAT_RGBA8)
+		for y in image.get_height():
+			for x in image.get_width():
+				var color := image.get_pixel(x, y)
+				var level := color.get_luminance() * dim
+				image.set_pixel(x, y, Color(level, level, level, color.a))
+		_gray[key] = ImageTexture.create_from_image(image)
+	return _gray[key]
