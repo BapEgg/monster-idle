@@ -20,6 +20,7 @@ var _refresh_left := 0.0
 @onready var _rates: Label = %Rates
 @onready var _balance: Label = %Balance
 @onready var _drop_boost: Button = %DropBoost
+@onready var _dev_notes: Button = %DevNotes
 @onready var _party_title: Label = %PartyTitle
 @onready var _party_rows: Label = %PartyRows
 
@@ -35,6 +36,11 @@ func _ready() -> void:
 	_drop_boost.set_pressed_no_signal(Balance.dev_boost > 1.0)
 	_drop_boost.toggled.connect(func(on: bool) -> void:
 		Balance.dev_boost = GameConfig.DEV_DROP_BOOST if on else 1.0
+		refresh())
+	UiKit.style_button(_dev_notes, TEXT_FONT_SIZE)
+	_dev_notes.set_pressed_no_signal(SkillSheet.dev_notes)
+	_dev_notes.toggled.connect(func(on: bool) -> void:
+		SkillSheet.dev_notes = on
 		refresh())
 	UiKit.style_caption(_party_title, TEXT_FONT_SIZE)
 	_party_title.text = UiText.DEBUG_PARTY_TITLE
@@ -101,6 +107,7 @@ func _show_balance() -> void:
 		got["cores_per_day"], roundi(cores.x), roundi(cores.y), got["shining_per_week"], roundi(GameConfig.TARGET_SHINING_PER_WEEK.x),
 		got["variants_per_month"], roundi(variants.x), roundi(variants.y)]
 	_drop_boost.text = UiText.DEBUG_DROP_BOOST % [roundi(GameConfig.DEV_DROP_BOOST), UiText.DEBUG_ON if Balance.dev_boost > 1.0 else UiText.DEBUG_OFF]
+	_dev_notes.text = UiText.DEBUG_DEV_NOTES % (UiText.DEBUG_ON if SkillSheet.dev_notes else UiText.DEBUG_OFF)
 
 
 ## 파티 전투 값 글자(실행 검사용).

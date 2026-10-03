@@ -98,6 +98,8 @@ const SKILL_DAMAGE_PER_STAT := 0.75
 const SKILL_HEAL_PER_STAT := 0.8
 ## 헨치 고유 액티브의 둘째 계수: 도감 설명 괄호 안 "○○ 비례"(예: 물대포 (명중 비례))의 능력치에 이 계수를 더한다(임시)
 const SKILL_SECONDARY_COEF := 0.5
+## 스킬 툴팁의 마나 소모 = 재사용 대기(초) × 이 값(임시 — 아직 MP를 실제로 쓰지 않는다. MP를 붙일 때 스킬마다 정한다)
+const SKILL_MANA_PER_COOLDOWN := 2.0
 ## 스킬 칸을 눌렀는데 바로 쓸 수 없으면(대상이 멀거나 없음) 이 시간(초) 동안 다가가며 기다렸다가 쓴다. 지나면 없던 일로.
 const SKILL_REQUEST_SECONDS := 3.0
 ## 도발: 맞은 적은 지금 가장 높은 위협 점수보다 이만큼 높게 도발한 헨치를 노린다.
@@ -143,9 +145,11 @@ const JOB_ACTIVE_SLOTS := 3
 const JOB_PASSIVE_SLOT_LEVELS := [10, 30]
 ## 스킬 포인트: 주인공 레벨이 오를 때마다 이만큼(기획서: 레벨업마다 스킬 포인트, 메이플키우기식)
 const JOB_SKILL_POINTS_PER_LEVEL := 1
-## 스킬 레벨 상한과 레벨 1당 효과(배율 · 보호막 · 버프 · 회복 · 패시브 보정) 증가
+## 스킬 레벨 상한과 레벨 1당 효과(계수 · 보호막 · 버프 · 패시브 보정) 증가
 const JOB_SKILL_MAX_LEVEL := 10
 const JOB_SKILL_LEVEL_BONUS := 0.1
+## 스킬 레벨 1당 재사용 대기가 처음 값의 이만큼 줄어든다(임시, 사용자 예시 "재사용 10초 → 9.5초")
+const JOB_SKILL_COOLDOWN_CUT := 0.05
 ## 버프 · 보호막 · 회복이 닿는 "파티 모두"의 거리(땅 위 px)
 const JOB_PARTY_RADIUS := 600.0
 ## 풀오토에서 직업 스킬을 알아서 쓰는 조건: 회복은 체력이 이 비율 아래인 동료가 있을 때
@@ -499,3 +503,6 @@ const SAVE_SOON_SECONDS := 2.0
 const DEV_STARTER_BAG := true
 ## 켜면 화면 오른쪽 위에 디버그 버튼이 보인다(사냥 기록 · 시간당 처치 · 파티 전투 값). 출시 전에 끈다.
 const DEV_DEBUG_PANEL := true
+## 스킬 상세 창의 개발 문구("수치는 임시" · "기획 효과" · "기획 설명")를 처음부터 보일까(사용자 결정 2026-10-03: 개발 모드에서만).
+## 꺼 두고, 필요하면 디버그 화면의 "개발 문구" 버튼으로 켠다.
+const DEV_SKILL_NOTES := false

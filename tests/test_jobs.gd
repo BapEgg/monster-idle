@@ -24,7 +24,10 @@ func test_job_data_matches_plan() -> void:
 			else:
 				expect_true(float(config.get("cooldown", 0.0)) > 0.0 and not (config.get("effects", []) as Array).is_empty(), "%s: 대기 시간 · 효과가 있다" % skill.name)
 				expect_true(JobSkill.create(skill, 1) != null, "%s: 필드에서 쓸 수 있다" % skill.name)
-				expect_true(not SkillSheet.job_skill(skill, 1).get("rows", []).is_empty(), "%s: 상세 창 계수 줄" % skill.name)
+				var tip := SkillSheet.job_skill(skill, 1)
+				var sentence := SkillSheet.plain(tip["body"])
+				expect_true(sentence.ends_with(".") and not sentence.contains("%") or sentence.contains("%"), "%s: 툴팁 설명 문장" % skill.name)
+				expect_true(sentence.length() > 10 and SkillSheet.plain(tip["line"]) != "" and not sentence.contains("[") , "%s: 설명 문장 · 마나 · 재사용 · 사거리 줄 — %s" % [skill.name, sentence])
 				for effect: Dictionary in config.get("effects", []):
 					if str(effect["type"]) in ["hit", "area", "dash", "retreat", "pierce", "storm", "heal"]:
 						var coefs: Dictionary = effect.get("coefs", {})
@@ -141,25 +144,32 @@ func test_job_skill_runtime_and_sheet() -> void:
 	expect_true(not runtime.is_ready() and runtime.wait_ratio() == 1.0, "쓰면 대기")
 	expect_true(JobSkill.create(JobDb.get_skill("encore"), 1) == null, "패시브는 필드에서 쓰는 스킬이 아니다")
 	expect_true(not JobSkill.create(JobDb.get_skill("courage_melody"), 1).needs_enemy(), "버프는 적이 없어도 쓴다")
+	expect_near(JobRules.cooldown_at(10.0, 2), 9.5, "스킬 레벨 1당 재사용 대기 −5%(10초 → 9.5초)")
+	expect_near(JobSkill.create(JobDb.get_skill("aimed_shot"), 3).cooldown, float(GameConfig.JOB_SKILLS["aimed_shot"]["cooldown"]) * (1.0 - 2.0 * GameConfig.JOB_SKILL_COOLDOWN_CUT), "필드 스킬도 레벨만큼 재사용 대기가 준다")
 	var stats := UnitStats.new()
 	stats.max_hp = 400.0
+	stats.attack_range = 240.0
 	stats.sheet = {"mighty": 20, "precise": 10}
 	var sheet := SkillSheet.job_skill(JobDb.get_skill("aimed_shot"), 2, stats)
-	expect_true(sheet["rows"][0][1] == UiText.JOB_LEVEL_VALUE % [2, GameConfig.JOB_SKILL_MAX_LEVEL] and sheet["motion"] == "strike", "상세: 스킬 레벨 2/%d · 강타 모션" % GameConfig.JOB_SKILL_MAX_LEVEL)
-	var damage := ""
-	for row: Array in sheet["rows"]:
-		if row[0] == UiText.SKILL_ROW_PHYSICAL:
-			damage = row[1]
-	# 조준 사격 = 공격 180% + 명중 80%, 스킬 레벨 2 → ×1.1 = 198% · 88%, 지금 = (198% × 20 + 88% × 10) × 0.75
+	expect_true(sheet["level"] == UiText.TIP_LEVEL % [2, GameConfig.JOB_SKILL_MAX_LEVEL] and sheet["level_state"] == "learned" and sheet["motion"] == "strike", "툴팁: Lv 2/%d · 강타 모션" % GameConfig.JOB_SKILL_MAX_LEVEL)
+	expect_true(sheet["tags"] == PackedStringArray([UiText.JOB_TYPE_NAMES["active"], UiText.TIP_TAG_RANGED, UiText.TIP_TAG_SINGLE]), "꼬리표: 액티브 · 원거리 · 단일")
+	var line := SkillSheet.plain(sheet["line"])
+	var cool := JobRules.cooldown_at(float(GameConfig.JOB_SKILLS["aimed_shot"]["cooldown"]), 2)
+	expect_true(line == UiText.TIP_LINE % [str(SkillSheet.mana_cost(cool)), UiText.TIP_SECONDS % SkillSheet.seconds(cool), "240"], "한 줄: 마나 · 재사용 대기(레벨 2) · 사거리 — %s" % line)
+	# 조준 사격 = 공격 180% + 명중 80%, 스킬 레벨 2 → ×1.1 = 198% · 88%, 숫자 = (198% × 20 + 88% × 10) × 0.75
 	var now := roundi((1.98 * 20.0 + 0.88 * 10.0) * GameConfig.SKILL_DAMAGE_PER_STAT)
-	expect_true(damage == "공격 × 198% + 명중 × 88%" + UiText.SKILL_NOW % now, "상세: 물리 피해 = 공격 × n%% + 명중 × n%% (지금 값) — %s" % damage)
+	var body := SkillSheet.plain(sheet["body"])
+	expect_true(body == UiText.TIP_HIT % ["%d(공격 198%% + 명중 88%%)" % now, UiText.TIP_PHYSICAL], "설명: \"대상 하나에게 %d(공격 198%% + 명중 88%%)의 물리 피해\" — %s" % [now, body])
+	var next := SkillSheet.plain(sheet["next"])
+	expect_true(next.contains("공격 198% → 216%") and next.contains("명중 88% → 96%") and next.contains(UiText.TIP_NEXT_COOLDOWN % [SkillSheet.seconds(cool), SkillSheet.seconds(JobRules.cooldown_at(float(GameConfig.JOB_SKILLS["aimed_shot"]["cooldown"]), 3))]), "다음 레벨 비교: 계수 · 재사용 — %s" % next)
+	expect_true(SkillSheet.job_skill(JobDb.get_skill("aimed_shot"), GameConfig.JOB_SKILL_MAX_LEVEL, stats)["next"] == "" and SkillSheet.job_skill(JobDb.get_skill("aimed_shot"), 0, stats, {}, 1)["next"] == "", "최고 레벨 · 안 배운 스킬은 다음 레벨 비교 없음")
 	var magic := SkillSheet.job_skill(JobDb.get_skill("dissonance"), 1, stats)
-	var has_magic := false
-	for row: Array in magic["rows"]:
-		has_magic = has_magic or row[0] == UiText.SKILL_ROW_MAGIC
-	expect_true(has_magic, "불협화음(마나 계수가 첫째) = 마법 피해")
+	var magic_body := SkillSheet.plain(magic["body"])
+	expect_true(magic_body.contains(UiText.TIP_MAGIC) and magic_body.contains("약화") and magic["body"].contains("[url=vulnerable]") and magic_body.contains("6초"), "불협화음(마나 계수가 첫째) = 마법 피해 + 약화(6초 · 수치) — %s" % magic_body)
 	var locked := SkillSheet.job_skill(JobDb.get_skill("sky_splitter"), 0)
-	expect_true(locked["rows"][0][1] == UiText.JOB_LEVEL_LOCKED % 25 and locked["tag"] == UiText.JOB_SKILL_TAG % ["궁수", "궁극기"], "못 배운 스킬: \"Lv 25에 배움\"")
+	expect_true(locked["level"] == UiText.TIP_LEVEL_LOCKED % 25 and locked["level_state"] == "locked" and locked["tags"][0] == UiText.JOB_TYPE_NAMES["ultimate"], "못 배운 궁극기: \"Lv 25에 배움\"")
+	expect_true(SkillSheet.job_skill(JobDb.get_skill("war_cry"), 0, null, {}, 10)["level_state"] == "learnable", "레벨은 됐는데 안 배움 = 배울 수 있음")
 	var passive := SkillSheet.job_skill(JobDb.get_skill("iron_stance"), 1)
-	expect_true(passive["motion"] == SkillSheet.MOTION_PASSIVE and passive["rows"][1][1] == UiText.JOB_MOD_NAMES["hp"] % 15, "패시브: 보정 줄(최대 체력 +15%)")
+	expect_true(passive["motion"] == SkillSheet.MOTION_PASSIVE and SkillSheet.plain(passive["body"]).contains("체력 +15%") and SkillSheet.plain(passive["next"]).contains("체력 +15% → 체력 +16.5%"), "패시브: 보정 + 다음 레벨 — %s" % SkillSheet.plain(passive["next"]))
+	expect_true(SkillSheet.plain(passive["dev"]).contains(JobDb.get_skill("iron_stance").desc), "개발 문구에 기획 설명")
 	expect_true(SkillSheet.job_skill(JobDb.get_skill("protective_veil"), 1)["motion"] == "shield_all" and SkillSheet.job_skill(JobDb.get_skill("first_aid"), 1)["motion"] == "revive", "보호의 막 · 응급 처치 모션")

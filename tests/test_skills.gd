@@ -81,62 +81,68 @@ func test_skill_coefficients() -> void:
 	expect_near(plain.stat("precise"), 0.0, "능력치 표가 없으면 나머지는 0")
 	expect_near(plain.skill_amount({"mighty": 1.0}), 15.0 * GameConfig.SKILL_DAMAGE_PER_STAT / GameConfig.CORE_COMBAT_ATTACK_PER_MIGHTY, "공격 × 100% = 기본 공격 한 대만큼")
 	expect_true(SkillSheet.is_magic({"abundant": 0.8, "mighty": 0.3}) and not SkillSheet.is_magic({"mighty": 1.8, "precise": 0.8}), "첫째(가장 큰) 계수가 마나면 마법 피해")
-	expect_true(SkillSheet.coef_text({"mighty": 1.8, "precise": 0.8}) == "공격 × 180% + 명중 × 80%", "계수 글: 능력치 이름 × n%를 +로 잇는다")
+	expect_true(SkillSheet.coef_text({"mighty": 1.8, "precise": 0.8}) == "공격 180% + 명중 80%", "계수 글: 능력치 이름 n%를 +로 잇는다")
+	var colored := SkillSheet.coef_bb({"mighty": 1.43, "sturdy": 0.44})
+	expect_true(colored.contains(Palette.STAT_COLORS["mighty"].to_html(false)) and colored.contains(Palette.STAT_COLORS["sturdy"].to_html(false)), "계수는 능력치 색(공격 = 주황, 방어 = 노랑)")
 
 
-## 스킬 상세 창(SkillSheet, 사용자 결정 2026-10-03): 피해 옆에 능력치 계수, 지금 값은 그 코어의 능력치로.
+## 스킬 툴팁(SkillSheet, 사용자 결정 2026-10-03: 롤 툴팁처럼) — 헨치 고유 스킬: 이름 + 꼬리표, 마나 · 재사용 · 사거리 줄,
+## 계산된 숫자와 색 계수가 든 설명 문장, 상태이상은 굵게 + 누르면 뜻, 개발 문구는 따로.
 func test_skill_sheet_active() -> void:
 	var gochu := HenchDb.get_species("gochuryong")
 	var stats := UnitStats.new()
 	stats.max_hp = 200.0
+	stats.attack_range = 56.0
 	stats.sheet = {"mighty": 20, "precise": 10, "swift": 12, "abundant": 15}
 	var sheet := SkillSheet.active(gochu, stats)
 	var strike: float = GameConfig.SKILL_KINDS["strike"]["coefs"]["mighty"]
 	var now := roundi(strike * 20.0 * GameConfig.SKILL_DAMAGE_PER_STAT)
-	expect_true(sheet["title"] == "매운 박치기" and sheet["motion"] == "strike" and sheet["description"] == UiText.SKILL_DESCRIPTIONS["strike"], "고추룡 = 매운 박치기, 강타 설명 · 강타 모션")
-	expect_true(_row(sheet, UiText.SKILL_ROW_PHYSICAL) == "공격 × %d%%" % roundi(strike * 100.0) + UiText.SKILL_NOW % now and int(sheet["amount"]) == now, "물리 피해 = 공격 × %d%% (지금 %d)" % [roundi(strike * 100.0), now])
-	expect_true(_row(sheet, UiText.SKILL_ROW_COOLDOWN) == UiText.SKILL_SECONDS % SkillSheet.seconds(GameConfig.SKILL_KINDS["strike"]["cooldown"]) and _row(sheet, UiText.SKILL_ROW_DESIGN) == "공격 + 화상", "재사용 대기 · 기획 효과(도감 괄호 안)")
+	var cooldown: float = GameConfig.SKILL_KINDS["strike"]["cooldown"]
+	expect_true(sheet["title"] == "매운 박치기" and sheet["motion"] == "strike" and int(sheet["amount"]) == now, "고추룡 = 매운 박치기, 강타 모션 · 미리보기 숫자 %d" % now)
+	expect_true(sheet["tags"] == PackedStringArray([UiText.TIP_TAG_HENCH_ACTIVE, UiText.TIP_TAG_MELEE, UiText.TIP_TAG_SINGLE]) and sheet["level"] == "", "꼬리표: 고유 액티브 · 근접 · 단일(헨치 스킬은 레벨 없음)")
+	expect_true(SkillSheet.plain(sheet["line"]) == UiText.TIP_LINE % [str(SkillSheet.mana_cost(cooldown)), UiText.TIP_SECONDS % SkillSheet.seconds(cooldown), "56"], "한 줄: 마나 · 재사용 대기 · 사거리 — %s" % SkillSheet.plain(sheet["line"]))
+	var body := SkillSheet.plain(sheet["body"])
+	expect_true(body == UiText.TIP_HIT % ["%d(공격 %d%%)" % [now, roundi(strike * 100.0)], UiText.TIP_PHYSICAL], "설명 문장 안에 숫자(계수): %s" % body)
+	expect_true(SkillSheet.plain(sheet["dev"]).contains("공격 + 화상") and sheet["dev"].contains("[url=burn]"), "개발 문구에 기획 효과, 화상은 굵게 + 누르면 뜻")
 	var preview := SkillSheet.active(gochu)
-	expect_true(_row(preview, UiText.SKILL_ROW_PHYSICAL) != "" and not _row(preview, UiText.SKILL_ROW_PHYSICAL).contains("("), "능력치를 모르면(미리보기) 지금 값 없이 계수만")
+	expect_true(SkillSheet.plain(preview["body"]) == UiText.TIP_HIT % ["공격 %d%%" % roundi(strike * 100.0), UiText.TIP_PHYSICAL] and int(preview["amount"]) == 0, "능력치를 모르면(미리보기) 숫자 없이 계수만")
 	var water := SkillSheet.active(HenchDb.get_species("haemapo"), stats)
 	var water_now := roundi((strike * 20.0 + GameConfig.SKILL_SECONDARY_COEF * 10.0) * GameConfig.SKILL_DAMAGE_PER_STAT)
-	expect_true(_row(water, UiText.SKILL_ROW_PHYSICAL) == "공격 × %d%% + 명중 × %d%%" % [roundi(strike * 100.0), roundi(GameConfig.SKILL_SECONDARY_COEF * 100.0)] + UiText.SKILL_NOW % water_now, "물대포(명중 비례): 공격 + 명중 계수 — %s" % _row(water, UiText.SKILL_ROW_PHYSICAL))
+	expect_true(SkillSheet.plain(water["body"]).contains("%d(공격 %d%% + 명중 %d%%)" % [water_now, roundi(strike * 100.0), roundi(GameConfig.SKILL_SECONDARY_COEF * 100.0)]), "물대포(명중 비례): 공격 + 명중 계수 — %s" % SkillSheet.plain(water["body"]))
 	var flurry := SkillSheet.active(HenchDb.get_species("gyulbeom"), stats)
 	var hits := int(GameConfig.SKILL_KINDS["flurry"]["hits"])
-	expect_true(_row(flurry, UiText.SKILL_ROW_PHYSICAL).contains("공격 속도 × ") and _row(flurry, UiText.SKILL_ROW_PHYSICAL).contains(UiText.SKILL_HITS_SUFFIX % hits), "연타(공속 비례): 공격 속도 계수 · 몇 번 때리나")
+	expect_true(SkillSheet.plain(flurry["body"]).contains("%d번" % hits) and SkillSheet.plain(flurry["body"]).contains("공격 속도 "), "연타(공속 비례): 몇 번 · 공격 속도 계수")
 	var stun := SkillSheet.active(HenchDb.get_species("dolguana"), stats)
-	expect_true(_row(stun, UiText.SKILL_ROW_RADIUS) == UiText.SKILL_RADIUS_VALUE % roundi(GameConfig.SKILL_KINDS["stun"]["radius"]) and _row(stun, UiText.SKILL_ROW_STUN) != "", "기절: 범위 · 기절 시간")
+	var stun_body := SkillSheet.plain(stun["body"])
+	expect_true(stun_body.contains("반지름 %d" % roundi(GameConfig.SKILL_KINDS["stun"]["radius"])) and stun_body.contains("%s초 동안 기절" % SkillSheet.seconds(GameConfig.SKILL_KINDS["stun"]["stun"])) and stun["body"].contains("[url=stun]"), "기절: 범위 · 지속 시간, 기절은 굵게 + 누르면 뜻 — %s" % stun_body)
+	expect_true(stun["tags"].has(UiText.TIP_TAG_AREA), "기절(범위) 꼬리표 = 범위")
 	var taunt := SkillSheet.active(HenchDb.get_species("sotmabaem"), stats)
 	var share: float = GameConfig.SKILL_KINDS["taunt"]["shield"]
-	expect_true(_row(taunt, UiText.SKILL_ROW_SHIELD).ends_with(UiText.SKILL_NOW % roundi(200.0 * share)), "도발: 보호막 = 최대 체력 × %d%%" % roundi(share * 100.0))
+	var taunt_body := SkillSheet.plain(taunt["body"])
+	expect_true(taunt_body.contains("도발") and taunt_body.contains("%d(최대 체력 %d%%)" % [roundi(200.0 * share), roundi(share * 100.0)]) and taunt["body"].contains("[url=taunt]") and SkillSheet.plain(taunt["line"]).ends_with(UiText.TIP_REACH_SELF), "도발: 도발 + 보호막(최대 체력 %d%%), 사거리 = 자신 — %s" % [roundi(share * 100.0), taunt_body])
 	var heal := SkillSheet.active(HenchDb.get_species("jinjuryong"), stats)
 	var heal_coef: float = GameConfig.SKILL_KINDS["heal"]["coefs"]["abundant"]
-	expect_true(_row(heal, UiText.SKILL_ROW_HEAL) == "마나 × %d%%" % roundi(heal_coef * 100.0) + UiText.SKILL_NOW % roundi(heal_coef * 15.0 * GameConfig.SKILL_HEAL_PER_STAT), "회복 = 마나 × 계수 — %s" % _row(heal, UiText.SKILL_ROW_HEAL))
+	expect_true(SkillSheet.plain(heal["body"]) == UiText.TIP_HEAL_LOWEST % ("%d(마나 %d%%)" % [roundi(heal_coef * 15.0 * GameConfig.SKILL_HEAL_PER_STAT), roundi(heal_coef * 100.0)]), "회복 = 마나 계수 — %s" % SkillSheet.plain(heal["body"]))
+	expect_true(SkillSheet.plain(SkillSheet.link_terms("공격 + 화상")) == "공격 + 화상" and not SkillSheet.dev_notes, "상태이상 링크를 걷으면 글 그대로, 개발 문구는 처음엔 꺼짐")
 
 
 func test_skill_sheet_passive_variant_inherit() -> void:
 	var gochu := HenchDb.get_species("gochuryong")
 	var own := SkillSheet.passive(gochu, gochu)
-	expect_true(own["title"] == gochu.passive and own["tag"] == UiText.SKILL_TAG_PASSIVE and own["motion"] == SkillSheet.MOTION_PASSIVE, "자기 패시브")
+	expect_true(own["title"] == gochu.passive and own["tags"] == PackedStringArray([UiText.SKILL_TAG_PASSIVE]) and own["motion"] == SkillSheet.MOTION_PASSIVE and own["line"] == "", "자기 패시브(마나 · 재사용 줄 없음)")
 	var turtle := HenchDb.get_species("kkangtonggeobuk")
 	var legacy := SkillSheet.passive(gochu, turtle)
-	expect_true(legacy["title"] == turtle.passive and legacy["tag"] == UiText.SKILL_TAG_LEGACY % turtle.name and _row(legacy, UiText.SKILL_ROW_FROM) == turtle.name, "유산 패시브: 원래 주인과 함께")
+	expect_true(legacy["title"] == turtle.passive and legacy["tags"] == PackedStringArray([UiText.SKILL_TAG_LEGACY_SHORT]) and SkillSheet.plain(legacy["body"]).contains(turtle.name), "유산 패시브: 원래 주인과 함께")
 	var item := CoreItem.new()
 	item.species_id = "haemapo"
 	expect_true(SkillSheet.variant(item).is_empty() and SkillSheet.inherit(item).is_empty(), "보통 코어는 변이 · 계승 카드가 없다")
 	item.variant = true
 	var mutated := SkillSheet.variant(item)
-	expect_true(_row(mutated, UiText.SKILL_ROW_STATS) == SuffixDb.stat_list(CoreStats.variant_stats(item)) and _row(mutated, UiText.SKILL_ROW_MIX) == UiText.SKILL_VARIANT_MIX, "변이: 오른 능력치 · 믹스 재료로 못 씀")
+	var first_stat: String = CoreStats.variant_stats(item)[0]
+	expect_true(SkillSheet.plain(mutated["body"]).contains(SuffixDb.stat_name(first_stat)) and SkillSheet.plain(mutated["body"]).contains("+%d%%" % roundi(GameConfig.VARIANT_STAT_BONUS * 100.0)), "변이: 오른 능력치 · 보정")
 	var born := CoreItem.new()
 	born.species_id = "dolguana"
 	born.inherit_stat = "mighty"
 	born.inherit_value = 6
-	expect_true(SkillSheet.inherit(born)["title"] == UiText.SKILL_INHERIT_VALUE % [SuffixDb.stat_name("mighty"), 6], "믹스 계승: 공격 +6")
+	expect_true(SkillSheet.inherit(born)["title"] == UiText.SKILL_INHERIT_VALUE % [SuffixDb.stat_name("mighty"), 6] and SkillSheet.plain(SkillSheet.inherit(born)["body"]).contains("공격 +6"), "믹스 계승: 공격 +6")
 	expect_true(SkillSheet.design_note("물대포 (명중 비례)") == "명중 비례" and SkillSheet.design_note("물대포") == "", "도감 괄호 안 = 기획 효과")
-
-
-func _row(sheet: Dictionary, caption: String) -> String:
-	for row: Array in sheet.get("rows", []):
-		if row[0] == caption:
-			return row[1]
-	return ""

@@ -330,12 +330,11 @@ func _run(main: Node) -> void:
 	_expect(active_chip.title == "매운 박치기" and info.skill_chip(1).title == gochu.species().passive, "스킬 카드: %s / %s" % [active_chip.title, info.skill_chip(1).title])
 	await _tap(active_chip.get_global_rect().get_center())
 	var skill_window := hud.skill_window
-	var damage_row := ""
-	for row: Array in skill_window.row_texts():
-		if row[0] == UiText.SKILL_ROW_PHYSICAL:
-			damage_row = row[1]
 	var gochu_damage := UnitStats.from_core(gochu).skill_amount(HenchSkill.skill_coefs("strike", gochu.species().active))
-	_expect(skill_window.visible and skill_window.texts()[1] == "매운 박치기" and skill_window.preview_motion() == "strike" and damage_row.begins_with(SuffixDb.stat_name("mighty") + " × ") and damage_row.ends_with(UiText.SKILL_NOW % roundi(gochu_damage)), "액티브 카드 → 스킬 상세 창: 강타 모션 · 물리 피해 = 능력치 계수 %s" % damage_row)
+	var body := skill_window.body_text()
+	_expect(skill_window.visible and skill_window.texts()[1] == "매운 박치기" and skill_window.preview_motion() == "strike" and body.contains("%d(%s " % [roundi(gochu_damage), SuffixDb.stat_name("mighty")]), "액티브 카드 → 스킬 툴팁: 강타 모션 · 설명 문장에 숫자(계수) — %s" % body)
+	_expect(skill_window.tag_texts() == PackedStringArray([UiText.TIP_TAG_HENCH_ACTIVE, UiText.TIP_TAG_MELEE, UiText.TIP_TAG_SINGLE]) and skill_window.line_text().begins_with("마나 ") and skill_window.body_bbcode().contains(Palette.STAT_COLORS["mighty"].to_html(false)), "꼬리표(고유 액티브 · 근접 · 단일) · 마나 · 재사용 · 사거리 줄 · 공격 계수는 주황 — %s" % skill_window.line_text())
+	_expect(not skill_window.dev_visible(), "개발 문구(수치는 임시 · 기획 효과)는 개발 모드에서만")
 	_expect(skill_window.find_child("Actions", true, false) == null, "스킬 상세 창은 보기 전용(아래 버튼 없음)")
 	await _seconds(0.45)
 	await _save_shot("skill_detail")
@@ -343,7 +342,7 @@ func _run(main: Node) -> void:
 	await _tap(Vector2(20, 20))  # 창 밖(어두운 덮개)을 누르면 닫힘
 	_expect(not skill_window.visible and hud.bag_panel.visible, "덮개를 누름 → 스킬 상세 창만 닫힘")
 	await _tap(info.skill_chip(1).get_global_rect().get_center())
-	_expect(skill_window.visible and skill_window.preview_motion() == SkillSheet.MOTION_PASSIVE and skill_window.texts()[0] == UiText.SKILL_TAG_PASSIVE, "패시브 카드 → 패시브 상세(늘 켜진 빛)")
+	_expect(skill_window.visible and skill_window.preview_motion() == SkillSheet.MOTION_PASSIVE and skill_window.texts()[0] == UiText.SKILL_TAG_PASSIVE and skill_window.line_text() == "", "패시브 카드 → 패시브 상세(늘 켜진 빛)")
 	await _tap(_center_of(skill_window, "Close"))
 	_expect(not skill_window.visible, "닫기 → 스킬 상세 창 닫힘")
 	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
@@ -438,7 +437,9 @@ func _run(main: Node) -> void:
 	await _save_shot("mix_preview")
 	await _seconds(0.2)
 	await _tap(mix_info.skill_chip(0).get_global_rect().get_center())
-	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == HenchDb.get_species("dolguana").skill and not hud.skill_window.row_texts()[1][1].contains("("), "결과 미리보기의 액티브 카드 → 믹스창 위에 스킬 상세 창(지금 값 없이 계수만)")
+	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == HenchDb.get_species("dolguana").skill and not hud.skill_window.body_text().contains("("), "결과 미리보기의 액티브 카드 → 믹스창 위에 스킬 툴팁(숫자 없이 계수만) — %s" % hud.skill_window.body_text())
+	hud.skill_window.show_term("stun")
+	_expect(hud.skill_window.term_text().begins_with(UiText.STATUS_TERMS["stun"][0]) and hud.skill_window.body_bbcode().contains("[url=stun]"), "기절은 굵게 + 누르면 뜻 말풍선 — %s" % hud.skill_window.term_text())
 	await _seconds(0.6)
 	await _save_shot("skill_blast")
 	await _seconds(0.2)
@@ -599,7 +600,7 @@ func _run(main: Node) -> void:
 	var variant_chip := info.skill_chip(2)
 	_expect(mutant.variant and variant_chip.visible and variant_chip.glyph == "variant" and variant_chip.title == UiText.CHIP_VARIANT_TITLE % roundi(GameConfig.VARIANT_STAT_BONUS * 100.0) and mix_button.disabled, "변이 코어: 막대 오른쪽에 변이 카드(%s), 믹스 버튼은 꺼짐" % variant_chip.title)
 	await _tap(variant_chip.get_global_rect().get_center())
-	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == SkillSheet.MOTION_VARIANT and hud.skill_window.row_texts()[0][1] == SuffixDb.stat_list(CoreStats.variant_stats(mutant)), "변이 카드 → 오른 능력치 · 보정 · 믹스 재료로 못 씀")
+	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == SkillSheet.MOTION_VARIANT and hud.skill_window.body_text().contains(SuffixDb.stat_name(CoreStats.variant_stats(mutant)[0])), "변이 카드 → 오른 능력치 · 보정 · 믹스 재료로 못 씀")
 	await _seconds(0.3)
 	await _save_shot("skill_variant")
 	await _seconds(0.2)
@@ -620,43 +621,43 @@ func _run(main: Node) -> void:
 	await _tap(close.get_global_rect().get_center())
 	await process_frame
 	_expect(not hud.bag_panel.visible and hud.joystick.visible, "닫기 → 가방 창 닫힘, 조이스틱 다시 보임")
-	# 8-2) 주인공 직업(기획서 3장, 직업 1차): Lv 20 전사 → 직업 창(액티브 · 패시브 · 궁극기 한 섹터씩 위아래, 섹터마다 장착 칸 + 스킬 목록) →
-	#      스킬을 눌러 고르고 아래 행동 줄에서 배우기 · 장착 · 레벨 올리기, 장착 칸을 눌러 바꾸기, 미리보기(보기 전용) → 직업 바꾸기.
+	# 8-2) 주인공 직업(기획서 3장, 직업 1차): Lv 20 전사 → 직업 창(위 탭 능력치 / 스킬 / 장비). 스킬 탭 = 액티브 · 패시브 · 궁극기 한 섹터씩,
+	#      섹터마다 큰 장착 칸 + 작은 스킬 카드(잠김 · 배울 수 있음 · 배움 · 장착 중). 카드를 눌러 고르고 아래 행동 줄에서 배우기 · 장착 · 레벨 올리기,
+	#      장착 칸을 눌러 바꾸기, 미리보기(툴팁) → 능력치 탭 → 직업 바꾸기.
 	var job: JobState = main.get("job")
 	_expect(job.levels.keys() == ["shield_bash"] and job.learnable(20) == ["war_cry", "shield_block", "charge", "iron_stance"], "Lv 20 전사: 처음 스킬(방패 밀치기)만 배움, 배울 수 있는 스킬 4개")
 	_expect(hud.skill_slot(3).skill.title == "방패 밀치기" and hud.skill_slot(4).skill == null and hud.ultimate_slot.skill == null and hud.ultimate_slot.locked_text == UiText.SKILL_SLOT_LOCKED % 25 and hud.ultimate_slot.locked_color == Palette.JOB_LEVEL_SHORT, "스킬 칸 4 = 방패 밀치기, 궁극기 칸은 빨간 \"Lv 25\"(레벨 모자람)")
 	await _tap(hud.job_button.global_position)
 	var panel := hud.job_panel
-	_expect(panel.visible and (panel.find_child("Points", true, false) as Label).text == UiText.JOB_POINTS % job.points(20), "직업 버튼 → 직업 창(스킬 포인트 %d)" % job.points(20))
+	_expect(panel.visible and panel.current_tab() == "skills" and (panel.find_child("Points", true, false) as Label).text == UiText.JOB_POINTS % job.points(20), "직업 버튼 → 직업 창, 처음은 스킬 탭(스킬 포인트 %d)" % job.points(20))
 	var sections: Array[Control] = []
 	for section_name in ["ActiveSection", "PassiveSection", "UltimateSection"]:
 		sections.append(panel.find_child(section_name, true, false) as Control)
 	var action_bar := panel.find_child("ActionBar", true, false) as Control
 	var stacked := sections[0].get_global_rect().end.y <= sections[1].global_position.y and sections[1].get_global_rect().end.y <= sections[2].global_position.y and sections[2].get_global_rect().end.y <= action_bar.global_position.y
-	_expect(stacked and is_equal_approx(sections[0].global_position.x, sections[2].global_position.x) and Rect2(Vector2.ZERO, panel.get_viewport_rect().size).encloses(panel.get_global_rect()), "액티브 · 패시브 · 궁극기가 한 섹터씩 위아래로, 맨 아래 행동 줄, 창이 화면 안에")
-	var sheet_now := JobRules.player_sheet("warrior", 20, job.mods(20))
-	_expect(panel.stat_text("mighty") == str(sheet_now["mighty"]) and panel.stat_text("hp") == str(sheet_now["hp"]) and panel.stat_text("lucky") != "", "왼쪽에 주인공 능력치 9종 + HP · MP(공격 %s · HP %s)" % [panel.stat_text("mighty"), panel.stat_text("hp")])
+	_expect(stacked and sections[0].size.x > panel.size.x * 0.9 and Rect2(Vector2.ZERO, panel.get_viewport_rect().size).encloses(panel.get_global_rect()), "스킬 탭: 섹터가 창 너비를 거의 다 씀(%.0f/%.0f), 위아래로 · 맨 아래 행동 줄" % [sections[0].size.x, panel.size.x])
 	var bash_tile := panel.skill_tile("shield_bash")
 	var cry_tile := panel.skill_tile("war_cry")
 	var fortress_tile := panel.skill_tile("fortress")
-	_expect(bash_tile.state == JobSkillTile.State.LEARNED and bash_tile.badge_text() == "" and bash_tile.slot_badge == "1" and JobDb.icon(bash_tile.skill) != null, "배운 칸: 그림 · 레벨 배지 없음 · 장착 칸 번호 1")
-	_expect(cry_tile.state == JobSkillTile.State.LEARNABLE and cry_tile.badge_text() == UiText.SKILL_SLOT_LOCKED % 5 and fortress_tile.state == JobSkillTile.State.LOCKED and fortress_tile.badge_text() == UiText.SKILL_SLOT_LOCKED % 25, "레벨은 됐는데 안 배움 = 회색 \"Lv 5\", 레벨 모자람 = 빨간 \"Lv 25\"")
-	_expect(panel.slot_card("active", 0).skill.id == "shield_bash" and panel.slot_card("active", 1).skill == null and panel.slot_card("active", 2) != null and not panel.slot_card("passive", 0).is_locked() and panel.slot_card("passive", 1).is_locked() and panel.slot_card("ultimate", 0) != null, "장착 칸: 액티브 3(1번 = 방패 밀치기) · 패시브 2(Lv 30 칸은 잠김) · 궁극기 1")
-	_expect(panel.section_info("active") == UiText.JOB_SECTION_INFO["active"] % [1, 3] and panel.section_info("passive") == UiText.JOB_SECTION_INFO["passive"] % [0, 1] and panel.section_info("ultimate") == UiText.JOB_SECTION_INFO["ultimate"] % [0, 1], "섹터 정보: 액티브 1/3 · 패시브 0/1 · 궁극기 0/1")
+	_expect(bash_tile.state == JobSkillTile.State.LEARNED and bash_tile.lit_dots() == 1 and bash_tile.slot_badge == "1" and bash_tile.material == null and JobDb.icon(bash_tile.skill) != null, "배운 카드: 컬러 · 레벨 점 1개 · 장착 칸 번호 1")
+	_expect(cry_tile.state == JobSkillTile.State.LEARNABLE and cry_tile.badge_text() == "" and fortress_tile.state == JobSkillTile.State.LOCKED and fortress_tile.badge_text() == UiText.SKILL_SLOT_LOCKED % 25 and fortress_tile.material != null, "배울 수 있음 = 빛나는 테두리 + \"+\", 잠김 = 회색 + 자물쇠 + \"Lv 25\"")
+	var slot := panel.slot_card("active", 0)
+	_expect(slot.skill.id == "shield_bash" and slot.size.x > bash_tile.size.x * 1.2 and panel.slot_card("active", 1).skill == null and not panel.slot_card("passive", 0).is_locked() and panel.slot_card("passive", 1).is_locked() and panel.slot_card("ultimate", 0) != null, "장착 칸은 큼(%.0f > 카드 %.0f): 액티브 3 · 패시브 2(Lv 30 칸은 잠긴 모양) · 궁극기 1" % [slot.size.x, bash_tile.size.x])
+	_expect(panel.section_info("active") == UiText.JOB_SECTION_INFO % [1, 3] and panel.section_info("passive") == UiText.JOB_SECTION_INFO % [0, 1] and panel.section_info("ultimate") == UiText.JOB_SECTION_INFO % [0, 1], "섹터: \"장착 1/3\" · \"장착 0/1\" · \"장착 0/1\"만")
 	_expect(panel.status_text() == UiText.JOB_HINT and not panel.action_button("main").is_visible_in_tree(), "아무것도 안 고르면 행동 줄은 안내 한 줄")
 	await _save_shot("job")
 	await _seconds(0.2)
 	var window := hud.skill_window
 	await _tap(cry_tile.get_global_rect().get_center())
 	await _physics_frames(2)
-	_expect(panel.selected_skill() == "war_cry" and panel.skill_tile("war_cry").selected and not window.visible and panel.action_button("main").text == UiText.JOB_ACT_LEARN and panel.status_text() == UiText.JOB_STATUS_LEARNABLE % [UiText.JOB_TYPE_NAMES["active"], 5], "안 배운 스킬을 누름 → 고름(흰 테두리 + 체크), 행동 줄 \"배우기\"(상세 창은 안 뜸)")
+	_expect(panel.selected_skill() == "war_cry" and panel.skill_tile("war_cry").selected and not window.visible and panel.action_button("main").text == UiText.JOB_ACT_LEARN and panel.status_text() == UiText.JOB_STATUS_LEARNABLE % [UiText.JOB_TYPE_NAMES["active"], 5], "배울 수 있는 카드를 누름 → 고름(흰 테두리 + 체크), 행동 줄 \"배우기\"")
 	await _tap(panel.action_button("main").get_global_rect().get_center())
 	await _physics_frames(3)
 	_expect(job.skill_level("war_cry") == 1 and job.actives[1] == "war_cry" and hud.skill_slot(4).skill.title == "도발 함성" and panel.action_button("main").text == UiText.JOB_ACT_UNEQUIP and panel.slot_card("active", 1).selected, "배우기 → 빈 칸(2번)에 장착, 스킬 칸 5 = 도발 함성, 행동 줄 \"해제\"")
-	_expect(panel.skill_tile("war_cry").state == JobSkillTile.State.LEARNED and panel.skill_tile("war_cry").badge_text() == "", "배운 칸은 레벨 배지가 사라짐")
+	_expect(panel.skill_tile("war_cry").state == JobSkillTile.State.LEARNED and panel.skill_tile("war_cry").slot_badge == "2", "배운 카드는 컬러 + 칸 번호 2")
 	await _tap(panel.skill_tile("war_cry").get_global_rect().get_center())
 	await _physics_frames(2)
-	_expect(window.visible and window.texts()[1] == "도발 함성" and window.row_texts()[0][1] == UiText.JOB_LEVEL_VALUE % [1, GameConfig.JOB_SKILL_MAX_LEVEL], "고른 스킬을 한 번 더 누름 → 스킬 상세 창(보기 전용)")
+	_expect(window.visible and window.texts()[1] == "도발 함성" and window.level_text() == UiText.TIP_LEVEL % [1, GameConfig.JOB_SKILL_MAX_LEVEL] and window.next_text().begins_with(UiText.TIP_NEXT.substr(0, 5)), "고른 카드를 한 번 더 누름 → 툴팁(Lv 1/10 · 다음 레벨 비교) — %s" % window.next_text())
 	await _tap(_center_of(window, "Close"))
 	job.learn("shield_block", 20)
 	await _physics_frames(2)
@@ -667,7 +668,7 @@ func _run(main: Node) -> void:
 	_expect(job.levels.has("charge") and not job.is_equipped("charge") and panel.action_button("main").text == UiText.JOB_ACT_EQUIP and panel.action_button("level").text == UiText.JOB_ACT_LEVEL, "칸이 차 있으면 배우기만 → 행동 줄 \"장착\" · \"레벨 올리기\"")
 	await _tap(panel.action_button("main").get_global_rect().get_center())
 	await _physics_frames(3)
-	_expect(panel.is_picking() and panel.status_text() == UiText.JOB_PICK_SLOT and panel.slot_card("active", 1).picking and not panel.slot_card("passive", 0).picking, "칸이 다 찼는데 \"장착\" → \"바꿀 칸을 누르세요\", 액티브 칸 테두리만 깜빡임")
+	_expect(panel.is_picking() and panel.status_text() == UiText.JOB_PICK_SLOT and panel.slot_card("active", 1).picking and not panel.slot_card("passive", 0).picking, "칸이 다 찼는데 \"장착\" → 장착 모드: 액티브 칸만 깜빡임 · \"바꿀 칸을 누르세요\"")
 	await _seconds(0.3)
 	await _save_shot("job_pick")
 	await _seconds(0.2)
@@ -677,28 +678,38 @@ func _run(main: Node) -> void:
 	var points_before := job.points(20)
 	await _tap(panel.action_button("level").get_global_rect().get_center())
 	await _physics_frames(3)
-	_expect(job.skill_level("charge") == 2 and job.points(20) == points_before - 1 and player.caster.skills[1].level == 2, "레벨 올리기 → 스킬 레벨 2, 포인트 −1, 필드 스킬도 2레벨")
+	_expect(job.skill_level("charge") == 2 and job.points(20) == points_before - 1 and player.caster.skills[1].level == 2 and panel.skill_tile("charge").lit_dots() == 2, "레벨 올리기 → 스킬 레벨 2(레벨 점 2개), 포인트 −1, 필드 스킬도 2레벨")
 	await _tap(panel.slot_card("active", 0).get_global_rect().get_center())
 	await _physics_frames(3)
 	_expect(job.actives == ["charge", "shield_bash", "shield_block"] and hud.skill_slot(3).skill.title == "돌진 충격" and hud.skill_slot(4).skill.title == "방패 밀치기", "고른 채 1번 칸을 누름 → 두 칸이 자리를 바꿈")
 	await _tap(panel.action_button("preview").get_global_rect().get_center())
 	await _physics_frames(2)
-	var charge_row := ""
-	for row: Array in window.row_texts():
-		if row[0] == UiText.SKILL_ROW_PHYSICAL:
-			charge_row = row[1]
-	_expect(window.visible and window.preview_motion() == "dash" and charge_row.contains(SuffixDb.stat_name("sturdy") + " × ") and charge_row.contains("(지금"), "미리보기 → 돌진 충격 상세: 물리 피해 = 공격 + 방어 계수 (%s)" % charge_row)
+	var charge_body := window.body_text()
+	_expect(window.visible and window.preview_motion() == "dash" and charge_body.contains(SuffixDb.stat_name("sturdy") + " ") and window.tag_texts().has(UiText.TIP_TAG_AREA) and window.next_text().contains("→"), "미리보기 → 돌진 충격 툴팁: 공격 + 방어 계수가 든 문장 · 범위 꼬리표 · 다음 레벨 비교 — %s" % charge_body)
+	SkillSheet.dev_notes = true
+	await _tap(panel.action_button("preview").get_global_rect().get_center())
+	_expect(window.dev_visible(), "개발 문구를 켜면(디버그 화면) 툴팁 아래에 개발 문구")
+	SkillSheet.dev_notes = false
 	await _seconds(0.45)
 	await _save_shot("job_skill")
 	await _seconds(0.2)
 	await _tap(_center_of(window, "Close"))
 	await _physics_frames(2)
-	_expect(not window.visible and panel.visible, "스킬 상세 창 닫기 → 직업 창")
+	_expect(not window.visible and panel.visible, "스킬 툴팁 닫기 → 직업 창")
 	job.learn("iron_stance", 20)
 	await _physics_frames(2)
-	_expect(job.passives[0] == "iron_stance" and is_equal_approx(player.stats.max_hp, JobRules.player_stats("warrior", 20, job.mods(20)).max_hp) and player.damage_taken_scale < 1.0 and panel.stat_text("tough") == str(JobRules.player_sheet("warrior", 20, job.mods(20))["tough"]), "철벽 자세를 배우면 패시브 칸에 → 체력 능력치 + · 받는 피해 −")
+	_expect(job.passives[0] == "iron_stance" and is_equal_approx(player.stats.max_hp, JobRules.player_stats("warrior", 20, job.mods(20)).max_hp) and player.damage_taken_scale < 1.0, "철벽 자세를 배우면 패시브 칸에 → 체력 능력치 + · 받는 피해 −")
 	await _save_shot("job_learned")
 	await _seconds(0.2)
+	await _tap(panel.tab_button("stats").get_global_rect().get_center())
+	await _physics_frames(2)
+	var sheet_now := JobRules.player_sheet("warrior", 20, job.mods(20))
+	_expect(panel.current_tab() == "stats" and not sections[0].is_visible_in_tree() and panel.stat_text("mighty") == str(sheet_now["mighty"]) and panel.stat_text("tough") == str(sheet_now["tough"]) and panel.stat_text("hp") == str(sheet_now["hp"]), "능력치 탭: 능력치 9종 + HP · MP(공격 %s · 체력 %s)" % [panel.stat_text("mighty"), panel.stat_text("tough")])
+	await _save_shot("job_stats")
+	await _seconds(0.2)
+	await _tap(panel.tab_button("gear").get_global_rect().get_center())
+	_expect(panel.current_tab() == "gear" and (panel.find_child("GearText", true, false) as Label).is_visible_in_tree(), "장비 탭: 아직 없음 안내")
+	await _tap(panel.tab_button("stats").get_global_rect().get_center())
 	# 직업 바꾸기(개발용): 궁수 → 원거리 공격, 궁수 스킬
 	await _tap(panel.switch_button("archer").get_global_rect().get_center())
 	_expect(hud.confirm_box.visible, "직업 바꾸기 → 확인 창")

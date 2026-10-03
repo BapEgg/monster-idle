@@ -3,7 +3,7 @@ extends RefCounted
 ## 직업 스킬 규칙(순수 함수, 기획서 3장 스킬 시스템). 수치는 GameConfig의 JOB_* 에서 읽는다.
 ## - 해금: 주인공 레벨이 스킬의 해금 레벨에 닿으면 스킬 레벨 1로 배운다.
 ## - 스킬 포인트: 주인공 레벨이 오를 때마다 JOB_SKILL_POINTS_PER_LEVEL. 스킬 레벨을 1 올리는 데 1점(상한 JOB_SKILL_MAX_LEVEL).
-## - 스킬 레벨 1당 효과(배율 · 보호막 · 버프 · 회복 · 패시브 보정)가 JOB_SKILL_LEVEL_BONUS만큼 커진다. 범위 · 시간 · 대기 시간은 그대로.
+## - 스킬 레벨 1당 효과(계수 · 보호막 · 버프 · 패시브 보정)가 JOB_SKILL_LEVEL_BONUS만큼 커지고, 재사용 대기가 JOB_SKILL_COOLDOWN_CUT만큼 준다. 범위 · 시간은 그대로.
 ## - 패시브 칸은 JOB_PASSIVE_SLOT_LEVELS에 닿을 때마다 하나씩 열린다.
 
 ## 스킬 레벨만큼 커지는 효과 값들(피해 · 회복 계수 coefs 안의 값들도 함께)
@@ -18,6 +18,11 @@ const GUARD_CAP := 0.8
 ## 스킬 레벨 배율: 1 + 보너스 × (레벨 − 1).
 static func level_scale(skill_level: int) -> float:
 	return 1.0 + GameConfig.JOB_SKILL_LEVEL_BONUS * maxi(skill_level - 1, 0)
+
+
+## 그 스킬 레벨의 재사용 대기: 처음 값 × (1 − 줄이기 × (레벨 − 1)).
+static func cooldown_at(base: float, skill_level: int) -> float:
+	return base * maxf(1.0 - GameConfig.JOB_SKILL_COOLDOWN_CUT * maxi(skill_level - 1, 0), 0.0)
 
 
 static func is_unlocked(skill: JobDb.Skill, player_level: int) -> bool:

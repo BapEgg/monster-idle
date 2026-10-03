@@ -87,6 +87,20 @@ const INFO_MP_BAR := Color("4a8ef0")
 const INFO_BAR_BACK := Color(1, 1, 1, 0.1)
 ## 코어 정보창: 주 코어 성별 때문에 오른 능력치와 그 설명 줄 / 변이라서 오른 능력치와 그 설명 줄
 const STAT_BOOSTED := Color("8ee28e")
+## 능력치 색(스킬 툴팁의 계수, 사용자 결정 2026-10-03: 공격 = 주황, 마나 = 파랑, 방어 = 노랑, 체력 = 초록. 나머지는 임시)
+const STAT_COLORS := {
+	"mighty": Color("ff9f43"), "abundant": Color("5aa9ff"), "sturdy": Color("f6d743"), "tough": Color("6ad36a"),
+	"swift": Color("ff7eb6"), "precise": Color("c792ea"), "nimble": Color("4fd1c5"), "steadfast": Color("aab4ff"), "lucky": Color("ffc8a2"),
+}
+## 스킬 툴팁: 상태이상 낱말(굵게, 누르면 뜻) · 꼬리표 바탕 · 다음 레벨 줄 · 레벨(배움 · 배울 수 있음 · 잠김)
+const STATUS_TERM := Color("ffe08a")
+const SKILL_TAG_BG := Color(1, 1, 1, 0.1)
+const SKILL_NEXT := Color("9fe6a0")
+const SKILL_LEVEL_LEARNED := Color(1, 1, 1)
+const SKILL_LEVEL_LEARNABLE := Color("7fe0d2")
+const SKILL_LEVEL_LOCKED := Color("d64545")
+## 상태이상 뜻 말풍선 바탕
+const TERM_BUBBLE_BG := Color(0.08, 0.09, 0.12, 0.97)
 const STAT_VARIANT := Color("c9a6ff")
 ## 가방 버튼
 const BAG_BUTTON := Color(0, 0, 0, 0.45)
@@ -204,16 +218,26 @@ const CHIP_INHERIT := Color("e0b84a")
 const CHIP_GLYPH := Color(0.08, 0.09, 0.12)
 ## 직업 창: 궁극기 카드 색
 const JOB_ULTIMATE := Color("ff5ad0")
-## 직업 창 스킬 칸 오른쪽 위 레벨 배지(사용자 결정 2026-10-03): 주인공 레벨이 모자람 = 빨강, 레벨은 됐는데 안 배움 = 회색
+## 레벨 모자람(궁극기 칸 "Lv 25" · 행동 줄 상태 글) = 빨강, 잠긴 카드의 필요 레벨 배지 = 회색
 const JOB_LEVEL_SHORT := Color("d64545")
 const JOB_LEVEL_READY := Color(0.42, 0.45, 0.5, 0.95)
-## 스킬 칸 아래 "배울 수 있음" 글자(누르라고 조금 눈에 띄게)
+## 행동 줄 "배울 수 있음" 글자
 const JOB_LEVEL_READY_TEXT := Color("7fe0d2")
 ## 직업 창 섹터(액티브 · 패시브 · 궁극기) 바탕
 const JOB_SECTION_BG := Color(1, 1, 1, 0.035)
 ## 직업 창 섹터 왼쪽 장착 칸: 바탕(스킬 칸보다 조금 어둡게) · 테두리(점선 느낌으로 옅게)
 const JOB_SLOT_BG := Color(0, 0, 0, 0.25)
 const JOB_SLOT_BORDER := Color(1, 1, 1, 0.22)
+## 직업 창 위 탭: 고른 탭 바탕 · 안 고른 탭 바탕 · 고른 탭 아래 줄
+const JOB_TAB_ON := Color(1, 1, 1, 0.14)
+const JOB_TAB_OFF := Color(1, 1, 1, 0.03)
+const JOB_TAB_LINE := Color("2a9d8f")
+## 직업 창 스킬 카드: 배울 수 있음 = 빛나는 테두리 · "+" 배지, 레벨 점(켜짐 · 꺼짐), 잠김 자물쇠, 장착 모드 칸 깜빡임
+const JOB_LEARNABLE_GLOW := Color("ffd166")
+const JOB_LEVEL_DOT_ON := Color("ffd166")
+const JOB_LEVEL_DOT_OFF := Color(1, 1, 1, 0.18)
+const JOB_LOCK := Color(0.75, 0.77, 0.8)
+const JOB_PICK_GLOW := Color("3ee6d0")
 ## 직업 창 아래 행동 줄 바탕 · "바꿀 칸을 누르세요" 글자
 const JOB_ACTION_BG := Color(1, 1, 1, 0.06)
 const JOB_PICK_TEXT := Color("7fe0d2")

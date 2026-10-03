@@ -1,19 +1,23 @@
 class_name JobPanel
 extends PanelContainer
 ## 직업 창(기획서 3장 스킬 시스템, 직업 1차): 오른쪽 위 "직업" 버튼으로 열고 닫는다.
-## 왼쪽 = 주인공(직업 색 도형) · 직업 이름 · 역할 · 무기 · 인물 / 능력치 9종(코어와 같은 능력치, 패시브 포함) + 전투 값 한 줄 / 직업 바꾸기(개발용).
-## 오른쪽 = 액티브 · 패시브 · 궁극기 한 섹터씩 위아래로(사용자 결정 2026-10-03). 섹터마다 왼쪽에 장착 칸(JobSlot), 오른쪽에 그 종류의 스킬 목록
-## (JobSkillTile, 가로로 넘겨 본다 — 업데이트로 스킬 · 궁극기가 늘어도 그대로 들어간다).
-## 스킬을 누르면 고르고(흰 테두리 + 체크), 아래 행동 줄에서 배우기 · 장착 · 해제 · 레벨 올리기. 고른 스킬을 한 번 더 누르거나 "미리보기"를 누르면
-## 스킬 상세 창(보기 전용: 모션 미리보기 · 설명 · 계수). 스킬을 고른 채 장착 칸을 누르면 그 칸에 장착한다. 칸이 다 찼으면 "장착" 뒤 바꿀 칸을 누른다.
+## 위 탭 "능력치 / 스킬 / 장비"(사용자 결정 2026-10-03)로 나눈다.
+## - 능력치: 주인공(직업 색 도형) · 직업 이름 · 역할 · 무기 · 인물 · 패시브 보정 · 직업 바꾸기(개발용) / 능력치 9종(코어와 같은 능력치) + HP · MP · 전투 값.
+## - 스킬: 액티브 · 패시브 · 궁극기 한 섹터씩 위아래로. 섹터마다 이름 + "장착 n/m", 큰 장착 칸(JobSlot, 아직 안 열린 칸은 잠긴 모양),
+##   그 종류의 스킬 목록(작은 카드 JobSkillTile, 가로로 넘겨 본다 — 업데이트로 스킬 · 궁극기가 늘어도 그대로 들어간다).
+##   카드 상태: 잠김 = 회색 + 자물쇠 + 필요 레벨 / 배울 수 있음 = 빛나는 테두리 + "+" / 배움 = 컬러 + 레벨 점 / 장착 중 = 칸 번호 배지.
+##   스킬을 누르면 고르고(흰 테두리 + 체크), 아래 행동 줄에서 배우기 · 장착 · 해제 · 레벨 올리기. 고른 스킬을 한 번 더 누르거나 "미리보기"를 누르면
+##   스킬 상세 창(툴팁, 보기 전용). 스킬을 고른 채 장착 칸을 누르면 그 칸에 장착. 칸이 다 찼는데 "장착"이면 장착 모드(칸이 깜빡임) → 바꿀 칸을 누른다.
+## - 장비: 아직 없음(장비 단계에서 붙는다).
 ## 위치 · 크기는 job_panel.tscn에서 에디터로 정한다.
 
 const TITLE_FONT_SIZE := 24
 const TEXT_FONT_SIZE := 18
 const NAME_FONT_SIZE := 26
 const SMALL_FONT_SIZE := 15
-const STAT_FONT_SIZE := 17
-const STAT_NUMBER_WIDTH := 52.0
+const STAT_FONT_SIZE := 19
+const STAT_NUMBER_WIDTH := 64.0
+const TAB_FONT_SIZE := 18
 const SWITCH_FONT_SIZE := 15
 const SECTION_TITLE_FONT_SIZE := 18
 const SECTION_PAD := 10.0
@@ -30,6 +34,7 @@ var _picking := false  # 칸이 다 차서 바꿀 칸을 고르는 중
 var _shown_skill := ""  # 스킬 상세 창에 띄운 직업 스킬(바뀌면 창도 다시 그린다)
 var _refresh_queued := false
 var _main_action := Callable()  # 행동 줄 가운데 버튼이 할 일(배우기 · 장착 · 해제)
+var _tab := "skills"  # 지금 탭(stats · skills · gear). 다시 열어도 그대로
 
 @onready var _title: Label = %Title
 @onready var _points: Label = %Points
@@ -44,6 +49,10 @@ var _main_action := Callable()  # 행동 줄 가운데 버튼이 할 일(배우�
 @onready var _switch_title: Label = %SwitchTitle
 @onready var _switch: HBoxContainer = %Switch
 @onready var _divider: VSeparator = %Divider
+@onready var _stats_title: Label = %StatsTitle
+@onready var _gear_text: Label = %GearText
+## 탭 이름 → [탭 버튼, 페이지]
+@onready var _tabs := {"stats": [%TabStats, %StatsPage], "skills": [%TabSkills, %SkillsPage], "gear": [%TabGear, %GearPage]}
 @onready var _action_bar: PanelContainer = %ActionBar
 @onready var _icon: TextureRect = %Icon
 @onready var _sel_name: Label = %SelName
@@ -73,6 +82,16 @@ func _ready() -> void:
 	UiKit.style_label(_mods, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
 	UiKit.style_caption(_switch_title, SMALL_FONT_SIZE)
 	_switch_title.text = UiText.JOB_SWITCH
+	UiKit.style_label(_stats_title, SECTION_TITLE_FONT_SIZE, Palette.TEXT)
+	_stats_title.add_theme_font_override("font", UiKit.bold_font())
+	_stats_title.text = UiText.JOB_STATS_TITLE
+	UiKit.style_caption(_gear_text, TEXT_FONT_SIZE)
+	_gear_text.text = UiText.JOB_GEAR_EMPTY
+	for tab: String in _tabs:
+		var button: Button = _tabs[tab][0]
+		button.text = UiText.JOB_TABS[tab]
+		UiKit.style_button(button, TAB_FONT_SIZE)
+		button.pressed.connect(show_tab.bind(tab))
 	for type: String in _sections:
 		var section: PanelContainer = _sections[type]
 		section.add_theme_stylebox_override("panel", _box(Palette.JOB_SECTION_BG, SECTION_PAD))
@@ -127,7 +146,44 @@ func bind(job: JobState, progress: PlayerProgress, window: SkillWindow, confirm:
 
 func open() -> void:
 	visible = true
+	show_tab(_tab)
 	refresh()
+
+
+## 탭을 바꾼다(stats · skills · gear). 고른 탭 버튼은 밝은 바탕 + 아래 청록 줄.
+func show_tab(tab: String) -> void:
+	if not _tabs.has(tab):
+		return
+	_tab = tab
+	if tab != "skills":
+		_picking = false
+	for each: String in _tabs:
+		var on := each == tab
+		(_tabs[each][1] as Control).visible = on
+		var button: Button = _tabs[each][0]
+		for state: String in ["normal", "hover", "pressed", "focus"]:
+			button.add_theme_stylebox_override(state, _tab_box(on))
+		button.add_theme_color_override("font_color", Palette.TEXT if on else Palette.TEXT_LABEL)
+		button.add_theme_font_override("font", UiKit.bold_font() if on else ThemeDB.fallback_font)
+
+
+static func _tab_box(on: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Palette.JOB_TAB_ON if on else Palette.JOB_TAB_OFF
+	box.border_color = Palette.JOB_TAB_LINE
+	box.border_width_bottom = 3 if on else 0
+	box.set_corner_radius_all(UiKit.ACCENT_CORNER)
+	box.set_content_margin_all(6.0)
+	return box
+
+
+## 지금 탭(실행 검사용).
+func current_tab() -> String:
+	return _tab
+
+
+func tab_button(tab: String) -> Button:
+	return _tabs[tab][0] if _tabs.has(tab) else null
 
 
 func close() -> void:
@@ -262,7 +318,7 @@ func _build_section(job: JobDb.Job, type: String, level: int) -> void:
 	for i in open_slots:
 		if slots[i] != "":
 			used += 1
-	(_section_part(type, "Info") as Label).text = UiText.JOB_SECTION_INFO[type] % [used, open_slots]
+	(_section_part(type, "Info") as Label).text = UiText.JOB_SECTION_INFO % [used, open_slots]
 	var chosen := JobDb.get_skill(_selected)
 	var picks_here := _picking and chosen != null and chosen.type == type
 	var slot_box := _section_part(type, "Slots")

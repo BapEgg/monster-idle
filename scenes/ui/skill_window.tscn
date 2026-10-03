@@ -29,10 +29,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -460.0
-offset_top = -225.0
-offset_right = 460.0
-offset_bottom = 225.0
+offset_left = -470.0
+offset_top = -240.0
+offset_right = 470.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -45,24 +45,30 @@ theme_override_constants/margin_bottom = 18
 
 [node name="Rows" type="VBoxContainer" parent="Panel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="Header" type="HBoxContainer" parent="Panel/Margin/Rows"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
 [node name="Titles" type="VBoxContainer" parent="Panel/Margin/Rows/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 2
-
-[node name="Tag" type="Label" parent="Panel/Margin/Rows/Header/Titles"]
-unique_name_in_owner = true
-layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="Panel/Margin/Rows/Header/Titles"]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="Tags" type="HBoxContainer" parent="Panel/Margin/Rows/Header/Titles"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Level" type="Label" parent="Panel/Margin/Rows/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 0
 
 [node name="Close" type="Button" parent="Panel/Margin/Rows/Header"]
 unique_name_in_owner = true
@@ -74,7 +80,7 @@ focus_mode = 0
 [node name="Body" type="HBoxContainer" parent="Panel/Margin/Rows"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 20
+theme_override_constants/separation = 22
 
 [node name="PreviewBox" type="VBoxContainer" parent="Panel/Margin/Rows/Body"]
 layout_mode = 2
@@ -97,22 +103,58 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 14
 
-[node name="Description" type="Label" parent="Panel/Margin/Rows/Body/Texts"]
+[node name="Line" type="RichTextLabel" parent="Panel/Margin/Rows/Body/Texts"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 autowrap_mode = 3
 
-[node name="Rows" type="GridContainer" parent="Panel/Margin/Rows/Body/Texts"]
+[node name="LineRule" type="HSeparator" parent="Panel/Margin/Rows/Body/Texts"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 18
-theme_override_constants/v_separation = 8
-columns = 2
 
-[node name="Note" type="Label" parent="Panel/Margin/Rows/Body/Texts"]
+[node name="Description" type="RichTextLabel" parent="Panel/Margin/Rows/Body/Texts"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="Next" type="RichTextLabel" parent="Panel/Margin/Rows/Body/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="Dev" type="RichTextLabel" parent="Panel/Margin/Rows/Body/Texts"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 10
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="TermBubble" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+top_level = true
+offset_right = 280.0
+offset_bottom = 60.0
+mouse_filter = 2
+
+[node name="TermText" type="RichTextLabel" parent="TermBubble"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+mouse_filter = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 autowrap_mode = 3

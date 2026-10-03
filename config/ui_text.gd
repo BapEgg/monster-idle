@@ -75,62 +75,82 @@ const SKILL_KIND_NAMES := {
 const SKILL_CAST := "%s!"
 ## 보호막이 피해를 모두 막았을 때 숫자 대신
 const SHIELD_BLOCK := "막음"
-## 스킬 상세 창(사용자 결정 2026-10-03: 롤처럼 스킬을 누르면 설명 · 계수 · 모션 미리보기)
-## 맨 위 꼬리표: 고유 액티브 · 효과 종류 / 고유 패시브 / 변이 / 믹스 계승
-const SKILL_TAG_ACTIVE := "고유 액티브 · %s"
+## 스킬 상세 창(툴팁, 사용자 결정 2026-10-03: 롤 툴팁처럼). 맨 위 꼬리표(헨치): 고유 액티브 / 고유 패시브 / 유산 패시브 / 변이 / 믹스 계승
+const TIP_TAG_HENCH_ACTIVE := "고유 액티브"
 const SKILL_TAG_PASSIVE := "고유 패시브"
-const SKILL_TAG_LEGACY := "유산 패시브 · %s에게서"
+const SKILL_TAG_LEGACY_SHORT := "유산 패시브"
 const SKILL_TAG_VARIANT := VARIANT
 const SKILL_TAG_INHERIT := TERM_MIX + " 계승"
-## 효과 종류마다 설명 한 줄(임시 분류 — 종마다 다른 효과는 스킬 단계에서)
-const SKILL_DESCRIPTIONS := {
-	"strike": "가까운 적에게 다가가 한 번 세게 때립니다.",
-	"flurry": "적 하나를 빠르게 여러 번 연달아 때립니다.",
-	"blast": "대상 자리에서 터져 둘레의 적 모두에게 피해를 줍니다.",
-	"stun": "대상 둘레의 적에게 피해를 주고 잠깐 기절시킵니다.",
-	"taunt": "둘레의 적이 나를 노리게 하고, 잠깐 보호막을 두릅니다.",
-	"heal": "체력이 가장 낮은 동료 하나를 회복합니다.",
-	"heal_all": "둘레의 동료 모두를 한꺼번에 회복합니다.",
-}
-const SKILL_TARGETS := {
-	"strike": "가까운 적 하나", "flurry": "가까운 적 하나", "blast": "대상 둘레의 적 모두", "stun": "대상 둘레의 적 모두",
-	"taunt": "내 둘레의 적 모두", "heal": "체력이 가장 낮은 동료 하나", "heal_all": "내 둘레의 동료 모두",
-}
-## 계수 줄 이름표
-const SKILL_ROW_TARGET := "대상"
-const SKILL_ROW_HEAL := "회복"
-const SKILL_ROW_RADIUS := "범위"
-const SKILL_ROW_STUN := "기절"
-const SKILL_ROW_SHIELD := "보호막"
-const SKILL_ROW_COOLDOWN := "재사용 대기"
-const SKILL_ROW_DESIGN := "기획 효과"
-const SKILL_ROW_EFFECT := "효과"
-const SKILL_ROW_FROM := "원래 주인"
-const SKILL_ROW_STATS := "오른 능력치"
-const SKILL_ROW_BONUS := "보정"
-const SKILL_ROW_MIX := TERM_MIX
-const SKILL_ROW_INHERIT := "계승 스탯"
-## 피해 줄 이름표: 첫째 계수가 마나(충만)면 마법, 아니면 물리(사용자 결정 2026-10-03: 능력치마다 계수)
-const SKILL_ROW_PHYSICAL := "물리 피해"
-const SKILL_ROW_MAGIC := "마법 피해"
-## 계수 값: 능력치 이름 × %d%%를 " + "로 잇는다(예: 공격 × 180% + 명중 × 80%). 여러 번 때리면 뒤에 " × n번".
-## (지금 n) = 이 코어 · 주인공의 지금 값 — 지금 값을 모르면(미리보기) 괄호를 뺀다
-const SKILL_COEF_TERM := "%s × %d%%"
-const SKILL_COEF_JOIN := " + "
-const SKILL_HITS_SUFFIX := " × %d번"
-const SKILL_SHIELD_POWER := "최대 체력 × %d%% · %s초"
-const SKILL_NOW := "  (지금 %d)"
-const SKILL_NOW_EACH := "  (지금 %d씩)"
-const SKILL_RADIUS_VALUE := "반지름 %d"
-const SKILL_SECONDS := "%s초"
-const SKILL_PASSIVE_DESC := "늘 켜져 있는 효과입니다. " + TERM_MIX + "할 때 주 " + TERM_CORE + "의 패시브(유산)로 바꿀 수 있습니다."
-const SKILL_VARIANT_DESC := "드롭으로만 얻는 돌연변이입니다. 능력치가 조금 더 높고, 나중에 원종과 다른 공격 패턴 · 스킬을 갖습니다."
-const SKILL_VARIANT_MIX := "재료로 못 씀"
-const SKILL_INHERIT_DESC := TERM_MIX + "할 때 보조 " + TERM_CORE + "의 접미사 능력치 일부를 고정치로 물려받았습니다."
+## 꼬리표: 근접 · 원거리(적을 겨누는 스킬만) · 단일 · 범위 · 자신
+const TIP_TAG_MELEE := "근접"
+const TIP_TAG_RANGED := "원거리"
+const TIP_TAG_SINGLE := "단일"
+const TIP_TAG_AREA := "범위"
+const TIP_TAG_SELF := "자신"
+## 오른쪽 위 스킬 레벨: 배움 / 배울 수 있음 / 레벨이 모자람
+const TIP_LEVEL := "Lv %d/%d"
+const TIP_LEVEL_LEARNABLE := "배울 수 있음 · Lv %d"
+const TIP_LEVEL_LOCKED := "Lv %d에 배움"
+## 둘째 줄: 마나 소모 · 재사용 대기 · 사거리(자신 둘레 스킬은 "자신")
+const TIP_LINE := "마나 %s  ·  재사용 대기 %s  ·  사거리 %s"
+const TIP_SECONDS := "%s초"
+const TIP_REACH_SELF := "자신"
+## 설명 문장: 계산된 숫자(계수). 계수 = 능력치 이름 + %, 스탯 색. 능력치를 모르면(미리보기) 계수만.
+const TIP_AMOUNT := "%s(%s)"
+const TIP_COEF := "%s %s"
+const TIP_COEF_JOIN := " + "
+const TIP_PHYSICAL := "물리 피해"
+const TIP_MAGIC := "마법 피해"
+const TIP_WHO := {"self": "나", "party": "파티 모두"}
+const TIP_HIT := "대상 하나에게 %s의 %s를 줍니다."
+const TIP_HIT_MULTI := "대상 하나를 %d번 때려 한 번에 %s의 %s를 줍니다."
+const TIP_AREA_TARGET := "대상 둘레 반지름 %d 안의 적 모두에게 %s의 %s를 줍니다."
+const TIP_AREA_SELF := "내 둘레 반지름 %d 안의 적 모두에게 %s의 %s를 줍니다."
+const TIP_STUN := "맞은 적은 %s초 동안 %s합니다."
+const TIP_VULNERABLE := "맞은 적은 %s초 동안 %s에 걸려 받는 피해가 %s 늘어납니다."
+const TIP_TAUNT := "내 둘레 반지름 %d 안의 적을 %s해 나만 노리게 합니다."
+const TIP_SHIELD := "%s에게 %s초 동안 %s의 %s을 두릅니다."
+const TIP_SHIELD_AMOUNT := "최대 체력 %s"
+const TIP_DASH := "최대 %d 떨어진 대상 곁으로 순간 이동해 %s %s의 %s를 줍니다."
+const TIP_DASH_ONE := "대상에게"
+const TIP_DASH_AREA := "반지름 %d 안의 적 모두에게"
+const TIP_RETREAT := "대상에게 %s의 %s를 주고 %d만큼 물러납니다."
+const TIP_PIERCE := "길이 %d · 폭 %d의 일직선 위 적 모두에게 %s의 %s를 줍니다."
+const TIP_SMOKE := "내 둘레 반지름 %d 안의 적이 %s초 동안 %s하고 나를 놓칩니다."
+const TIP_HEAL_LOWEST := "체력이 가장 낮은 동료 하나를 %s만큼 회복합니다."
+const TIP_HEAL_AREA := "내 둘레 반지름 %d 안의 동료 모두를 %s만큼 회복합니다."
+const TIP_CLEANSE := "%s도 풀어 줍니다."
+const TIP_REVIVE := "쓰러진 헨치를 %d명까지 체력 %s로 일으킵니다."
+const TIP_REVIVE_ALL := "쓰러진 헨치 모두를 체력 %s로 일으킵니다."
+const TIP_BUFF := "%s에게 %s초 동안 %s: %s."
+const TIP_STORM := "내 둘레 반지름 %d 안의 적을 %d번 휩쓸어 한 번에 %s의 %s를 줍니다."
+const TIP_PASSIVE_JOB := "패시브 칸에 장착하면 늘 켜집니다: %s."
+const TIP_HENCH_PASSIVE := "늘 켜져 있는 효과: %s. " + TERM_MIX + "할 때 주 " + TERM_CORE + "의 패시브(유산)로 바꿀 수 있습니다."
+const TIP_LEGACY_FROM := "%s에게서 물려받은 유산 패시브입니다."
+const TIP_VARIANT := "드롭으로만 얻는 돌연변이입니다. %s 능력치가 %s 더 높습니다. " + TERM_MIX + " 재료로 쓸 수 없고, 나중에 원종과 다른 공격 패턴 · 스킬을 갖습니다."
+const TIP_INHERIT := TERM_MIX + "할 때 보조 " + TERM_CORE + "에게서 %s를 고정치로 물려받았습니다."
 const SKILL_INHERIT_VALUE := "%s +%d"
+## 다음 레벨 비교(배운 스킬, 최고 레벨 전까지): "다음 레벨: 공격 143% → 157% · 재사용 10초 → 9.5초"
+const TIP_NEXT := "다음 레벨  %s"
+const TIP_NEXT_PART := "%s %s → %s"
+const TIP_NEXT_COOLDOWN := "재사용 %s초 → %s초"
+const TIP_ARROW := "%s → %s"
+const TIP_NEXT_NAMES := {"amount": "보호막", "attack": "공격", "speed": "공격 속도", "guard": "받는 피해 −", "vulnerable": "받는 피해 +", "hp": "일으킨 체력"}
+## 개발 문구(디버그 화면에서 켰을 때만 보인다)
+const TIP_DESIGN := "기획 효과: %s"
+const TIP_DESIGN_DESC := "기획 설명: %s"
+## 상태이상 낱말(굵게, 누르면 뜻 말풍선): id → [이름, 뜻]
+const STATUS_TERMS := {
+	"stun": ["기절", "아무것도 못 합니다(움직이기 · 공격 · 스킬)."],
+	"burn": ["화상", "불에 데어 잠깐 동안 조금씩 피해를 입습니다(아직 효과 없음 — 스킬 단계에서 붙입니다)."],
+	"taunt": ["도발", "도발한 대상만 노립니다."],
+	"vulnerable": ["약화", "받는 피해가 늘어납니다."],
+	"shield": ["보호막", "체력보다 먼저 피해를 받아 줍니다. 시간이 지나면 사라집니다."],
+	"buff": ["강화", "공격 · 공격 속도가 오르거나 받는 피해가 줄어듭니다."],
+}
 const SKILL_NOTE_ACTIVE := "수치 · 효과 종류는 임시입니다. 그림 단계에서 종마다 다른 모션으로 바뀝니다."
 const SKILL_NOTE_PASSIVE := "패시브 수치는 아직 없습니다(스킬 단계에서 정함)."
-const SKILL_MOTION_CAPTION := "모션 미리보기(임시 도형)"
+const SKILL_MOTION_CAPTION := "모션 미리보기"
 const SKILL_CLOSE := "닫기"
 ## 레벨이 올라 직업 스킬을 새로 배울 수 있게 됐을 때(주인공 머리 위, 직업 창에서 배운다). %s = 스킬 이름
 const JOB_LEARNABLE := "배울 수 있어요: %s"
@@ -150,7 +170,11 @@ const JOB_SWITCH := "직업 바꾸기(개발용 · 출시 전엔 프롤로그에
 const JOB_SWITCH_ASK := "%s(으)로 바꿀까요?\n배운 스킬과 장착이 처음으로 돌아갑니다(개발용)."
 ## 직업 창 섹터 제목 · 오른쪽 작은 줄(장착 수 / 칸 수)
 const JOB_SECTION_TITLES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
-const JOB_SECTION_INFO := {"active": "장착 %d/%d · 스킬 칸 4~6", "passive": "장착 %d/%d · 칸은 Lv 10 · 30에 열림", "ultimate": "장착 %d/%d · 궁극기 칸"}
+const JOB_SECTION_INFO := "장착 %d/%d"
+## 위 탭(사용자 결정 2026-10-03) · 능력치 탭 제목 · 장비 탭(아직 없음)
+const JOB_TABS := {"stats": "능력치", "skills": "스킬", "gear": "장비"}
+const JOB_STATS_TITLE := "능력치"
+const JOB_GEAR_EMPTY := "장비는 장비 단계에서 붙습니다.\n장비는 능력치 9종을 올려 스킬 계수로 이어집니다."
 ## 섹터 왼쪽 장착 칸 아래 글(%d = 칸 번호) · 아직 안 열린 칸
 const JOB_SLOT_CAPTION := "%d번 칸"
 const JOB_SLOT_ULTIMATE := "궁극기 칸"
@@ -164,11 +188,7 @@ const JOB_STATUS_FREE := "%s · Lv %d/%d · 장착 안 함"
 const JOB_STATUS_LEARNABLE := "%s · 배울 수 있음(Lv %d 해금)"
 const JOB_STATUS_LOCKED := "%s · Lv %d에 배울 수 있음"
 const JOB_PICK_SLOT := "바꿀 칸을 누르세요"
-## 스킬 칸 아래 작은 줄: 배운 스킬 레벨 / 배울 수 있음
-const JOB_TILE_LEVEL := "Lv %d/%d"
-const JOB_TILE_LEARNABLE := "배울 수 있음"
-## 스킬 상세 창의 스킬 레벨 줄(레벨은 됐는데 안 배움)
-const JOB_LEVEL_LEARNABLE := "배울 수 있음(Lv %d 해금)"
+
 ## 직업 창 아래 행동 줄 버튼(스킬 상세 창은 보기 전용, 사용자 결정 2026-10-03)
 const JOB_ACT_PREVIEW := "미리보기"
 const JOB_ACT_LEARN := "배우기"
@@ -180,42 +200,16 @@ const JOB_ACT_NO_POINTS := "스킬 포인트 없음"
 const JOB_ACT_MAX := "최고 레벨"
 ## 스킬 칸(궁극기 칸)이 아직 열리지 않았을 때
 const SKILL_SLOT_LOCKED := "Lv %d"
-## 직업 스킬 상세(직업 창 · 스킬 상세 창): 꼬리표 · 계수 줄
+## 직업 스킬 종류 이름(꼬리표 · 행동 줄)
 const JOB_TYPE_NAMES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
-const JOB_SKILL_TAG := "%s · %s 스킬"
-const JOB_ROW_LEVEL := "스킬 레벨"
-const JOB_LEVEL_VALUE := "%d / %d"
-const JOB_LEVEL_LOCKED := "Lv %d에 배움"
-const JOB_ROW_LEVEL_BONUS := "레벨 효과"
-const JOB_LEVEL_BONUS_VALUE := "스킬 레벨 1당 +%d%%"
-const JOB_ROW_TARGET := "대상"
-const JOB_ROW_MOVE := "움직임"
-const JOB_ROW_LENGTH := "길이"
-const JOB_ROW_REVIVE := "일으키기"
-const JOB_ROW_BUFF := "강화"
-const JOB_ROW_DEBUFF := "약화"
-const JOB_ROW_SMOKE := "연막"
-const JOB_ROW_CLEANSE := "정화"
-const JOB_TARGETS := {"self": "나", "party": "파티 모두", "lowest": "체력이 가장 낮은 동료 하나", "area": "내 둘레의 동료 모두", "target": "대상 둘레의 적 모두", "around": "내 둘레의 적 모두", "one": "대상 하나", "line": "일직선의 적 모두"}
-const JOB_DASH_VALUE := "대상 곁으로 순간 이동(최대 %d)"
-const JOB_RETREAT_VALUE := "때린 뒤 %d만큼 물러남"
-const JOB_LENGTH_VALUE := "%d · 폭 %d"
-const JOB_REVIVE_VALUE := "쓰러진 헨치 %d명까지 · 체력 %d%%"
-const JOB_REVIVE_ALL := "쓰러진 헨치 모두 · 체력 %d%%"
-const JOB_VULNERABLE_VALUE := "받는 피해 +%d%% · %s초"
-const JOB_SMOKE_VALUE := "%s초 동안 아무것도 못 하고 나를 놓침"
-const JOB_CLEANSE_VALUE := "기절 풀기"
-const JOB_TAUNT_VALUE := "반지름 %d 안의 적이 나를 노림"
 const JOB_BUFF_PARTS := {"attack": "공격 +%d%%", "speed": "공격 속도 +%d%%", "guard": "받는 피해 −%d%%"}
-const JOB_SECONDS_SUFFIX := " · %s초"
 ## 패시브 보정 이름(값 = %d%%)
 const JOB_MOD_NAMES := {
 	"hp": "체력 +%d%%", "damage_taken": "받는 피해 −%d%%", "attack": "공격 +%d%%", "attack_speed": "공격 속도 +%d%%",
 	"move_speed": "이동 속도 +%d%%", "range": "사거리 +%d%%", "ambush": "기습 배율 +%d%%", "heal_power": "마나 +%d%%",
 	"tank_damage_taken": "탱커 헨치가 받는 피해 −%d%%", "party_hp": "파티 헨치 최대 체력 +%d%%", "buff_seconds": "버프 시간 +%d%%", "buff_power": "버프 효과 +%d%%",
 }
-const JOB_ROW_MOD := "보정"
-const JOB_PASSIVE_NOTE := "패시브 칸에 장착하면 늘 켜집니다. 수치는 임시입니다."
+const JOB_PASSIVE_NOTE := "수치는 임시입니다."
 const JOB_ACTIVE_NOTE := "수치는 임시입니다. 그림 단계에서 직업마다 다른 모션으로 바뀝니다."
 ## 정보창의 스킬 카드(눌러서 상세): 위 작은 이름표 · 아이콘 글자
 const CHIP_ACTIVE := "액티브"
@@ -271,6 +265,8 @@ const EXP_SHARD_PICKUP := "경험치 조각 +%d"
 const DEBUG_BALANCE := "확률(하루 처치 %s마리 기준): " + TERM_CORE + " %.3f%% · 빛나는 %.1f%% · 변이 %.4f%%\n목표 대비: 하루 " + TERM_CORE + " %.1f개(목표 %d~%d) · 주 빛나는 %.1f개(목표 %d) · 월 변이 %.1f마리(목표 %d~%d)"
 ## 개발 확인용 드랍 배율 버튼(켜짐/꺼짐)
 const DEBUG_DROP_BOOST := "드랍 확인 ×%d: %s"
+## 스킬 상세 창의 개발 문구("수치는 임시" · "기획 효과") 보이기(사용자 결정 2026-10-03: 개발 모드에서만)
+const DEBUG_DEV_NOTES := "스킬 창 개발 문구: %s"
 const DEBUG_ON := "켜짐"
 const DEBUG_OFF := "꺼짐"
 

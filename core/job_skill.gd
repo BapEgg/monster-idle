@@ -23,7 +23,7 @@ static func create(skill: JobDb.Skill, skill_level: int, mods: Dictionary = {}) 
 	s.type = skill.type
 	s.title = skill.name
 	s.level = skill_level
-	s.cooldown = float(config.get("cooldown", 0.0))
+	s.cooldown = JobRules.cooldown_at(float(config.get("cooldown", 0.0)), skill_level)
 	for effect: Dictionary in config["effects"]:
 		s.effects.append(JobRules.scaled_effect(effect, skill_level, mods))
 	return s

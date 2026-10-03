@@ -112,3 +112,14 @@ static func draw_check(canvas: CanvasItem, at: Vector2, radius: float) -> void:
 	canvas.draw_circle(at, radius, Palette.CARD_SELECTED_BORDER, true, -1.0, true)
 	var mark := PackedVector2Array([at + Vector2(-0.5, 0.0) * radius, at + Vector2(-0.12, 0.38) * radius, at + Vector2(0.5, -0.35) * radius])
 	canvas.draw_polyline(mark, Palette.CHECK_MARK, CHECK_WIDTH, true)
+
+
+## 자물쇠(잠긴 칸): 가운데 at, 몸통 너비 width. 몸통 = 둥근 네모, 위 = 고리(반원 선).
+static func draw_lock(canvas: CanvasItem, at: Vector2, width: float, color: Color) -> void:
+	var body := Rect2(at + Vector2(-width * 0.5, -width * 0.15), Vector2(width, width * 0.75))
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.set_corner_radius_all(roundi(width * 0.15))
+	canvas.draw_style_box(box, body)
+	canvas.draw_arc(at + Vector2(0, -width * 0.15), width * 0.32, PI, TAU, 16, color, maxf(width * 0.13, 2.0), true)
+	canvas.draw_circle(body.get_center() + Vector2(0, -width * 0.04), width * 0.1, Palette.CHECK_MARK, true, -1.0, true)
