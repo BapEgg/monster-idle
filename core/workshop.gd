@@ -126,15 +126,33 @@ func can_dismantle(item: CoreItem) -> bool:
 	return bag.has(item) and not item.locked and not item.in_party()
 
 
-## 분해한다. 얻은 코어 조각 수(못 하면 0).
+## 분해한다: 그 종의 코어 조각을 얻는다. 얻은 조각 수(못 하면 0).
 func dismantle(item: CoreItem) -> int:
 	if not can_dismantle(item):
 		return 0
 	var shards := Mix.dismantle_shards(item)
 	bag.remove(item)
-	wallet.add_shards(shards)
+	wallet.add_core_shards(item.species_id, shards)
 	acted.emit()
 	return shards
+
+
+## 그 종의 코어 조각이 다 모였나(GameConfig.CORE_SHARDS_PER_CORE개).
+func can_make_from_shards(species_id: String) -> bool:
+	return HenchDb.get_species(species_id) != null and wallet.core_shards_of(species_id) >= GameConfig.CORE_SHARDS_PER_CORE
+
+
+## 코어 조각을 모아 그 종 코어를 하나 만든다(임시: 나이 · 성별 · 접미사는 무작위, 레벨 = 그 종 최소 출현 레벨).
+## 만든 코어를 돌려준다(못 하면 null).
+func make_from_shards(species_id: String) -> CoreItem:
+	if not can_make_from_shards(species_id):
+		return null
+	wallet.spend_core_shards(species_id, GameConfig.CORE_SHARDS_PER_CORE)
+	var item := Drops.shard_core(rng, species_id)
+	codex.register(species_id)
+	bag.add(item)
+	acted.emit()
+	return item
 
 
 func toggle_lock(item: CoreItem) -> void:

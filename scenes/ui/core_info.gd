@@ -1,14 +1,16 @@
 class_name CoreInfo
 extends VBoxContainer
 ## 코어 정보창(가방 창 왼쪽, 사용자 결정 2026-10-03). 위에서부터:
-## 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV, HP·MP 막대 /
-## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 보정 줄(변이 효과 · 믹스 계승 스탯) / 고유 액티브·패시브 / 버튼 4개.
+## 초상화 + 이름(크게) + 종족·역할·등급 / 나이·성별·변이 배지, LV /
+## 왼쪽 HP · MP · EXP 막대(반 폭) + 오른쪽 스킬 카드(고유 액티브 · 패시브 · 변이 또는 믹스 계승, 사용자 결정 2026-10-03) /
+## 능력치 9개(이름 왼쪽 · 숫자 오른쪽, 2열 표) / 버튼 4개.
+## 스킬 카드를 누르면 스킬 상세 창(모션 미리보기 · 설명 · 계수) — 신호(skill_detail_requested)로 HUD의 SkillWindow가 띄운다.
 ## 글자: 숫자는 흰색 굵게, 이름표는 연한 회색. 접미사로 강한 능력치 한 줄만 강조색(Palette.STAT_ACCENT).
 ## LV 옆에 경험치 조각 먹이기 버튼, HP · MP 아래에 경험치 막대(헨치도 경험치로 오른다, 상한 = 주인공 레벨 — 못 하면 까닭이 버튼에 보인다).
 ## 버튼은 신호만 보내고, 실제 처리는 가방 창(→ Workshop, main)이 한다.
 ## 초상화는 종족 그림(TribeDb.portrait, data/tribes.json 경로)이다.
 ## 믹스창도 이 정보창을 쓴다(사용자 결정 2026-10-03): 버튼은 숨기고(show_actions = false), 재료를 누르면 그 코어,
-## 결과 칸을 누르면 미리보기(show_preview: 예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률)를 보여 준다.
+## 결과 칸을 누르면 미리보기(show_preview: 예상 레벨 · 접미사 확률 · 계승 스탯 · 나이 · 성별 확률 + 스킬 카드)를 보여 준다.
 ## 휴대폰 가로 화면 기준 글자 크기다. 자리·크기는 core_info.tscn을 에디터에서 열어 바꾼다.
 
 signal party_requested(item: CoreItem, slot: int)
@@ -17,6 +19,8 @@ signal mix_requested(item: CoreItem)
 signal dismantle_requested(item: CoreItem)
 signal lock_requested(item: CoreItem)
 signal feed_requested(item: CoreItem)
+## 스킬 카드를 눌렀을 때: sheet = SkillSheet 내용, caster = 시전자 색(종족 색)
+signal skill_detail_requested(sheet: Dictionary, caster: Color)
 
 const TITLE_FONT_SIZE := 26
 const TEXT_FONT_SIZE := 17
@@ -51,6 +55,7 @@ var party_names := Callable()
 var workshop: Workshop
 
 var _stat_names := {}  # 능력치 id → 이름 Label
+var _caster_color := Color.WHITE  # 스킬 상세 창 미리보기의 시전자 색(종족 색)
 var _stat_values := {}  # 능력치 id → 숫자 Label
 
 @onready var _heading: Label = %Heading
@@ -61,7 +66,11 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _preview: GridContainer = %Preview
 @onready var _badge_row: HBoxContainer = %BadgeRow
 @onready var _buttons: HBoxContainer = %Buttons
-@onready var _skills: GridContainer = %Skills
+@onready var _bars: VBoxContainer = %Bars
+@onready var _chips: VBoxContainer = %Chips
+@onready var _active_chip: SkillChip = %ActiveChip
+@onready var _passive_chip: SkillChip = %PassiveChip
+@onready var _extra_chip: SkillChip = %ExtraChip
 @onready var _title: Label = %Title
 @onready var _kind: Label = %Kind
 @onready var _badges: BadgeStrip = %Badges
@@ -70,11 +79,6 @@ var _stat_values := {}  # 능력치 id → 숫자 Label
 @onready var _mp_bar: ValueBar = %MpBar
 @onready var _exp_bar: ValueBar = %ExpBar
 @onready var _stats: GridContainer = %Stats
-@onready var _bonus: Label = %Bonus
-@onready var _active_caption: Label = %ActiveCaption
-@onready var _active: Label = %Active
-@onready var _passive_caption: Label = %PassiveCaption
-@onready var _passive: Label = %Passive
 @onready var _notice: Label = %Notice
 @onready var _party: Button = %Party
 @onready var _mix: Button = %MixButton
@@ -96,13 +100,9 @@ func _ready() -> void:
 	_title.add_theme_font_override("font", UiKit.bold_font())
 	UiKit.style_caption(_kind, TEXT_FONT_SIZE)
 	UiKit.style_number(_level, LEVEL_FONT_SIZE)
-	UiKit.style_label(_bonus, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
-	for caption: Label in [_active_caption, _passive_caption]:
-		UiKit.style_caption(caption, SMALL_FONT_SIZE)
-	_active_caption.text = UiText.INFO_ACTIVE
-	_passive_caption.text = UiText.INFO_PASSIVE
-	for label: Label in [_active, _passive]:
-		UiKit.style_label(label, TEXT_FONT_SIZE, Palette.TEXT)
+	for chip: SkillChip in [_active_chip, _passive_chip, _extra_chip]:
+		chip.pressed.connect(func() -> void:
+			skill_detail_requested.emit(chip.sheet, _caster_color))
 	UiKit.style_label(_notice, SMALL_FONT_SIZE, Palette.TEXT_WARNING)
 	UiKit.style_caption(_party_pick_title, SMALL_FONT_SIZE)
 	_party_pick_title.text = UiText.PARTY_PICK
@@ -187,11 +187,9 @@ func show_preview(title: String, kind: String, portrait: Texture2D, silhouette: 
 		value.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_preview.add_child(caption)
 		_preview.add_child(value)
-	var skills_known := species != null
-	_skills.visible = skills_known
-	if skills_known:
-		_active.text = species.active
-		_passive.text = species.passive
+	_chips.visible = species != null
+	if species != null:
+		_show_chips(species, species, null, null)
 
 
 ## 미리보기 줄의 값 글자들(실행 검사용).
@@ -204,11 +202,11 @@ func preview_values() -> PackedStringArray:
 
 ## 코어 보기(true)와 미리보기(false)에서 보이는 칸이 다르다.
 func _set_core_parts_visible(on: bool) -> void:
-	for part: Control in [_badge_row, _hp_bar, _mp_bar, _exp_bar, _stats, _bonus, _notice]:
+	for part: Control in [_badge_row, _bars, _stats, _notice]:
 		part.visible = on
 	_buttons.visible = on and show_actions
 	_preview.visible = not on
-	_skills.visible = true
+	_chips.visible = true
 	if on:
 		_portrait.modulate = Color.WHITE
 
@@ -258,12 +256,7 @@ func refresh() -> void:
 		(_stat_values[stat] as Label).text = str(stats.get(stat, 0))
 		(_stat_values[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT)
 		(_stat_names[stat] as Label).add_theme_color_override("font_color", Palette.STAT_ACCENT if accent else Palette.TEXT_LABEL)
-	_show_bonus(CoreStats.variant_stats(item))
-	_active.text = species.active
-	if species.skill != "":
-		_active.text += UiText.INFO_SKILL_KIND % UiText.SKILL_KIND_NAMES.get(species.skill, species.skill)
-	var holder := HenchDb.get_species(item.passive_owner_id())
-	_passive.text = (UiText.INFO_LEGACY % [holder.passive, holder.name]) if holder != species else species.passive
+	_show_chips(species, HenchDb.get_species(item.passive_owner_id()), item, UnitStats.from_core(item))
 	_party.text = UiText.BTN_PARTY_LEAVE if item.in_party() else UiText.BTN_PARTY
 	_lock.text = UiText.BTN_UNLOCK if item.locked else UiText.BTN_LOCK
 	_dismantle.disabled = item.locked or item.in_party()
@@ -290,15 +283,38 @@ func _show_feed() -> void:
 	_feed.disabled = problem != Workshop.FeedProblem.NONE
 
 
-## 보정 줄: 변이 효과 또는 믹스 계승 스탯(보조 코어에게서). 둘 다 아니면 숨는다(변이는 믹스로 태어나지 않는다).
-func _show_bonus(mutated: Array) -> void:
-	_bonus.visible = item.is_mix_born() or not mutated.is_empty()
-	if item.is_mix_born():
-		_bonus.text = UiText.INFO_INHERIT % [SuffixDb.stat_name(item.inherit_stat), item.inherit_value]
-		_bonus.add_theme_color_override("font_color", Palette.STAT_BOOSTED)
-	elif not mutated.is_empty():
-		_bonus.text = UiText.INFO_VARIANT % [SuffixDb.stat_list(mutated), roundi(GameConfig.VARIANT_STAT_BONUS * 100.0)]
-		_bonus.add_theme_color_override("font_color", Palette.STAT_VARIANT)
+## 스킬 카드: 고유 액티브(효과 종류 색) · 패시브(유산이면 "유산 패시브") · 변이 또는 믹스 계승(둘 다 아니면 숨김).
+## item · stats가 없으면(미리보기) 액티브 · 패시브만, 계수에 지금 값 없이.
+func _show_chips(species: HenchSpecies, holder: HenchSpecies, of_item: CoreItem, stats: UnitStats) -> void:
+	_caster_color = TribeDb.get_tribe(species.tribe).color
+	var active := SkillSheet.active(species, stats) if GameConfig.SKILL_KINDS.has(species.skill) else {}
+	_active_chip.visible = not active.is_empty()
+	if not active.is_empty():
+		_set_chip(_active_chip, UiText.CHIP_ACTIVE, active, Palette.SKILL_COLORS.get(species.skill, Palette.CHIP_PASSIVE))
+	var passive := SkillSheet.passive(species, holder)
+	_set_chip(_passive_chip, UiText.CHIP_LEGACY if holder != null and holder != species else UiText.CHIP_PASSIVE, passive, Palette.CHIP_PASSIVE)
+	var extra := {}
+	if of_item != null:
+		extra = SkillSheet.variant(of_item) if of_item.variant else SkillSheet.inherit(of_item)
+	_extra_chip.visible = not extra.is_empty()
+	if of_item != null and of_item.variant:
+		_extra_chip.glyph = "variant"
+		_set_chip(_extra_chip, UiText.CHIP_VARIANT, extra, Palette.CHIP_VARIANT)
+	elif not extra.is_empty():
+		_extra_chip.glyph = "inherit"
+		_set_chip(_extra_chip, UiText.CHIP_INHERIT, extra, Palette.CHIP_INHERIT)
+
+
+static func _set_chip(chip: SkillChip, caption: String, sheet: Dictionary, accent: Color) -> void:
+	chip.caption = caption
+	chip.title = sheet.get("title", "")
+	chip.accent = accent
+	chip.sheet = sheet
+
+
+## 스킬 카드(실행 검사용): 0 = 액티브, 1 = 패시브, 2 = 변이 · 계승.
+func skill_chip(index: int) -> SkillChip:
+	return [_active_chip, _passive_chip, _extra_chip][index]
 
 
 func _on_party() -> void:

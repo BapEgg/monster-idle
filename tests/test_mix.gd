@@ -269,8 +269,26 @@ func test_wallet() -> void:
 	wallet.add_gold(100)
 	expect_true(not wallet.spend_gold(150) and wallet.gold == 100, "모자라면 내지 않는다")
 	expect_true(wallet.spend_gold(60) and wallet.gold == 40, "있으면 낸다")
-	wallet.add_shards(3)
-	expect_true(wallet.shards == 3, "코어 조각")
+	wallet.add_core_shards("gochuryong", 3)
+	wallet.add_core_shards("haemapo", 1)
+	expect_true(wallet.core_shards_of("gochuryong") == 3 and wallet.total_core_shards() == 4, "코어 조각은 종마다 따로")
+	expect_true(not wallet.spend_core_shards("haemapo", 2) and wallet.spend_core_shards("haemapo", 1) and not wallet.core_shards.has("haemapo"), "모자라면 안 쓰고, 다 쓰면 목록에서 빠진다")
+
+
+## 코어 조각(종마다)을 다 모으면 그 종 코어 하나(사용자 결정 2026-10-03, 쓰는 곳은 임시).
+func test_make_core_from_shards() -> void:
+	var bag := Bag.new()
+	var wallet := Wallet.new()
+	var shop := Workshop.new(bag, wallet)
+	shop.rng.seed = 3
+	wallet.add_core_shards("gochuryong", GameConfig.CORE_SHARDS_PER_CORE - 1)
+	expect_true(not shop.can_make_from_shards("gochuryong") and shop.make_from_shards("gochuryong") == null and bag.count() == 0, "덜 모이면 못 만든다")
+	wallet.add_core_shards("gochuryong", 2)
+	var made := shop.make_from_shards("gochuryong")
+	var species := HenchDb.get_species("gochuryong")
+	expect_true(made != null and bag.has(made) and made.species_id == "gochuryong" and made.level == species.level_min, "다 모이면 그 종 코어(Lv %d = 최소 출현 레벨)" % (made.level if made != null else 0))
+	expect_true(not made.shining and not made.variant and made.suffix_id != "" and wallet.core_shards_of("gochuryong") == 1, "빛나지 않고 변이도 아님, 쓴 만큼 조각이 줄어듦")
+	expect_true(shop.codex.has("gochuryong"), "만든 종은 도감에")
 
 
 ## 사용자 결정(2026-10-02): 실패해도 재료는 사라지고 골드도 나간다.
@@ -319,7 +337,7 @@ func test_workshop_blocks_locked_and_party() -> void:
 	shop.toggle_lock(f)
 	m.party_slot = 1
 	expect_true(shop.dismantle(m) == 0 and bag.has(m), "파티 코어는 분해되지 않는다")
-	expect_true(shop.dismantle(f) == GameConfig.DISMANTLE_SHARDS and not bag.has(f) and wallet.shards == GameConfig.DISMANTLE_SHARDS, "분해 → 가방에서 빠지고 코어 조각")
+	expect_true(shop.dismantle(f) == GameConfig.DISMANTLE_SHARDS and not bag.has(f) and wallet.core_shards_of("gochuryong") == GameConfig.DISMANTLE_SHARDS, "분해 → 가방에서 빠지고 그 종의 코어 조각")
 
 
 ## 레시피 창: 모든 공식 목록이 공식 찾기(recipe_result)와 같다.

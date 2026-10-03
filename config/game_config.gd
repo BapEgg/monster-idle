@@ -302,15 +302,21 @@ const MIX_SUFFIX_KEEP_CHANCE := 0.5
 const MIX_INHERIT_RATE := Vector2(0.15, 0.2)
 ## 이런 재료를 쓰면 한 번 더 묻는다: 빛나는 코어, 이 레벨 이상(임시)
 const MIX_CONFIRM_LEVEL := 20
-## 믹스 연출(초): 재료가 모이는 시간, 번쩍임이 사라지는 시간, 결과 카드가 튀어나오는 시간, 실패 흔들림
-const MIX_FX_GATHER_SECONDS := 0.45
+## 믹스 연출(초): 번쩍임이 사라지는 시간, 결과 카드가 튀어나오는 시간, 실패 흔들림
 const MIX_FX_FLASH_SECONDS := 0.5
 const MIX_FX_POP_SECONDS := 0.35
 const MIX_FX_SHAKE_SECONDS := 0.4
 const MIX_FX_SHAKE_PIXELS := 14.0
-## 믹스 연출(플라스크): 액체가 쭉 차오르는 시간(초) · 결과를 보여 주고(성공 = 짠, 실패 = 깨짐 + 우는 주 코어) 카드가 뜨기까지(초)
-const MIX_FX_FILL_SECONDS := 0.9
+## 믹스 연출(플라스크, 사용자 결정 2026-10-03: 유리관 = 진행 막대): 재료가 비커 액체로 녹아드는 시간(초),
+## 관이 끝까지 차오르는 시간(초, 끝까지 차면 성공), 결과를 보여 주고(성공 = 짠, 실패 = 깨짐 + 우는 주 코어) 카드가 뜨기까지(초)
+const MIX_FX_DISSOLVE_SECONDS := 0.35
+const MIX_FX_FILL_SECONDS := 1.6
 const MIX_FX_REVEAL_SECONDS := 0.7
+## 실패: 관이 멈칫멈칫 오르다 멈추고 깨진다. [이만큼까지(0~1), 걸리는 시간(초)]를 차례로(살짝 내려가는 칸 = 멈칫)
+const MIX_FX_FAIL_STEPS := [[0.32, 0.45], [0.29, 0.12], [0.29, 0.22], [0.52, 0.4], [0.48, 0.12], [0.48, 0.25], [0.63, 0.35], [0.6, 0.1], [0.6, 0.3]]
+## 멈칫할 때 플라스크가 떨리는 기울기(도) · 빠르기
+const MIX_FX_STUTTER_DEGREES := 4.0
+const MIX_FX_STUTTER_SPEED := 40.0
 ## 플라스크 흔들림: 마우스를 대면 · 누르고 있으면 기울기(도), 빠르기
 const MIX_WOBBLE_HOVER_DEGREES := 5.0
 const MIX_WOBBLE_PRESS_DEGREES := 10.0
@@ -330,6 +336,8 @@ const LONG_PRESS_SECONDS := 0.45
 const DISMANTLE_SHARDS := 1
 const DISMANTLE_SHARDS_SHINING_BONUS := 2
 const DISMANTLE_SHARDS_VARIANT_BONUS := 4
+## 코어 조각(종마다)을 이만큼 모으면 그 종 코어 하나(사용자 결정 2026-10-03의 "1/12", 모았을 때 쓰는 곳은 임시)
+const CORE_SHARDS_PER_CORE := 12
 
 # ─── 섬의 왕 보스전 (프로토타입 6, 연습용 임시 보스 — 왕별 전투 규칙은 기획서에서 미정) ─────
 ## 연습 상대(data/henches.json의 id): 용섬의 왕 미르. 연습이라 보상이 없다.

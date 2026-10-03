@@ -22,6 +22,16 @@ static func bold_font() -> Font:
 	return _bold
 
 
+## 세 자리마다 쉼표(12345 → "12,345").
+static func thousands(value: int) -> String:
+	var digits := str(absi(value))
+	var out := ""
+	while digits.length() > 3:
+		out = "," + digits.substr(digits.length() - 3) + out
+		digits = digits.substr(0, digits.length() - 3)
+	return ("-" if value < 0 else "") + digits + out
+
+
 ## 숫자: 흰색 굵게.
 static func style_number(label: Label, font_size: int) -> void:
 	style_label(label, font_size, Palette.TEXT)

@@ -319,6 +319,28 @@ func _run(main: Node) -> void:
 	fighter = (main.get("party") as Array)[0] as Hench
 	_expect(gochu.level == level_before + 1 and money.exp_shards == 3 and fighter.level == gochu.level and is_equal_approx(fighter.stats.max_hp, UnitStats.from_core(gochu).max_hp), "경험치 조각 %d개 먹임 → Lv %d, 파티 헨치 능력치도 바로 오름" % [need_shards, gochu.level])
 	_expect((info.find_child("ExpBar", true, false) as Control).visible, "정보창에 경험치 막대")
+	# 코어 상세: HP 막대는 반 폭, 오른쪽에 스킬 카드(액티브 · 패시브). 카드를 누르면 스킬 상세 창(모션 미리보기 · 설명 · 계수)
+	var hp_bar := info.find_child("HpBar", true, false) as Control
+	var active_chip := info.skill_chip(0)
+	_expect(hp_bar.size.x < info.size.x * 0.6 and active_chip.visible and active_chip.global_position.x > hp_bar.get_global_rect().end.x and info.skill_chip(1).visible and not info.skill_chip(2).visible, "HP 막대는 반 폭(%.0f/%.0f), 오른쪽에 액티브 · 패시브 카드(보통 코어는 변이 카드 없음)" % [hp_bar.size.x, info.size.x])
+	_expect(active_chip.title == "매운 박치기" and info.skill_chip(1).title == gochu.species().passive, "스킬 카드: %s / %s" % [active_chip.title, info.skill_chip(1).title])
+	await _tap(active_chip.get_global_rect().get_center())
+	var skill_window := hud.skill_window
+	var damage_row := ""
+	for row: Array in skill_window.row_texts():
+		if row[0] == UiText.SKILL_ROW_DAMAGE:
+			damage_row = row[1]
+	var gochu_attack := UnitStats.from_core(gochu).attack * float(GameConfig.SKILL_KINDS["strike"]["power"])
+	_expect(skill_window.visible and skill_window.texts()[1] == "매운 박치기" and skill_window.preview_motion() == "strike" and damage_row.ends_with(UiText.SKILL_NOW % roundi(gochu_attack)), "액티브 카드 → 스킬 상세 창: 강타 모션 · 피해 %s" % damage_row)
+	await _seconds(0.45)
+	await _save_shot("skill_detail")
+	await _seconds(0.2)
+	await _tap(Vector2(20, 20))  # 창 밖(어두운 덮개)을 누르면 닫힘
+	_expect(not skill_window.visible and hud.bag_panel.visible, "덮개를 누름 → 스킬 상세 창만 닫힘")
+	await _tap(info.skill_chip(1).get_global_rect().get_center())
+	_expect(skill_window.visible and skill_window.preview_motion() == SkillSheet.MOTION_PASSIVE and skill_window.texts()[0] == UiText.SKILL_TAG_PASSIVE, "패시브 카드 → 패시브 상세(늘 켜진 빛)")
+	await _tap(_center_of(skill_window, "Close"))
+	_expect(not skill_window.visible, "닫기 → 스킬 상세 창 닫힘")
 	var other_stat := "lucky" if gochu.suffix_id != "lucky" else "swift"
 	_expect(info.stat_value_label(gochu.suffix_id).get_theme_color("font_color") == Palette.STAT_ACCENT and info.stat_value_label(other_stat).get_theme_color("font_color") == Palette.TEXT, "정보창 능력치 표: 접미사로 강한 능력치만 강조색")
 	await _tap(_center_of(info, "Party"))
@@ -329,11 +351,31 @@ func _run(main: Node) -> void:
 	var owl := _find_core(bag, "mangwonbueong", CoreItem.Gender.FEMALE)
 	await _tap(hud.bag_panel.card_for(owl).get_global_rect().get_center())
 	var count_before := bag.count()
-	var shards_before := wallet.shards
+	var shards_before := wallet.core_shards_of("mangwonbueong")
 	await _tap(_center_of(info, "Dismantle"))
 	_expect(hud.confirm_box.visible, "분해 → 확인 창")
 	await _tap(_center_of(hud.confirm_box, "Yes"))
-	_expect(not bag.has(owl) and bag.count() == count_before - 1 and wallet.shards == shards_before + Mix.dismantle_shards(owl), "분해 → 가방에서 빠지고 코어 조각 +%d" % Mix.dismantle_shards(owl))
+	var owl_shards := shards_before + Mix.dismantle_shards(owl)
+	_expect(not bag.has(owl) and bag.count() == count_before - 1 and wallet.core_shards_of("mangwonbueong") == owl_shards, "분해 → 가방에서 빠지고 망원부엉 코어 조각 +%d" % Mix.dismantle_shards(owl))
+	# 코어 조각 칸(종마다 n/12): 덜 모이면 흑백으로 흐리게, 다 모이면 색이 돌아오고 눌러서 그 종 코어를 만든다
+	await _physics_frames(2)
+	var owl_card := hud.bag_panel.shard_card_for("mangwonbueong")
+	_expect(owl_card != null and owl_card.progress_text() == UiText.SHARD_PROGRESS % [owl_shards, GameConfig.CORE_SHARDS_PER_CORE] and owl_card.material != null and not owl_card.is_ready(), "가방에 흐린(흑백) 조각 칸: %s" % (owl_card.progress_text() if owl_card != null else "없음"))
+	await _tap(owl_card.get_global_rect().get_center())
+	_expect(info.previewing and info.preview_values()[0] == "%d / %d" % [owl_shards, GameConfig.CORE_SHARDS_PER_CORE] and not hud.confirm_box.visible, "덜 모인 조각 칸을 누름 → 정보창에 모은 조각 · 얻는 곳(만들기 확인 없음)")
+	wallet.add_core_shards("mangwonbueong", GameConfig.CORE_SHARDS_PER_CORE - owl_shards)
+	await _physics_frames(2)
+	owl_card = hud.bag_panel.shard_card_for("mangwonbueong")
+	_expect(owl_card.is_ready() and owl_card.material == null, "다 모이면 색이 돌아오고 \"만들기\"")
+	count_before = bag.count()
+	await _tap(owl_card.get_global_rect().get_center())
+	_expect(hud.confirm_box.visible, "다 모인 조각 칸을 누름 → 만들기 확인 창")
+	await _tap(_center_of(hud.confirm_box, "Yes"))
+	await _physics_frames(2)
+	var made_owl := bag.cores[bag.count() - 1]
+	_expect(bag.count() == count_before + 1 and made_owl.species_id == "mangwonbueong" and info.item == made_owl and hud.bag_panel.shard_card_for("mangwonbueong") == null, "조각 %d개 → 망원부엉 코어(Lv %d)가 가방에, 조각 칸은 사라짐" % [GameConfig.CORE_SHARDS_PER_CORE, made_owl.level])
+	wallet.add_core_shards("gochuryong", 7)  # 사진용: 조각 칸 하나(7/12)
+	_expect(hud.currency_bar.texts()[0] == UiKit.thousands(wallet.gold) and hud.currency_bar.texts()[1] == str(wallet.exp_shards), "메인 화면 오른쪽 위 재화: 골드 %s · 경험치 조각 %s" % Array(hud.currency_bar.texts()))
 	await _tap(hud.bag_panel.card_for(gochu).get_global_rect().get_center())
 	await _tap(_center_of(info, "MixButton"))
 	var mixer := hud.mix_panel
@@ -391,6 +433,13 @@ func _run(main: Node) -> void:
 	_expect(mixer.is_info_drawer_open() and mix_info.previewing and mix_info.heading == UiText.MIX_INFO_PREVIEW and preview.size() == UiText.MIX_PREVIEW_CAPTIONS.size() and preview[0] == UiText.MIX_PREVIEW_LEVEL % 18, "결과 칸을 누름 → 오른쪽 정보 카드 \"결과 미리보기\"(%s)" % " · ".join(preview))
 	await _save_shot("mix_preview")
 	await _seconds(0.2)
+	await _tap(mix_info.skill_chip(0).get_global_rect().get_center())
+	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == HenchDb.get_species("dolguana").skill and not hud.skill_window.row_texts()[1][1].contains("("), "결과 미리보기의 액티브 카드 → 믹스창 위에 스킬 상세 창(지금 값 없이 배율만)")
+	await _seconds(0.6)
+	await _save_shot("skill_blast")
+	await _seconds(0.2)
+	await _tap(_center_of(hud.skill_window, "Close"))
+	_expect(not hud.skill_window.visible and mixer.visible and mixer.is_info_drawer_open(), "스킬 상세 창을 닫으면 믹스창 · 정보 카드 그대로")
 	await _tap(Vector2(root.get_visible_rect().size.x * 0.3, root.get_visible_rect().size.y * 0.5))
 	await _seconds(GameConfig.MIX_DRAWER_SECONDS + 0.1)
 	_expect(not mixer.is_info_drawer_open() and mixer.visible, "정보 카드 밖을 누름 → 카드가 닫힘")
@@ -434,10 +483,13 @@ func _run(main: Node) -> void:
 	await _tap(_center_of(mixer, "ResultSlot"))
 	_expect(not hud.confirm_box.visible, "플라스크를 누름 → 보통 재료는 확인 창 없이 바로 믹스")
 	var flying := (mixer.find_child("FxLayer", true, false) as Control).get_child_count()
-	_expect(flying == 2, "두 재료가 플라스크로 빨려 드는 연출(%d개)" % flying)
-	await _seconds(GameConfig.MIX_FX_FILL_SECONDS * 0.4)
+	_expect(flying == 2 and mixer.tube_fill() == 0.0, "두 재료가 비커 액체로 녹아드는 연출(%d개), 유리관은 아직 빈 회색" % flying)
+	await _seconds(GameConfig.MIX_FX_DISSOLVE_SECONDS + GameConfig.MIX_FX_FILL_SECONDS * 0.5)
+	var half_fill := mixer.tube_fill()
+	_expect(half_fill > 0.2 and half_fill < 0.9, "유리관이 진행 막대처럼 차오름(%.2f)" % half_fill)
 	await _save_shot("mix_fill")
-	await _seconds(GameConfig.MIX_FX_FILL_SECONDS * 0.6 + 0.25)
+	await _seconds(GameConfig.MIX_FX_FILL_SECONDS * 0.5 + 0.25)
+	_expect(mixer.last_born == null or mixer.tube_fill() == 1.0, "성공 → 유리관이 끝까지 참")
 	await _save_shot("mix_reveal")
 	await _seconds(GameConfig.MIX_FX_REVEAL_SECONDS + GameConfig.MIX_FX_POP_SECONDS + 0.3)
 	var born := mixer.last_born
@@ -466,7 +518,7 @@ func _run(main: Node) -> void:
 		mixer.call("_show_result_card")
 		await _seconds(GameConfig.MIX_FX_POP_SECONDS + 0.1)
 		await _tap(_center_of(mixer, "ShowInfo"))
-		_expect(not mixer.visible and info.item == born and (info.find_child("Bonus", true, false) as Label).visible, "정보 보기 → 가방 창에서 태어난 코어(계승 줄)")
+		_expect(not mixer.visible and info.item == born and info.skill_chip(2).visible and info.skill_chip(2).glyph == "inherit" and info.skill_chip(2).title == UiText.SKILL_INHERIT_VALUE % [SuffixDb.stat_name(born.inherit_stat), born.inherit_value], "정보 보기 → 가방 창에서 태어난 코어(믹스 계승 카드: %s)" % info.skill_chip(2).title)
 	else:
 		var lost_cards := mixer.find_child("CardLost", true, false) as HBoxContainer
 		_expect(lost_cards.visible and lost_cards.get_child_count() == 2 and card_texts[2] == UiText.MIX_FAIL_LOST % [kkang.title(), gochu.title()], "실패 카드: 잃은 재료 두 칸 · 얻은 숙련 경험치")
@@ -509,7 +561,22 @@ func _run(main: Node) -> void:
 		pulse_scales.append((mixer.find_child("MainEmpty", true, false) as Control).scale.x)
 		await _seconds(0.1)
 	_expect(pulse_scales.max() - pulse_scales.min() > 0.02, "빈 주 칸 \"눌러서 고르기\"가 커졌다 작아지며 누르라고 알림")
-	mixer.show_outcome(false)
+	# 실패 연출: 유리관이 멈칫멈칫(살짝 내려가거나 멈추며 플라스크가 떨림) 오르다 끝까지 못 가고 멈춘 뒤 깨진다
+	var fail_fx := mixer.call("_play_fill", false, 0.0) as Tween
+	fail_fx.tween_callback(func() -> void: mixer.show_outcome(false))
+	var fills: Array[float] = []
+	var shook := false
+	var fail_seconds := 0.0
+	for step: Array in GameConfig.MIX_FX_FAIL_STEPS:
+		fail_seconds += float(step[1])
+	for i in ceili(fail_seconds / 0.05):
+		fills.append(mixer.tube_fill())
+		shook = shook or absf(mixer.flask_angle()) > deg_to_rad(GameConfig.MIX_FX_STUTTER_DEGREES) * 0.3
+		await _seconds(0.05)
+	var dipped := false
+	for i in range(1, fills.size()):
+		dipped = dipped or fills[i] < fills[i - 1] - 0.005
+	_expect(dipped and shook and fills.max() < 1.0, "실패 게이지: 멈칫(내려감 · 떨림)하며 끝까지 못 감(최고 %.2f)" % fills.max())
 	await _seconds(0.5)
 	_expect(mixer.is_flask_broken(), "실패 연출: 플라스크가 깨지고 주 코어가 욺")
 	await _save_shot("mix_broken")
@@ -521,12 +588,18 @@ func _run(main: Node) -> void:
 	await _seconds(GameConfig.SAVE_SOON_SECONDS + 0.5)
 	var saved := LocalSaveStore.new(SMOKE_SAVE_PATH).load_data()
 	_expect(saved.get("cores", []).size() == bag.count() and int(saved.get("gold", -1)) == wallet.gold, "믹스하고 %.0f초 뒤 저장됨 (코어 %d개 · 골드 %d)" % [GameConfig.SAVE_SOON_SECONDS, bag.count(), wallet.gold])
-	# 변이(돌연변이) 코어: 정보창에 변이 보정 줄, 믹스 버튼은 못 누름
+	# 변이(돌연변이) 코어: 정보창에 변이 카드, 믹스 버튼은 못 누름
 	var mutant := _find_core(bag, "haemapo", CoreItem.Gender.MALE)
 	await _tap(hud.bag_panel.card_for(mutant).get_global_rect().get_center())
-	var bonus := info.find_child("Bonus", true, false) as Label
 	var mix_button := info.find_child("MixButton", true, false) as Button
-	_expect(mutant.variant and bonus.visible and bonus.text.begins_with(UiText.VARIANT) and mix_button.disabled, "변이 코어: 변이 보정 줄이 보이고 믹스 버튼은 꺼짐")
+	var variant_chip := info.skill_chip(2)
+	_expect(mutant.variant and variant_chip.visible and variant_chip.glyph == "variant" and variant_chip.title == UiText.CHIP_VARIANT_TITLE % roundi(GameConfig.VARIANT_STAT_BONUS * 100.0) and mix_button.disabled, "변이 코어: 막대 오른쪽에 변이 카드(%s), 믹스 버튼은 꺼짐" % variant_chip.title)
+	await _tap(variant_chip.get_global_rect().get_center())
+	_expect(hud.skill_window.visible and hud.skill_window.preview_motion() == SkillSheet.MOTION_VARIANT and hud.skill_window.row_texts()[0][1] == SuffixDb.stat_list(CoreStats.variant_stats(mutant)), "변이 카드 → 오른 능력치 · 보정 · 믹스 재료로 못 씀")
+	await _seconds(0.3)
+	await _save_shot("skill_variant")
+	await _seconds(0.2)
+	await _tap(_center_of(hud.skill_window, "Close"))
 	await _save_shot("variant")
 	await _seconds(0.2)
 	# 목록(스크롤) 위를 끌면 목록이 굴러가서, 그다음 누름은 굴러가기를 멈추는 데 쓰인다(휴대폰과 같음). 그래서 위쪽 글자 칸에서 끈다.
@@ -730,7 +803,7 @@ func _run(main: Node) -> void:
 	for item in bag.cores:
 		expected.append(item.to_dict())
 	var gold_saved := wallet.gold
-	var shards_saved := wallet.shards
+	var shards_saved := wallet.core_shards.duplicate()
 	main.propagate_notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)  # 창 닫기(X)를 눌렀을 때 오는 알림
 	var on_close := LocalSaveStore.new(SMOKE_SAVE_PATH).load_data()
 	_expect(int(on_close.get("gold", -1)) == gold_saved and on_close.get("cores", []).size() == expected.size(), "창을 닫으면(X) 기다리지 않고 바로 저장")
@@ -746,7 +819,7 @@ func _run(main: Node) -> void:
 		restored.append(item.to_dict())
 	_expect(restored == expected, "다시 켜면 가방이 그대로 (코어 %d개, 시작 가방을 다시 넣지 않음)" % restored.size())
 	var wallet_again: Wallet = again.get("wallet")
-	_expect(wallet_again.gold == gold_saved and wallet_again.shards == shards_saved, "골드 %d · 코어 조각 %d 그대로" % [gold_saved, shards_saved])
+	_expect(wallet_again.gold == gold_saved and wallet_again.core_shards == shards_saved, "골드 %d · 종마다 코어 조각 %s 그대로" % [gold_saved, shards_saved])
 	var party_again: Array = again.get("party")
 	var healer := party_again[2] as Hench
 	_expect(healer.species.id == "jinjuryong" and is_equal_approx(healer.stats.max_hp, UnitStats.from_core(keep).max_hp), "파티 3번 자리 = 진주룡 코어(능력치까지) 그대로")

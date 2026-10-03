@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scenes/ui/core_info.gd" id="1_info"]
 [ext_resource type="Script" path="res://scenes/ui/badge_strip.gd" id="2_badges"]
 [ext_resource type="Script" path="res://scenes/ui/value_bar.gd" id="3_bar"]
+[ext_resource type="Script" path="res://scenes/ui/skill_chip.gd" id="4_chip"]
 
 [node name="CoreInfo" type="VBoxContainer"]
 custom_minimum_size = Vector2(470, 0)
@@ -87,23 +88,65 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 focus_mode = 0
 
-[node name="HpBar" type="Control" parent="Body"]
+[node name="Middle" type="HBoxContainer" parent="Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Bars" type="VBoxContainer" parent="Body/Middle"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="HpBar" type="Control" parent="Body/Middle/Bars"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 script = ExtResource("3_bar")
 
-[node name="MpBar" type="Control" parent="Body"]
+[node name="MpBar" type="Control" parent="Body/Middle/Bars"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 script = ExtResource("3_bar")
 
-[node name="ExpBar" type="Control" parent="Body"]
+[node name="ExpBar" type="Control" parent="Body/Middle/Bars"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 script = ExtResource("3_bar")
+
+[node name="Chips" type="VBoxContainer" parent="Body/Middle"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="ActiveChip" type="Button" parent="Body/Middle/Chips"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 0
+script = ExtResource("4_chip")
+
+[node name="PassiveChip" type="Button" parent="Body/Middle/Chips"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 0
+script = ExtResource("4_chip")
+glyph = "passive"
+
+[node name="ExtraChip" type="Button" parent="Body/Middle/Chips"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
+layout_mode = 2
+focus_mode = 0
+script = ExtResource("4_chip")
+glyph = "variant"
 
 [node name="Stats" type="GridContainer" parent="Body"]
 unique_name_in_owner = true
@@ -111,40 +154,6 @@ layout_mode = 2
 theme_override_constants/h_separation = 28
 theme_override_constants/v_separation = 4
 columns = 2
-
-[node name="Bonus" type="Label" parent="Body"]
-unique_name_in_owner = true
-layout_mode = 2
-autowrap_mode = 3
-
-[node name="Skills" type="GridContainer" parent="Body"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 6
-columns = 2
-
-[node name="ActiveCaption" type="Label" parent="Body/Skills"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="Active" type="Label" parent="Body/Skills"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-autowrap_mode = 3
-
-[node name="PassiveCaption" type="Label" parent="Body/Skills"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 0
-
-[node name="Passive" type="Label" parent="Body/Skills"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-autowrap_mode = 3
 
 [node name="Notice" type="Label" parent="Body"]
 unique_name_in_owner = true

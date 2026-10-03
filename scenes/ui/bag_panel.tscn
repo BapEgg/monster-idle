@@ -35,10 +35,10 @@ theme_override_constants/separation = 18
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Money" type="Label" parent="Margin/Rows/Header"]
-unique_name_in_owner = true
+[node name="HeaderGap" type="Control" parent="Margin/Rows/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="Close" type="Button" parent="Margin/Rows/Header"]
 unique_name_in_owner = true
@@ -69,7 +69,24 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Grid" type="GridContainer" parent="Margin/Rows/Body/Right/Scroll"]
+[node name="Lists" type="VBoxContainer" parent="Margin/Rows/Body/Right/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Grid" type="GridContainer" parent="Margin/Rows/Body/Right/Scroll/Lists"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="ShardTitle" type="Label" parent="Margin/Rows/Body/Right/Scroll/Lists"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ShardGrid" type="GridContainer" parent="Margin/Rows/Body/Right/Scroll/Lists"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

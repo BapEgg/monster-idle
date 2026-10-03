@@ -1,6 +1,6 @@
 class_name Hud
 extends CanvasLayer
-## 화면 위 UI: 가상 조이스틱, 사냥 상태, 처치 수, 가방 버튼·가방 창, 대상 창(위 가운데),
+## 화면 위 UI: 가상 조이스틱, 오른쪽 위 재화(골드 · 경험치 조각) · 사냥 상태 · 처치 수, 가방 버튼·가방 창, 대상 창(위 가운데),
 ## 오른쪽 아래의 공격 버튼(늘 보임) · 오토 버튼 · 스킬 칸(메이플키우기 배치를 따름, 사용자 결정 2026-10-02).
 ## 스킬 칸 1~3 = 파티 헨치 1~3의 고유 액티브(누르면 씀), 4~6 = 나중에 주인공 직업 스킬.
 ## 위치·크기는 이 장면(hud.tscn)을 에디터에서 열어 끌어서 정한다. 코드는 자리를 건드리지 않는다.
@@ -37,6 +37,7 @@ const CONTROLS_PADDING := 8.0
 @onready var auto_button: AutoButton = $Controls/AutoButton
 @onready var target_frame: TargetFrame = $TargetFrame
 @onready var level_bar: LevelBar = $LevelBar
+@onready var currency_bar: CurrencyBar = $Currency
 @onready var bag_button: BagButton = $TopControls/BagButton
 @onready var bag_panel: BagPanel = $BagPanel
 @onready var debug_button: TextButton = $TopControls/DebugButton
@@ -44,6 +45,7 @@ const CONTROLS_PADDING := 8.0
 @onready var boss_button: TextButton = $TopControls/BossButton
 @onready var _commands: Array[CommandButton] = [$Controls/CommandAll, $Controls/CommandMelee, $Controls/CommandRanged]
 @onready var mix_panel: MixPanel = $MixPanel
+@onready var skill_window: SkillWindow = $SkillWindow
 @onready var confirm_box: ConfirmBox = $ConfirmBox
 @onready var _controls: Control = $Controls
 @onready var _top_controls: Control = $TopControls
@@ -85,6 +87,8 @@ func _ready() -> void:
 	bag_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 	bag_panel.party_leave_requested.connect(func(item: CoreItem) -> void: party_leave_requested.emit(item))
 	mix_panel.core_shown.connect(bag_panel.select)
+	bag_panel.info().skill_detail_requested.connect(skill_window.open)
+	mix_panel.info().skill_detail_requested.connect(skill_window.open)
 	mix_panel.party_requested.connect(func(item: CoreItem, slot: int) -> void: party_requested.emit(item, slot))
 
 
@@ -127,6 +131,7 @@ func set_kills(count: int) -> void:
 
 ## 지갑·코어 다루기(믹스·분해·잠금)·파티 이름을 가방 창과 믹스창에 이어 준다.
 func bind_collection(wallet: Wallet, workshop: Workshop, party_names: Callable) -> void:
+	currency_bar.bind(wallet)
 	bag_panel.bind_collection(wallet, workshop, confirm_box, party_names)
 	mix_panel.bind(workshop, confirm_box, party_names)
 
@@ -203,7 +208,7 @@ func _on_bag_button() -> void:
 
 ## 화면을 덮는 창들(가방 · 믹스 · 디버그 · 확인).
 func _modals() -> Array[Control]:
-	return [bag_panel, mix_panel, debug_panel, confirm_box]
+	return [bag_panel, mix_panel, debug_panel, skill_window, confirm_box]
 
 
 ## 창이 하나라도 열려 있으면 조이스틱과 오른쪽 아래 버튼(공격 · 오토 · 스킬 칸), 오른쪽 위 버튼(가방 · 디버그)을 숨겨,

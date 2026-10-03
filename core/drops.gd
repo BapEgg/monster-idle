@@ -16,6 +16,19 @@ static func roll_core(rng: RandomNumberGenerator, wild: CoreItem) -> CoreItem:
 	return item
 
 
+## 코어 조각을 모아 만드는 코어(임시): 나이 · 성별 · 접미사는 무작위, 레벨 = 그 종 최소 출현 레벨. 빛나는 코어 · 변이체는 아니다.
+static func shard_core(rng: RandomNumberGenerator, species_id: String) -> CoreItem:
+	var species := HenchDb.get_species(species_id)
+	var item := CoreItem.new()
+	item.species_id = species_id
+	item.age = roll_age(rng)
+	item.gender = roll_gender(rng)
+	item.level = species.level_min if species != null else 1
+	var suffixes := SuffixDb.ids()
+	item.suffix_id = suffixes[rng.randi() % suffixes.size()] if not suffixes.is_empty() else ""
+	return item
+
+
 ## 처치했을 때 경험치 조각이 떨어지나(Balance.exp_shard_chance).
 static func roll_exp_shard(rng: RandomNumberGenerator) -> bool:
 	return rng.randf() < Balance.exp_shard_chance()

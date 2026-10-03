@@ -104,6 +104,8 @@ const MIX_ACCENT_BORDER := Color("7fe0d2")
 const FLASK_GLASS := Color(0.78, 0.92, 1.0, 0.75)
 const FLASK_SHINE := Color(1, 1, 1, 0.35)
 const FLASK_TUBE := Color(0.78, 0.92, 1.0, 0.4)
+## 유리관 안이 비었을 때(회색, 믹스하면 액체가 이 위로 차오른다)
+const FLASK_TUBE_EMPTY := Color(0.42, 0.44, 0.48)
 const FLASK_BUBBLE := Color(1, 1, 1, 0.8)
 ## 빈 칸 비커 둘레 깜빡임(누르라고) · 믹스할 수 있는 플라스크 둘레 빛 · 실패한 플라스크의 탁한 액체 · 금 · 눈물
 const FLASK_PULSE := Color(1, 1, 1, 0.55)
@@ -117,6 +119,8 @@ const CRYING_TINT := Color(0.75, 0.82, 1.0)
 const MIX_TIP_BG := Color(0.18, 0.2, 0.26, 0.98)
 ## 서랍이 열렸을 때 그 뒤(연성 장치)를 살짝 가리는 덮개. 누르면 서랍이 닫힌다.
 const MIX_DRAWER_SHADE := Color(0, 0, 0, 0.35)
+## 스킬 상세 창 뒤를 덮는 어두운 덮개(누르면 닫힘)
+const MODAL_SHADE := Color(0, 0, 0, 0.55)
 const MIX_TABLE_NOW := Color(1, 1, 1, 0.12)
 const MIX_RECIPE_READY := Color("8ee28e")
 ## 주인공 경험치 막대(왼쪽 위): 바탕 · 찬 부분, 레벨업 글자
@@ -125,6 +129,16 @@ const LEVEL_BAR_FILL := Color("ffd84a")
 const LEVEL_UP_TEXT := Color("ffd84a")
 ## 경험치 조각(주웠을 때 글자 · 먹이기 버튼)
 const EXP_SHARD := Color("7fd4ff")
+## 화면 오른쪽 위 재화: 골드 동전 · 동전 안쪽 고리
+const CURRENCY_GOLD := Color("ffc93c")
+const CURRENCY_GOLD_DARK := Color("b8860b")
+## 가방의 코어 조각 칸(종마다 n/12, 사용자 결정 2026-10-03: 색 없이 흐리게, 시선이 몰리지 않게):
+## 칸 바탕 · 테두리 · 진행 막대 바탕 · 찬 만큼(회색) · 다 모인 칸의 막대와 테두리
+const SHARD_CARD_BG := Color(1, 1, 1, 0.03)
+const SHARD_CARD_BORDER := Color(1, 1, 1, 0.1)
+const SHARD_BAR_BG := Color(1, 1, 1, 0.08)
+const SHARD_BAR_FILL := Color(0.62, 0.64, 0.68)
+const SHARD_READY := Color("7fe0d2")
 const CARD_BLOCKED_SHADE := Color(0.05, 0.06, 0.08, 0.62)
 ## 변이 칸 테두리: 두 보라 사이를 오가며 반짝인다
 const CARD_VARIANT_DIM := Color("7b3fd0")
@@ -178,6 +192,24 @@ const SKILL_COLORS := {
 	"strike": Color("ff9a3d"), "flurry": Color("ffb35c"), "blast": Color("ff6a3d"), "stun": Color("ffe14d"),
 	"taunt": Color("5ab8ff"), "heal": Color("7dff8a"), "heal_all": Color("7dff8a"),
 }
+## 코어 정보창 스킬 카드(눌러서 상세): 바탕 · 마우스를 댔을 때 · 누를 때, 네모 색(패시브 · 변이 · 믹스 계승), 네모 안 글자
+const CHIP_BG := Color(1, 1, 1, 0.07)
+const CHIP_BG_HOVER := Color(1, 1, 1, 0.12)
+const CHIP_BG_DOWN := Color(1, 1, 1, 0.18)
+const CHIP_PASSIVE := Color("8fa8c8")
+const CHIP_VARIANT := Color("9b5de5")
+const CHIP_INHERIT := Color("e0b84a")
+const CHIP_GLYPH := Color(0.08, 0.09, 0.12)
+## 스킬 상세 창 모션 미리보기(임시 도형): 바닥 · 범위 · 적 · 동료 · 그림자 · 체력 바 · 피해 숫자 · 회복 숫자
+const PREVIEW_BG := Color(0.16, 0.2, 0.17)
+const PREVIEW_RANGE := Color(1, 1, 1, 0.12)
+const PREVIEW_ENEMY := Color("d9574a")
+const PREVIEW_ALLY := Color("9fd3a8")
+const PREVIEW_SHADOW := Color(0, 0, 0, 0.25)
+const PREVIEW_HP_BG := Color(0, 0, 0, 0.5)
+const PREVIEW_HP := Color("6fdc6f")
+const PREVIEW_DAMAGE := Color("ffd84a")
+const PREVIEW_HEAL := Color("7dff8a")
 ## 보호막 막대(체력 바 위) / 기절 별
 const SHIELD_BAR := Color("8fd3ff")
 const STUN_STAR := Color("ffe14d")

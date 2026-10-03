@@ -67,6 +67,7 @@ var _can_mix := false  # 지금 플라스크를 누르면 믹스되나
 var _hovering := false  # 플라스크 위에 마우스가 있나(흔들림)
 var _pressing := false  # 플라스크를 누르고 있나(더 크게 흔들림)
 var _wobble := 0.0  # 지금 흔들림 크기(라디안, 부드럽게 따라간다)
+var _stuttering := false  # 실패 게이지가 멈칫하는 중(플라스크가 부르르)
 var _result_plain := ""  # 결과 이름(ⓘ 빼고)
 
 @onready var _dim: ColorRect = %Dim
@@ -548,7 +549,7 @@ func _process(delta: float) -> void:
 	_animate_flask(delta)
 
 
-## 플라스크 흔들림(마우스를 대면 살짝, 누르고 있으면 크게)과 빈 칸 글자 맥박(다음에 채울 칸).
+## 플라스크 흔들림(마우스를 대면 살짝, 누르고 있으면 크게, 실패 게이지가 멈칫할 때 부르르)과 빈 칸 글자 맥박(다음에 채울 칸).
 func _animate_flask(delta: float) -> void:
 	var t := Time.get_ticks_msec() / 1000.0
 	var target := 0.0
@@ -559,6 +560,8 @@ func _animate_flask(delta: float) -> void:
 			target = deg_to_rad(GameConfig.MIX_WOBBLE_HOVER_DEGREES)
 	_wobble = lerpf(_wobble, target, minf(delta * 8.0, 1.0))
 	var angle := _wobble * sin(t * GameConfig.MIX_WOBBLE_SPEED)
+	if _stuttering:
+		angle += deg_to_rad(GameConfig.MIX_FX_STUTTER_DEGREES) * sin(t * GameConfig.MIX_FX_STUTTER_SPEED)
 	_result_slot.pivot_offset = _result_slot.size * 0.5
 	_result_slot.rotation = angle
 	_flasks.angle = angle
@@ -915,8 +918,9 @@ func _on_go() -> void:
 		_confirm.ask(UiText.MIX_CONFIRM_ASK % "\n".join(reasons), _start_mix)
 
 
-## 믹스를 먼저 굴리고(패시브는 성공 카드에서 고른다) 연출한다: 두 재료가 플라스크로 빨려 들며 액체가 쭉 차오른다
-## → 성공이면 번쩍이며 태어난 헨치가 짠, 실패면 플라스크가 깨지고 주 코어가 운다 → 잠깐 보여 준 뒤 결과 카드.
+## 믹스를 먼저 굴리고(패시브는 성공 카드에서 고른다) 연출한다: 두 재료가 비커 액체로 녹아들고, 유리관이 진행 막대처럼 차오른다
+## (사용자 결정 2026-10-03) → 끝까지 차면 성공(번쩍이며 태어난 헨치가 짠), 멈칫멈칫하다 멈추면 실패(플라스크가 깨지고 주 코어가 운다)
+## → 잠깐 보여 준 뒤 결과 카드.
 func _start_mix() -> void:
 	if _busy:
 		return
@@ -929,11 +933,8 @@ func _start_mix() -> void:
 	_mixed_sub = sub_core
 	_legacy_owner = main_core.passive_owner_id()
 	last_born = _workshop.mix(main_core, sub_core, false)
-	var tween := create_tween().set_parallel()
-	var fill := GameConfig.MIX_FX_FILL_SECONDS
-	_flasks.fill_override = MixFlasks.FLASK_LIQUID_RATIO
-	tween.tween_property(_flasks, "fill_override", 1.0, fill).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	var target := _result_slot.get_global_rect().get_center()
+	var dissolve := GameConfig.MIX_FX_DISSOLVE_SECONDS
+	var cards := create_tween().set_parallel()
 	for slot: Button in [_main_slot, _sub_slot]:
 		var original := _slot_card(slot)
 		if original == null:
@@ -944,12 +945,47 @@ func _start_mix() -> void:
 		flying.global_position = original.global_position
 		flying.pivot_offset = SLOT_CARD_SIZE * 0.5
 		original.modulate.a = 0.0
-		tween.tween_property(flying, "global_position", target - SLOT_CARD_SIZE * 0.5, fill * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(flying, "scale", Vector2.ONE * 0.3, fill * 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(flying, "modulate:a", 0.0, fill * 0.6)
-	tween.chain().tween_callback(func() -> void: show_outcome(last_born != null))
-	tween.chain().tween_interval(GameConfig.MIX_FX_REVEAL_SECONDS)
-	tween.chain().tween_callback(_finish_mix)
+		var sink := original.global_position + Vector2(0.0, SLOT_CARD_SIZE.y * 0.3)
+		cards.tween_property(flying, "global_position", sink, dissolve).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		cards.tween_property(flying, "scale", Vector2.ONE * 0.2, dissolve).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		cards.tween_property(flying, "modulate:a", 0.0, dissolve)
+	var success := last_born != null
+	var tween := _play_fill(success, dissolve)
+	tween.tween_callback(func() -> void: show_outcome(success))
+	tween.tween_interval(GameConfig.MIX_FX_REVEAL_SECONDS)
+	tween.tween_callback(_finish_mix)
+
+
+## 유리관 게이지 연출(delay초 뒤 시작): 성공이면 끝까지 쭉 차오르고, 실패면 GameConfig.MIX_FX_FAIL_STEPS대로
+## 오르다 멈칫(살짝 내려가거나 멈춤, 플라스크가 떨림)을 되풀이하다 멈춘다. 이어 붙일 수 있게 트윈을 돌려준다(실행 검사에서도 부른다).
+func _play_fill(success: bool, delay := 0.0) -> Tween:
+	_set_fill(0.0)
+	var tween := create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	if success:
+		tween.tween_method(_set_fill, 0.0, 1.0, GameConfig.MIX_FX_FILL_SECONDS).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		return tween
+	var at := 0.0
+	for step: Array in GameConfig.MIX_FX_FAIL_STEPS:
+		var to := float(step[0])
+		var stutter := to <= at
+		tween.tween_callback(func() -> void: _stuttering = stutter)
+		tween.tween_method(_set_fill, at, to, float(step[1])).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		at = to
+	tween.tween_callback(func() -> void: _stuttering = false)
+	return tween
+
+
+## 관이 찬 정도(0~1). 플라스크 안 액체도 조금 따라 오르며 끓는다(끝까지 차면 성공 연출이 가득 채운다).
+func _set_fill(value: float) -> void:
+	_flasks.tube_fill = value
+	_flasks.fill_override = lerpf(MixFlasks.FLASK_LIQUID_RATIO, MixFlasks.FLASK_BREW_RATIO, value)
+
+
+## 유리관이 찬 정도(실행 검사용).
+func tube_fill() -> float:
+	return _flasks.tube_fill
 
 
 ## 결과를 플라스크에 보여 준다. 성공 = 번쩍이며 태어난 헨치 그림이 짠(커지며 나타남),
@@ -980,6 +1016,8 @@ func show_outcome(success: bool) -> void:
 func _reset_flask() -> void:
 	_flasks.cracked = false
 	_flasks.fill_override = -1.0
+	_flasks.tube_fill = 0.0
+	_stuttering = false
 	_flask_fx.broken = false
 	_result_portrait.scale = Vector2.ONE
 

@@ -75,8 +75,68 @@ const SKILL_KIND_NAMES := {
 const SKILL_CAST := "%s!"
 ## 보호막이 피해를 모두 막았을 때 숫자 대신
 const SHIELD_BLOCK := "막음"
-## 정보창의 고유 액티브 줄 뒤에 붙는다. %s = 효과 종류 이름
-const INFO_SKILL_KIND := "\n지금 효과(임시): %s"
+## 스킬 상세 창(사용자 결정 2026-10-03: 롤처럼 스킬을 누르면 설명 · 계수 · 모션 미리보기)
+## 맨 위 꼬리표: 고유 액티브 · 효과 종류 / 고유 패시브 / 변이 / 믹스 계승
+const SKILL_TAG_ACTIVE := "고유 액티브 · %s"
+const SKILL_TAG_PASSIVE := "고유 패시브"
+const SKILL_TAG_LEGACY := "유산 패시브 · %s에게서"
+const SKILL_TAG_VARIANT := VARIANT
+const SKILL_TAG_INHERIT := TERM_MIX + " 계승"
+## 효과 종류마다 설명 한 줄(임시 분류 — 종마다 다른 효과는 스킬 단계에서)
+const SKILL_DESCRIPTIONS := {
+	"strike": "가까운 적에게 다가가 한 번 세게 때립니다.",
+	"flurry": "적 하나를 빠르게 여러 번 연달아 때립니다.",
+	"blast": "대상 자리에서 터져 둘레의 적 모두에게 피해를 줍니다.",
+	"stun": "대상 둘레의 적에게 피해를 주고 잠깐 기절시킵니다.",
+	"taunt": "둘레의 적이 나를 노리게 하고, 잠깐 보호막을 두릅니다.",
+	"heal": "체력이 가장 낮은 동료 하나를 회복합니다.",
+	"heal_all": "둘레의 동료 모두를 한꺼번에 회복합니다.",
+}
+const SKILL_TARGETS := {
+	"strike": "가까운 적 하나", "flurry": "가까운 적 하나", "blast": "대상 둘레의 적 모두", "stun": "대상 둘레의 적 모두",
+	"taunt": "내 둘레의 적 모두", "heal": "체력이 가장 낮은 동료 하나", "heal_all": "내 둘레의 동료 모두",
+}
+## 계수 줄 이름표
+const SKILL_ROW_TARGET := "대상"
+const SKILL_ROW_DAMAGE := "피해"
+const SKILL_ROW_HEAL := "회복"
+const SKILL_ROW_RADIUS := "범위"
+const SKILL_ROW_STUN := "기절"
+const SKILL_ROW_SHIELD := "보호막"
+const SKILL_ROW_COOLDOWN := "재사용 대기"
+const SKILL_ROW_DESIGN := "기획 효과"
+const SKILL_ROW_EFFECT := "효과"
+const SKILL_ROW_FROM := "원래 주인"
+const SKILL_ROW_STATS := "오른 능력치"
+const SKILL_ROW_BONUS := "보정"
+const SKILL_ROW_MIX := TERM_MIX
+const SKILL_ROW_INHERIT := "계승 스탯"
+## 계수 값: %d%% = 배율, (지금 n) = 이 코어의 지금 값 — 지금 값을 모르면(미리보기) 괄호를 뺀다
+const SKILL_POWER := "공격력 × %d%%"
+const SKILL_POWER_HITS := "공격력 × %d%% × %d번"
+const SKILL_HEAL_POWER := "회복력 × %d%%"
+const SKILL_SHIELD_POWER := "최대 체력 × %d%% · %s초"
+const SKILL_NOW := "  (지금 %d)"
+const SKILL_NOW_EACH := "  (지금 %d씩)"
+const SKILL_RADIUS_VALUE := "반지름 %d"
+const SKILL_SECONDS := "%s초"
+const SKILL_PASSIVE_DESC := "늘 켜져 있는 효과입니다. " + TERM_MIX + "할 때 주 " + TERM_CORE + "의 패시브(유산)로 바꿀 수 있습니다."
+const SKILL_VARIANT_DESC := "드롭으로만 얻는 돌연변이입니다. 능력치가 조금 더 높고, 나중에 원종과 다른 공격 패턴 · 스킬을 갖습니다."
+const SKILL_VARIANT_MIX := "재료로 못 씀"
+const SKILL_INHERIT_DESC := TERM_MIX + "할 때 보조 " + TERM_CORE + "의 접미사 능력치 일부를 고정치로 물려받았습니다."
+const SKILL_INHERIT_VALUE := "%s +%d"
+const SKILL_NOTE_ACTIVE := "수치 · 효과 종류는 임시입니다. 그림 단계에서 종마다 다른 모션으로 바뀝니다."
+const SKILL_NOTE_PASSIVE := "패시브 수치는 아직 없습니다(스킬 단계에서 정함)."
+const SKILL_MOTION_CAPTION := "모션 미리보기(임시 도형)"
+const SKILL_CLOSE := "닫기"
+## 정보창의 스킬 카드(눌러서 상세): 위 작은 이름표 · 아이콘 글자
+const CHIP_ACTIVE := "액티브"
+const CHIP_PASSIVE := "패시브"
+const CHIP_LEGACY := "유산 패시브"
+const CHIP_VARIANT := VARIANT
+const CHIP_INHERIT := TERM_MIX + " 계승"
+const CHIP_GLYPHS := {"active": "액", "passive": "패", "variant": "변", "inherit": "계"}
+const CHIP_VARIANT_TITLE := "능력치 +%d%%"
 ## 여러 이름을 한 줄로 늘어놓을 때 사이
 const LIST_SEPARATOR := ", "
 const VARIANT := "변이"
@@ -130,8 +190,16 @@ const GRADE_NAMES := {"low": "하급", "mid": "중급", "high": "상급", "king"
 ## 가방 칸 배지
 const BADGE_LOCK := "잠금"
 const BADGE_PARTY := "파티"
-## 가방 창 위: 골드 · 코어 조각
-const MONEY := "골드 %d · " + TERM_CORE + " 조각 %d · 경험치 조각 %d"
+## 가방의 코어 조각 칸(종마다, 사용자 결정 2026-10-03): 칸 아래 진행 · 다 모인 칸 배지 · 조각 칸들 위 작은 제목
+const SHARD_PROGRESS := TERM_CORE + " 조각 %d/%d"
+const SHARD_READY := "만들기"
+const SHARD_SECTION := TERM_CORE + " 조각 · %d개를 모으면 그 " + TERM_CORE + "가 됩니다"
+## 조각 칸을 누르면 정보창: 종류 줄 뒤 · 줄들([이름표, 값])
+const SHARD_INFO_COUNT := "모은 조각"
+const SHARD_INFO_SOURCE := "얻는 곳"
+const SHARD_INFO_SOURCE_VALUE := "같은 종 " + TERM_CORE + " 분해"
+## 만들기 확인. %s = 종 이름, %d = 쓰는 조각 수
+const SHARD_MAKE_ASK := "%s " + TERM_CORE + " 조각 %d개로 " + TERM_CORE + "를 만들까요?\n(나이 · 성별 · 접미사는 무작위)"
 ## 코어 정보창
 const INFO_EMPTY := "칸을 누르면 정보가 보입니다"
 ## 종족 · 역할 · 등급
@@ -143,12 +211,6 @@ const INFO_EXP := "EXP"
 const INFO_EXP_VALUE := "%d/%d"
 ## 믹스로 태어난 코어: 보조 코어에게서 물려받은 추가 스탯. %s = 능력치 이름, %d = 더한 값
 const INFO_INHERIT := TERM_MIX + " 계승: %s +%d (보조 " + TERM_CORE + "에게서)"
-## 변이 코어: %s = 오른 능력치들, %d = 몇 %. 믹스 재료로는 못 쓴다.
-const INFO_VARIANT := VARIANT + ": %s +%d%% · " + TERM_MIX + " 재료로 못 씀"
-const INFO_ACTIVE := "고유 액티브"
-const INFO_PASSIVE := "고유 패시브"
-## 유산으로 받은 패시브. %s = 패시브, %s = 원래 주인 종 이름
-const INFO_LEGACY := "%s (유산 · %s)"
 const BTN_PARTY := "파티 편성"
 const BTN_PARTY_LEAVE := "파티에서 빼기"
 const BTN_MIX := TERM_MIX
@@ -161,8 +223,8 @@ const PARTY_SLOT := "%d번 · %s"
 const BTN_CANCEL := "취소"
 const BTN_OK := "확인"
 const BTN_YES := "예"
-## 분해 확인. %s = 이름, %d = 조각 수
-const DISMANTLE_ASK := "%s\n분해하면 사라지고 " + TERM_CORE + " 조각 %d개를 얻습니다."
+## 분해 확인. %s = 이름, %s = 종 이름, %d = 조각 수(그 종의 코어 조각)
+const DISMANTLE_ASK := "%s\n분해하면 사라지고 %s " + TERM_CORE + " 조각 %d개를 얻습니다."
 const CANT_DISMANTLE := "잠겼거나 파티에 있는 것은 분해할 수 없습니다"
 ## 믹스창(전체 화면 3단: 재료 · 연성 장치 · 정보창, 사용자 결정 2026-10-03)
 const MIX_TITLE := TERM_MIX

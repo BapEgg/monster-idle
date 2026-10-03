@@ -3,9 +3,11 @@ class_name MixFlasks
 extends Control
 ## 믹스창 연성 장치의 유리 그림(임시 도형, 사용자 결정 2026-10-03: 연구소 플라스크 느낌, 믹스마스터 기계 모양은 쓰지 않는다).
 ## 위 = 결과 칸을 감싼 둥근 바닥 플라스크(목 · 액체 · 거품), 아래 = 주 · 보조 칸을 감싼 비커 두 개(눈금 · 액체).
-## 비커 위에서 유리관이 올라가 플라스크 양옆으로 들어간다.
+## 비커 위에서 유리관이 올라가 플라스크 양옆으로 들어간다. 관은 평소 비어 있는 회색이고, 믹스하면 비커 액체가 관을 따라
+## 차오른다(사용자 결정 2026-10-03: 관 = 믹스 진행 막대 — 끝까지 차면 성공, 멈칫멈칫하다 멈추면 깨져 실패).
 ## 칸 자리는 장면(mix_panel.tscn)의 칸 노드를 따라 그린다 — 에디터에서 칸을 옮기면 유리도 따라간다(@tool).
-## 연출 값(믹스창이 매 프레임 넣어 준다): angle = 플라스크 흔들림(라디안), fill_override = 액체 높이(0~1, 음수면 보통),
+## 연출 값(믹스창이 매 프레임 넣어 준다): angle = 플라스크 흔들림(라디안), tube_fill = 관이 찬 정도(0~1, 0 = 빈 회색 관),
+## fill_override = 플라스크 액체 높이(0~1, 음수면 보통),
 ## mix_ready = 믹스할 수 있으면 플라스크 둘레가 은은히 빛남, pulse_main · pulse_sub = 빈 칸이면 비커 둘레가 깜빡여 누르라고 알림,
 ## cracked = 실패(액체가 탁해지고 빠진다). 금 · 눈물은 결과 칸 위의 FlaskFx가 그린다. 이 노드는 칸들보다 뒤에 둔다. 입력은 받지 않는다.
 
@@ -24,6 +26,7 @@ var pulse_main := false
 var pulse_sub := false
 var cracked := false
 var angle := 0.0
+var tube_fill := 0.0
 var fill_override := -1.0
 
 # 임시 도형 치수(px)
@@ -34,10 +37,13 @@ const BEAKER_TICKS := 4
 const BEAKER_LIQUID_RATIO := 0.32
 const FLASK_RADIUS_RATIO := 0.64
 const FLASK_LIQUID_RATIO := 0.45
+const FLASK_BREW_RATIO := 0.6  # 관이 끝까지 찼을 때 플라스크 액체 높이(성공하면 가득 찬다)
 const CRACKED_LIQUID_RATIO := 0.18
 const NECK_HALF_WIDTH := 15.0
 const NECK_LENGTH := 22.0
 const TUBE_WIDTH := 7.0
+const TUBE_LIQUID_WIDTH := 4.5
+const TUBE_LIQUID_ALPHA := 0.9
 const LIQUID_ALPHA := 0.32
 const BUBBLE_COUNT := 7
 const BUBBLE_RADIUS := Vector2(3.0, 6.0)
@@ -114,12 +120,45 @@ func _draw_beaker(slot: Rect2, liquid: Color, spout_right: bool, pulse: bool) ->
 
 
 ## 유리관: 비커 위 가운데에서 플라스크 가운데 높이까지 올라가 꺾여서 플라스크 옆구리로 들어간다(side = -1 왼쪽 · 1 오른쪽).
+## 안쪽은 비어 있는 회색, tube_fill만큼 비커 쪽부터 그 비커 액체 색으로 찬다(깨지면 탁한 색).
 func _draw_tube(slot: Rect2, center: Vector2, radius: float, side: float, liquid: Color) -> void:
+	var points := tube_points(slot, center, radius, side)
+	draw_polyline(points, Palette.FLASK_TUBE, TUBE_WIDTH, true)
+	draw_polyline(points, Palette.FLASK_TUBE_EMPTY, TUBE_LIQUID_WIDTH, true)
+	if tube_fill <= 0.0:
+		return
+	var color := liquid if liquid.a > 0.0 else _mixed_liquid()
+	if cracked or color.a <= 0.0:
+		color = Palette.FLASK_MURKY
+	var filled := _cut_polyline(points, tube_fill)
+	if filled.size() >= 2:
+		draw_polyline(filled, Color(color, TUBE_LIQUID_ALPHA), TUBE_LIQUID_WIDTH, true)
+		draw_circle(filled[filled.size() - 1], TUBE_LIQUID_WIDTH * 0.5, Color(color.lightened(0.35), TUBE_LIQUID_ALPHA), true, -1.0, true)
+
+
+## 관이 지나는 점들: 비커 위 가운데 → 플라스크 가운데 높이 → 플라스크 옆구리.
+static func tube_points(slot: Rect2, center: Vector2, radius: float, side: float) -> PackedVector2Array:
 	var start := Vector2(slot.get_center().x, slot.position.y - BEAKER_PAD)
 	var into := center + Vector2(side * radius * 0.96, 0.0)
-	var points := PackedVector2Array([start, Vector2(start.x, into.y), into])
-	draw_polyline(points, Palette.FLASK_TUBE, TUBE_WIDTH, true)
-	draw_polyline(points, Color(liquid, LIQUID_ALPHA * 2.0) if liquid.a > 0.0 else Palette.FLASK_SHINE, TUBE_WIDTH * 0.35, true)
+	return PackedVector2Array([start, Vector2(start.x, into.y), into])
+
+
+## 꺾인 선을 처음부터 길이 비율(0~1)만큼만 자른 점들.
+static func _cut_polyline(points: PackedVector2Array, ratio: float) -> PackedVector2Array:
+	var total := 0.0
+	for i in points.size() - 1:
+		total += points[i].distance_to(points[i + 1])
+	var left := total * clampf(ratio, 0.0, 1.0)
+	var cut := PackedVector2Array([points[0]])
+	for i in points.size() - 1:
+		var length := points[i].distance_to(points[i + 1])
+		if left <= length:
+			if left > 0.0:
+				cut.append(points[i].lerp(points[i + 1], left / length))
+			return cut
+		cut.append(points[i + 1])
+		left -= length
+	return cut
 
 
 ## 둥근 바닥 플라스크(원점 = 플라스크 가운데, 흔들림만큼 돌려서 그린다): 액체 + 거품 + 유리 + 목, 준비되면 둘레가 빛남.

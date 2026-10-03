@@ -13,6 +13,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/debug_panel.tscn" id="11_debug"]
 [ext_resource type="Script" path="res://scenes/ui/command_button.gd" id="12_command"]
 [ext_resource type="Script" path="res://scenes/ui/level_bar.gd" id="13_level"]
+[ext_resource type="Script" path="res://scenes/ui/currency_bar.gd" id="14_currency"]
+[ext_resource type="PackedScene" path="res://scenes/ui/skill_window.tscn" id="15_skill_window"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_attack"]
 radius = 60.0
@@ -51,14 +53,26 @@ offset_bottom = 58.0
 mouse_filter = 2
 script = ExtResource("13_level")
 
+[node name="Currency" type="Control" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -376.0
+offset_top = 14.0
+offset_right = -56.0
+offset_bottom = 44.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("14_currency")
+
 [node name="Mode" type="Label" parent="."]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -376.0
-offset_top = 24.0
+offset_top = 50.0
 offset_right = -56.0
-offset_bottom = 52.0
+offset_bottom = 78.0
 grow_horizontal = 0
 horizontal_alignment = 2
 mouse_filter = 2
@@ -68,9 +82,9 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -376.0
-offset_top = 54.0
+offset_top = 80.0
 offset_right = -56.0
-offset_bottom = 80.0
+offset_bottom = 106.0
 grow_horizontal = 0
 horizontal_alignment = 2
 mouse_filter = 2
@@ -166,17 +180,17 @@ grow_horizontal = 0
 mouse_filter = 2
 
 [node name="BagButton" type="TouchScreenButton" parent="TopControls"]
-position = Vector2(-98, 108)
+position = Vector2(-98, 138)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("6_bag_button")
 
 [node name="DebugButton" type="TouchScreenButton" parent="TopControls"]
-position = Vector2(-98, 156)
+position = Vector2(-98, 186)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 
 [node name="BossButton" type="TouchScreenButton" parent="TopControls"]
-position = Vector2(-98, 204)
+position = Vector2(-98, 234)
 shape = SubResource("RectangleShape2D_bag")
 script = ExtResource("10_text_button")
 
@@ -187,6 +201,9 @@ visible = false
 visible = false
 
 [node name="DebugPanel" parent="." instance=ExtResource("11_debug")]
+visible = false
+
+[node name="SkillWindow" parent="." instance=ExtResource("15_skill_window")]
 visible = false
 
 [node name="ConfirmBox" parent="." instance=ExtResource("9_confirm")]
