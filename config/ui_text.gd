@@ -129,8 +129,8 @@ const SKILL_NOTE_ACTIVE := "수치 · 효과 종류는 임시입니다. 그림 �
 const SKILL_NOTE_PASSIVE := "패시브 수치는 아직 없습니다(스킬 단계에서 정함)."
 const SKILL_MOTION_CAPTION := "모션 미리보기(임시 도형)"
 const SKILL_CLOSE := "닫기"
-## 레벨이 올라 직업 스킬을 새로 배웠을 때(주인공 머리 위). %s = 스킬 이름
-const JOB_LEARNED := "새 스킬: %s"
+## 레벨이 올라 직업 스킬을 새로 배울 수 있게 됐을 때(주인공 머리 위, 직업 창에서 배운다). %s = 스킬 이름
+const JOB_LEARNABLE := "배울 수 있어요: %s"
 ## 직업 창(기획서 3장, 직업 1차)
 const JOB_BUTTON := "직업"
 const JOB_TITLE := "직업 · 스킬"
@@ -143,16 +143,17 @@ const JOB_STAT_ROWS := [["체력", "%d"], ["공격", "%d"], ["공격 간격", "%
 const JOB_MODS_LINE := "패시브 보정: %s"
 const JOB_SWITCH := "직업 바꾸기(개발용 · 출시 전엔 프롤로그에서 한 번 고름)"
 const JOB_SWITCH_ASK := "%s(으)로 바꿀까요?\n배운 스킬과 장착이 처음으로 돌아갑니다(개발용)."
-const JOB_EQUIP_TITLE := "장착(액티브 3 · 패시브 · 궁극기) — 칸을 누르면 그 스킬"
-const JOB_LIST_TITLE := "스킬 — 눌러서 모션 · 설명 · 계수를 보고 장착 · 레벨 올리기"
-const JOB_SLOT_CAPTIONS := {"active": "액티브 칸 %d", "passive": "패시브 칸 %d", "ultimate": "궁극기 칸"}
-const JOB_SLOT_EMPTY := "비어 있음"
-const JOB_SLOT_LOCKED := "Lv %d에 열림"
-## 스킬 목록 카드 위 작은 줄: 종류 · 스킬 레벨 / 해금 레벨, 장착 중이면 꼬리
-const JOB_CARD_CAPTION := "%s · Lv %d/%d"
-const JOB_CARD_LOCKED := "%s · Lv %d에 배움"
-const JOB_CARD_EQUIPPED := " · 장착 중"
+## 직업 창 섹터 제목 · 오른쪽 작은 줄(장착 수 / 칸 수)
+const JOB_SECTION_TITLES := {"active": "액티브", "passive": "패시브", "ultimate": "궁극기"}
+const JOB_SECTION_INFO := {"active": "장착 %d/%d · 스킬 칸 4~6", "passive": "장착 %d/%d · 칸은 Lv 10 · 30에 열림", "ultimate": "장착 %d/%d · 궁극기 칸"}
+const JOB_HINT := "스킬을 누르면 모션 · 설명 · 계수를 보고 배우기 · 장착 · 레벨 올리기"
+## 스킬 칸 아래 작은 줄: 배운 스킬 레벨 / 배울 수 있음
+const JOB_TILE_LEVEL := "Lv %d/%d"
+const JOB_TILE_LEARNABLE := "배울 수 있음"
+## 스킬 상세 창의 스킬 레벨 줄(레벨은 됐는데 안 배움)
+const JOB_LEVEL_LEARNABLE := "배울 수 있음(Lv %d 해금)"
 ## 스킬 상세 창 아래 버튼(직업 스킬)
+const JOB_ACT_LEARN := "배우기"
 const JOB_ACT_EQUIP := "장착"
 const JOB_ACT_EQUIP_AT := "%d번 칸에"
 const JOB_ACT_UNEQUIP := "해제"

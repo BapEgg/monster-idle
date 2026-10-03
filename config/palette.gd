@@ -204,6 +204,13 @@ const CHIP_INHERIT := Color("e0b84a")
 const CHIP_GLYPH := Color(0.08, 0.09, 0.12)
 ## 직업 창: 궁극기 카드 색
 const JOB_ULTIMATE := Color("ff5ad0")
+## 직업 창 스킬 칸 오른쪽 위 레벨 배지(사용자 결정 2026-10-03): 주인공 레벨이 모자람 = 빨강, 레벨은 됐는데 안 배움 = 회색
+const JOB_LEVEL_SHORT := Color("d64545")
+const JOB_LEVEL_READY := Color(0.42, 0.45, 0.5, 0.95)
+## 스킬 칸 아래 "배울 수 있음" 글자(누르라고 조금 눈에 띄게)
+const JOB_LEVEL_READY_TEXT := Color("7fe0d2")
+## 직업 창 섹터(액티브 · 패시브 · 궁극기) 바탕
+const JOB_SECTION_BG := Color(1, 1, 1, 0.035)
 ## 스킬 상세 창 모션 미리보기(임시 도형): 바닥 · 범위 · 적 · 동료 · 그림자 · 체력 바 · 피해 숫자 · 회복 숫자
 const PREVIEW_BG := Color(0.16, 0.2, 0.17)
 const PREVIEW_RANGE := Color(1, 1, 1, 0.12)

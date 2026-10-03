@@ -45,20 +45,59 @@ func points(player_level: int) -> int:
 	return maxi(JobRules.points_earned(player_level) - JobRules.points_spent(levels), 0)
 
 
-## 주인공 레벨에 맞춰 해금된 스킬을 배우고(레벨 1), 빈 칸이 있으면 바로 장착한다. 새로 배운 스킬 id들을 돌려준다.
+## 처음부터 가진 스킬(해금 레벨 GameConfig.JOB_START_SKILL_LEVEL 이하)을 배우고 빈 칸에 장착한다. 새로 배운 스킬 id들을 돌려준다.
+## 그보다 높은 스킬은 레벨이 닿아도 저절로 배우지 않는다 — 직업 창에서 "배우기"(사용자 결정 2026-10-03: 레벨은 됐는데 아직 안 배운 상태가 있다).
 func sync(player_level: int) -> Array[String]:
 	var learned: Array[String] = []
 	var of_job := job()
 	if of_job == null:
 		return learned
 	for skill in of_job.skills:
-		if JobRules.is_unlocked(skill, player_level) and not levels.has(skill.id):
+		if skill.unlock <= GameConfig.JOB_START_SKILL_LEVEL and JobRules.is_unlocked(skill, player_level) and not levels.has(skill.id):
 			levels[skill.id] = 1
 			learned.append(skill.id)
 			_auto_equip(skill, player_level)
 	if not learned.is_empty():
 		changed.emit()
 	return learned
+
+
+## 배울 수 있나(레벨은 닿았고 아직 안 배움).
+func can_learn(id: String, player_level: int) -> bool:
+	var skill := JobDb.get_skill(id)
+	return skill != null and skill.job_id == job_id and JobRules.is_unlocked(skill, player_level) and not levels.has(id)
+
+
+## 배운다(스킬 레벨 1, 임시: 포인트는 쓰지 않음). 빈 칸이 있으면 바로 장착한다.
+func learn(id: String, player_level: int) -> bool:
+	if not can_learn(id, player_level):
+		return false
+	levels[id] = 1
+	_auto_equip(JobDb.get_skill(id), player_level)
+	changed.emit()
+	return true
+
+
+## 레벨은 닿았는데 아직 안 배운 스킬들.
+func learnable(player_level: int) -> Array[String]:
+	var list: Array[String] = []
+	var of_job := job()
+	if of_job != null:
+		for skill in of_job.skills:
+			if can_learn(skill.id, player_level):
+				list.append(skill.id)
+	return list
+
+
+## 레벨이 from에서 to로 오르며 새로 배울 수 있게 된 스킬들(레벨업 알림).
+func newly_learnable(from_level: int, to_level: int) -> Array[String]:
+	var list: Array[String] = []
+	var of_job := job()
+	if of_job != null:
+		for skill in of_job.skills:
+			if skill.unlock > from_level and skill.unlock <= to_level and not levels.has(skill.id):
+				list.append(skill.id)
+	return list
 
 
 func _auto_equip(skill: JobDb.Skill, player_level: int) -> void:
@@ -165,7 +204,7 @@ func mods(player_level: int) -> Dictionary:
 	return JobRules.sum_mods(equipped_passives(player_level), levels)
 
 
-## 직업을 바꾼다(개발용): 배운 것 · 장착을 비우고 그 레벨까지 다시 배운다.
+## 직업을 바꾼다(개발용): 배운 것 · 장착을 비우고 처음 스킬만 다시 배운다.
 func change_job(id: String, player_level: int) -> bool:
 	if JobDb.get_job(id) == null or id == job_id:
 		return false
@@ -181,7 +220,7 @@ func to_dict() -> Dictionary:
 	return {"job": job_id, "levels": levels.duplicate(), "actives": Array(actives), "passives": Array(passives), "ultimate": ultimate}
 
 
-## 저장 내용 → 상태. 없는 직업 · 다른 직업의 스킬 · 상한을 넘는 레벨은 버리거나 줄이고, 그 레벨까지 해금된 것을 배운다.
+## 저장 내용 → 상태. 없는 직업 · 다른 직업의 스킬 · 아직 레벨이 안 닿은 스킬은 버리고, 상한을 넘는 레벨은 줄인다. 처음 스킬은 배운다.
 func load_dict(row: Dictionary, player_level: int) -> void:
 	var id := str(row.get("job", GameConfig.START_JOB))
 	job_id = id if JobDb.get_job(id) != null else GameConfig.START_JOB

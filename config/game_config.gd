@@ -121,6 +121,8 @@ const JOB_STATS := {
 	"healer": {"hp": 270.0, "attack": 8.0, "attack_interval": 1.1, "attack_range": 200.0, "heal": 14.0},
 	"buffer": {"hp": 290.0, "attack": 9.0, "attack_interval": 1.0, "attack_range": 180.0},
 }
+## 처음부터 배운 상태인 스킬의 해금 레벨(이하). 그보다 높은 스킬은 레벨이 닿으면 직업 창에서 "배우기"(사용자 결정 2026-10-03)
+const JOB_START_SKILL_LEVEL := 1
 ## 장착 칸: 액티브 3 · 궁극기 1(기획서 3장 확정), 패시브 칸이 열리는 레벨(기획서 초안 Lv 10 · 30, MVP 최대 2칸)
 const JOB_ACTIVE_SLOTS := 3
 const JOB_PASSIVE_SLOT_LEVELS := [10, 30]

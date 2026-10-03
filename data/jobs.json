@@ -1,69 +1,335 @@
 {
-  "about": "주인공 직업 5종(기획서 3장 확정)과 직업 스킬(기획서 3장 '직업 스킬 초안': MVP 액티브 5 · 패시브 2 · 궁극기 1). unlock = 해금 레벨(기획서 초안: 액티브 Lv 1·5·10·20·30, 패시브 15·40, 궁극기 25). 스킬 수치(대기 시간 · 효과)는 GameConfig.JOB_SKILLS, 직업 기본 능력치는 GameConfig.JOB_STATS에 있다. desc = 스킬 상세 창의 설명 한 줄(임시). 괄호 안 설명이 기획서에 있는 것(헨치 탱커 피해↓ 등)은 그대로 옮겼다. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다.",
+  "about": "주인공 직업 5종(기획서 3장 확정)과 직업 스킬(기획서 3장 '직업 스킬 초안': MVP 액티브 5 · 패시브 2 · 궁극기 1). unlock = 해금 레벨(기획서 초안: 액티브 Lv 1·5·10·20·30, 패시브 15·40, 궁극기 25). 스킬 수치(대기 시간 · 효과)는 GameConfig.JOB_SKILLS, 직업 기본 능력치는 GameConfig.JOB_STATS에 있다. desc = 스킬 상세 창의 설명 한 줄(임시). 괄호 안 설명이 기획서에 있는 것(헨치 탱커 피해↓ 등)은 그대로 옮겼다. color는 그림이 들어오기 전까지 쓰는 임시 도형 색이다. icon_path = 스킬 아이콘 그림 경로 틀({job} = 직업 id, {skill} = 스킬 id). 지금 PNG는 tools/make_skill_icons.gd로 만든 임시 그림이고, 같은 이름으로 덮어쓰면 바뀐다.",
+  "icon_path": "res://art/skills/{job}/{skill}.png",
   "jobs": [
     {
-      "id": "warrior", "name": "전사", "role": "tank", "weapon": "대형 방패", "person": "군인 · 실종 해역 조사 중 부대 실종", "color": "#5b8fd9",
+      "id": "warrior",
+      "name": "전사",
+      "role": "tank",
+      "weapon": "대형 방패",
+      "person": "군인 · 실종 해역 조사 중 부대 실종",
+      "color": "#5b8fd9",
       "skills": [
-        {"id": "shield_bash", "name": "방패 밀치기", "type": "active", "unlock": 1, "desc": "눈앞의 적들을 방패로 밀쳐 잠깐 기절시킵니다."},
-        {"id": "war_cry", "name": "도발 함성", "type": "active", "unlock": 5, "desc": "둘레의 적이 나를 노리게 하고 보호막을 두릅니다."},
-        {"id": "shield_block", "name": "방패 막기", "type": "active", "unlock": 10, "desc": "방패를 세워 큰 보호막을 두르고 받는 피해를 줄입니다."},
-        {"id": "charge", "name": "돌진 충격", "type": "active", "unlock": 20, "desc": "대상에게 단숨에 돌진해 둘레의 적에게 피해를 줍니다."},
-        {"id": "shield_throw", "name": "방패 던지기", "type": "active", "unlock": 30, "desc": "멀리 있는 적에게 방패를 던져 세게 맞힙니다."},
-        {"id": "iron_stance", "name": "철벽 자세", "type": "passive", "unlock": 15, "desc": "최대 체력이 늘고 받는 피해가 줄어듭니다."},
-        {"id": "comradeship", "name": "전우애", "type": "passive", "unlock": 40, "desc": "파티의 탱커 헨치가 받는 피해가 줄어듭니다."},
-        {"id": "fortress", "name": "철옹성", "type": "ultimate", "unlock": 25, "desc": "파티 모두에게 큰 보호막을 두르고 둘레의 적을 모두 끌어옵니다."}
+        {
+          "id": "shield_bash",
+          "name": "방패 밀치기",
+          "type": "active",
+          "unlock": 1,
+          "desc": "눈앞의 적들을 방패로 밀쳐 잠깐 기절시킵니다."
+        },
+        {
+          "id": "war_cry",
+          "name": "도발 함성",
+          "type": "active",
+          "unlock": 5,
+          "desc": "둘레의 적이 나를 노리게 하고 보호막을 두릅니다."
+        },
+        {
+          "id": "shield_block",
+          "name": "방패 막기",
+          "type": "active",
+          "unlock": 10,
+          "desc": "방패를 세워 큰 보호막을 두르고 받는 피해를 줄입니다."
+        },
+        {
+          "id": "charge",
+          "name": "돌진 충격",
+          "type": "active",
+          "unlock": 20,
+          "desc": "대상에게 단숨에 돌진해 둘레의 적에게 피해를 줍니다."
+        },
+        {
+          "id": "shield_throw",
+          "name": "방패 던지기",
+          "type": "active",
+          "unlock": 30,
+          "desc": "멀리 있는 적에게 방패를 던져 세게 맞힙니다."
+        },
+        {
+          "id": "iron_stance",
+          "name": "철벽 자세",
+          "type": "passive",
+          "unlock": 15,
+          "desc": "최대 체력이 늘고 받는 피해가 줄어듭니다."
+        },
+        {
+          "id": "comradeship",
+          "name": "전우애",
+          "type": "passive",
+          "unlock": 40,
+          "desc": "파티의 탱커 헨치가 받는 피해가 줄어듭니다."
+        },
+        {
+          "id": "fortress",
+          "name": "철옹성",
+          "type": "ultimate",
+          "unlock": 25,
+          "desc": "파티 모두에게 큰 보호막을 두르고 둘레의 적을 모두 끌어옵니다."
+        }
       ]
     },
     {
-      "id": "rogue", "name": "도적", "role": "melee", "weapon": "단검", "person": "커플 A · 신혼여행 크루즈 조난", "color": "#9b6bd6",
+      "id": "rogue",
+      "name": "도적",
+      "role": "melee",
+      "weapon": "단검",
+      "person": "커플 A · 신혼여행 크루즈 조난",
+      "color": "#9b6bd6",
       "skills": [
-        {"id": "double_slash", "name": "연속 베기", "type": "active", "unlock": 1, "desc": "적 하나를 빠르게 여러 번 벱니다."},
-        {"id": "shadow_dash", "name": "그림자 대시", "type": "active", "unlock": 5, "desc": "대상 곁으로 순식간에 파고들어 벱니다."},
-        {"id": "vital_stab", "name": "급소 찌르기", "type": "active", "unlock": 10, "desc": "급소를 노려 아주 세게 한 번 찌릅니다."},
-        {"id": "poison_coat", "name": "독 바르기", "type": "active", "unlock": 20, "desc": "단검에 독을 발라 잠깐 공격이 세집니다."},
-        {"id": "smoke_bomb", "name": "연막탄", "type": "active", "unlock": 30, "desc": "연막을 터뜨려 둘레의 적이 잠깐 아무것도 못 하고 나를 놓칩니다."},
-        {"id": "ambush_master", "name": "기습의 달인", "type": "passive", "unlock": 15, "desc": "감지 전 첫 타(기습)가 더 세집니다."},
-        {"id": "nimble_body", "name": "날렵한 몸놀림", "type": "passive", "unlock": 40, "desc": "공격이 빨라지고 더 빨리 걷습니다."},
-        {"id": "blade_storm", "name": "폭풍 난무", "type": "ultimate", "unlock": 25, "desc": "둘레의 적을 휩쓸며 쉬지 않고 벱니다."}
+        {
+          "id": "double_slash",
+          "name": "연속 베기",
+          "type": "active",
+          "unlock": 1,
+          "desc": "적 하나를 빠르게 여러 번 벱니다."
+        },
+        {
+          "id": "shadow_dash",
+          "name": "그림자 대시",
+          "type": "active",
+          "unlock": 5,
+          "desc": "대상 곁으로 순식간에 파고들어 벱니다."
+        },
+        {
+          "id": "vital_stab",
+          "name": "급소 찌르기",
+          "type": "active",
+          "unlock": 10,
+          "desc": "급소를 노려 아주 세게 한 번 찌릅니다."
+        },
+        {
+          "id": "poison_coat",
+          "name": "독 바르기",
+          "type": "active",
+          "unlock": 20,
+          "desc": "단검에 독을 발라 잠깐 공격이 세집니다."
+        },
+        {
+          "id": "smoke_bomb",
+          "name": "연막탄",
+          "type": "active",
+          "unlock": 30,
+          "desc": "연막을 터뜨려 둘레의 적이 잠깐 아무것도 못 하고 나를 놓칩니다."
+        },
+        {
+          "id": "ambush_master",
+          "name": "기습의 달인",
+          "type": "passive",
+          "unlock": 15,
+          "desc": "감지 전 첫 타(기습)가 더 세집니다."
+        },
+        {
+          "id": "nimble_body",
+          "name": "날렵한 몸놀림",
+          "type": "passive",
+          "unlock": 40,
+          "desc": "공격이 빨라지고 더 빨리 걷습니다."
+        },
+        {
+          "id": "blade_storm",
+          "name": "폭풍 난무",
+          "type": "ultimate",
+          "unlock": 25,
+          "desc": "둘레의 적을 휩쓸며 쉬지 않고 벱니다."
+        }
       ]
     },
     {
-      "id": "archer", "name": "궁수", "role": "ranged", "weapon": "활", "person": "커플 B · 같은 사고로 다른 섬에 떨어짐", "color": "#4caf6a",
+      "id": "archer",
+      "name": "궁수",
+      "role": "ranged",
+      "weapon": "활",
+      "person": "커플 B · 같은 사고로 다른 섬에 떨어짐",
+      "color": "#4caf6a",
       "skills": [
-        {"id": "aimed_shot", "name": "조준 사격", "type": "active", "unlock": 1, "desc": "잘 겨눠 적 하나를 세게 맞힙니다."},
-        {"id": "arrow_rain", "name": "화살비", "type": "active", "unlock": 5, "desc": "대상 둘레에 화살을 쏟아 적 모두에게 피해를 줍니다."},
-        {"id": "retreat_shot", "name": "후퇴 사격", "type": "active", "unlock": 10, "desc": "적을 쏘고 뒤로 물러나 거리를 벌립니다."},
-        {"id": "snare_trap", "name": "덫 설치", "type": "active", "unlock": 20, "desc": "대상 자리에 덫을 놓아 둘레의 적을 붙잡습니다(기절)."},
-        {"id": "piercing_arrow", "name": "관통 화살", "type": "active", "unlock": 30, "desc": "일직선으로 꿰뚫는 화살로 줄지은 적 모두에게 피해를 줍니다."},
-        {"id": "hawk_eye", "name": "매의 눈", "type": "passive", "unlock": 15, "desc": "사거리가 늘고 공격이 조금 세집니다."},
-        {"id": "hunter_mark", "name": "사냥꾼의 표식", "type": "passive", "unlock": 40, "desc": "공격이 세집니다(임시: 표식 대신 공격 보너스)."},
-        {"id": "sky_splitter", "name": "하늘 가르기", "type": "ultimate", "unlock": 25, "desc": "하늘을 가르는 일격으로 넓은 범위의 적 모두에게 큰 피해를 줍니다."}
+        {
+          "id": "aimed_shot",
+          "name": "조준 사격",
+          "type": "active",
+          "unlock": 1,
+          "desc": "잘 겨눠 적 하나를 세게 맞힙니다."
+        },
+        {
+          "id": "arrow_rain",
+          "name": "화살비",
+          "type": "active",
+          "unlock": 5,
+          "desc": "대상 둘레에 화살을 쏟아 적 모두에게 피해를 줍니다."
+        },
+        {
+          "id": "retreat_shot",
+          "name": "후퇴 사격",
+          "type": "active",
+          "unlock": 10,
+          "desc": "적을 쏘고 뒤로 물러나 거리를 벌립니다."
+        },
+        {
+          "id": "snare_trap",
+          "name": "덫 설치",
+          "type": "active",
+          "unlock": 20,
+          "desc": "대상 자리에 덫을 놓아 둘레의 적을 붙잡습니다(기절)."
+        },
+        {
+          "id": "piercing_arrow",
+          "name": "관통 화살",
+          "type": "active",
+          "unlock": 30,
+          "desc": "일직선으로 꿰뚫는 화살로 줄지은 적 모두에게 피해를 줍니다."
+        },
+        {
+          "id": "hawk_eye",
+          "name": "매의 눈",
+          "type": "passive",
+          "unlock": 15,
+          "desc": "사거리가 늘고 공격이 조금 세집니다."
+        },
+        {
+          "id": "hunter_mark",
+          "name": "사냥꾼의 표식",
+          "type": "passive",
+          "unlock": 40,
+          "desc": "공격이 세집니다(임시: 표식 대신 공격 보너스)."
+        },
+        {
+          "id": "sky_splitter",
+          "name": "하늘 가르기",
+          "type": "ultimate",
+          "unlock": 25,
+          "desc": "하늘을 가르는 일격으로 넓은 범위의 적 모두에게 큰 피해를 줍니다."
+        }
       ]
     },
     {
-      "id": "healer", "name": "힐러", "role": "healer", "weapon": "지팡이", "person": "의사 · 원인 모를 병 조사 중 조난", "color": "#e8e0a0",
+      "id": "healer",
+      "name": "힐러",
+      "role": "healer",
+      "weapon": "지팡이",
+      "person": "의사 · 원인 모를 병 조사 중 조난",
+      "color": "#e8e0a0",
       "skills": [
-        {"id": "healing_light", "name": "치유의 빛", "type": "active", "unlock": 1, "desc": "체력이 가장 낮은 동료 하나를 크게 회복합니다."},
-        {"id": "purify", "name": "정화", "type": "active", "unlock": 5, "desc": "둘레의 동료를 조금 회복하고 기절을 풀어 줍니다."},
-        {"id": "healing_field", "name": "회복의 장", "type": "active", "unlock": 10, "desc": "둘레의 동료 모두를 회복합니다."},
-        {"id": "protective_veil", "name": "보호의 막", "type": "active", "unlock": 20, "desc": "둘레의 동료 모두에게 보호막을 두릅니다."},
-        {"id": "first_aid", "name": "응급 처치", "type": "active", "unlock": 30, "desc": "쓰러진 헨치 하나를 그 자리에서 일으킵니다."},
-        {"id": "house_call", "name": "왕진 가방", "type": "passive", "unlock": 15, "desc": "회복 스킬이 더 많이 회복합니다."},
-        {"id": "diagnosis", "name": "진찰", "type": "passive", "unlock": 40, "desc": "파티 헨치의 최대 체력이 늘어납니다(임시 해석)."},
-        {"id": "breath_of_life", "name": "생명의 숨결", "type": "ultimate", "unlock": 25, "desc": "쓰러진 헨치를 모두 일으키고 파티 모두를 크게 회복합니다."}
+        {
+          "id": "healing_light",
+          "name": "치유의 빛",
+          "type": "active",
+          "unlock": 1,
+          "desc": "체력이 가장 낮은 동료 하나를 크게 회복합니다."
+        },
+        {
+          "id": "purify",
+          "name": "정화",
+          "type": "active",
+          "unlock": 5,
+          "desc": "둘레의 동료를 조금 회복하고 기절을 풀어 줍니다."
+        },
+        {
+          "id": "healing_field",
+          "name": "회복의 장",
+          "type": "active",
+          "unlock": 10,
+          "desc": "둘레의 동료 모두를 회복합니다."
+        },
+        {
+          "id": "protective_veil",
+          "name": "보호의 막",
+          "type": "active",
+          "unlock": 20,
+          "desc": "둘레의 동료 모두에게 보호막을 두릅니다."
+        },
+        {
+          "id": "first_aid",
+          "name": "응급 처치",
+          "type": "active",
+          "unlock": 30,
+          "desc": "쓰러진 헨치 하나를 그 자리에서 일으킵니다."
+        },
+        {
+          "id": "house_call",
+          "name": "왕진 가방",
+          "type": "passive",
+          "unlock": 15,
+          "desc": "회복 스킬이 더 많이 회복합니다."
+        },
+        {
+          "id": "diagnosis",
+          "name": "진찰",
+          "type": "passive",
+          "unlock": 40,
+          "desc": "파티 헨치의 최대 체력이 늘어납니다(임시 해석)."
+        },
+        {
+          "id": "breath_of_life",
+          "name": "생명의 숨결",
+          "type": "ultimate",
+          "unlock": 25,
+          "desc": "쓰러진 헨치를 모두 일으키고 파티 모두를 크게 회복합니다."
+        }
       ]
     },
     {
-      "id": "buffer", "name": "버퍼", "role": "buffer", "weapon": "첼로", "person": "음대 첼로 전공 백수 · 공짜 투어 참가", "color": "#e0864a",
+      "id": "buffer",
+      "name": "버퍼",
+      "role": "buffer",
+      "weapon": "첼로",
+      "person": "음대 첼로 전공 백수 · 공짜 투어 참가",
+      "color": "#e0864a",
       "skills": [
-        {"id": "courage_melody", "name": "용기의 선율", "type": "active", "unlock": 1, "desc": "파티 모두의 공격이 잠깐 세집니다."},
-        {"id": "sprint_beat", "name": "질주의 박자", "type": "active", "unlock": 5, "desc": "파티 모두의 공격이 잠깐 빨라집니다."},
-        {"id": "concerto", "name": "협주", "type": "active", "unlock": 10, "desc": "파티 모두의 공격이 조금 세지고 빨라집니다."},
-        {"id": "guard_bass", "name": "수비의 저음", "type": "active", "unlock": 20, "desc": "파티 모두가 받는 피해가 잠깐 줄어듭니다."},
-        {"id": "dissonance", "name": "불협화음", "type": "active", "unlock": 30, "desc": "대상 둘레의 적에게 피해를 주고 잠깐 더 아프게 맞게 합니다."},
-        {"id": "encore", "name": "앙코르", "type": "passive", "unlock": 15, "desc": "버프가 더 오래 갑니다."},
-        {"id": "stage_presence", "name": "무대 체질", "type": "passive", "unlock": 40, "desc": "버프가 더 세집니다."},
-        {"id": "grand_ensemble", "name": "대합주", "type": "ultimate", "unlock": 25, "desc": "헨치 전체 각성: 파티 모두의 공격이 크게 세지고 빨라집니다."}
+        {
+          "id": "courage_melody",
+          "name": "용기의 선율",
+          "type": "active",
+          "unlock": 1,
+          "desc": "파티 모두의 공격이 잠깐 세집니다."
+        },
+        {
+          "id": "sprint_beat",
+          "name": "질주의 박자",
+          "type": "active",
+          "unlock": 5,
+          "desc": "파티 모두의 공격이 잠깐 빨라집니다."
+        },
+        {
+          "id": "concerto",
+          "name": "협주",
+          "type": "active",
+          "unlock": 10,
+          "desc": "파티 모두의 공격이 조금 세지고 빨라집니다."
+        },
+        {
+          "id": "guard_bass",
+          "name": "수비의 저음",
+          "type": "active",
+          "unlock": 20,
+          "desc": "파티 모두가 받는 피해가 잠깐 줄어듭니다."
+        },
+        {
+          "id": "dissonance",
+          "name": "불협화음",
+          "type": "active",
+          "unlock": 30,
+          "desc": "대상 둘레의 적에게 피해를 주고 잠깐 더 아프게 맞게 합니다."
+        },
+        {
+          "id": "encore",
+          "name": "앙코르",
+          "type": "passive",
+          "unlock": 15,
+          "desc": "버프가 더 오래 갑니다."
+        },
+        {
+          "id": "stage_presence",
+          "name": "무대 체질",
+          "type": "passive",
+          "unlock": 40,
+          "desc": "버프가 더 세집니다."
+        },
+        {
+          "id": "grand_ensemble",
+          "name": "대합주",
+          "type": "ultimate",
+          "unlock": 25,
+          "desc": "헨치 전체 각성: 파티 모두의 공격이 크게 세지고 빨라집니다."
+        }
       ]
     }
   ]

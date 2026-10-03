@@ -75,17 +75,7 @@ func _draw() -> void:
 	var shown_title := title if not Engine.is_editor_hint() else "매운 박치기"
 	var middle := size.y * 0.5
 	draw_string(font, Vector2(left, middle - 3.0), shown_caption, HORIZONTAL_ALIGNMENT_LEFT, room, CAPTION_FONT_SIZE, Palette.TEXT_LABEL)
-	draw_string(bold, Vector2(left, middle + TITLE_FONT_SIZE - 1.0), _fit(bold, shown_title, room), HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_FONT_SIZE, Palette.TEXT)
+	draw_string(bold, Vector2(left, middle + TITLE_FONT_SIZE - 1.0), UiKit.fit_text(bold, shown_title, room, TITLE_FONT_SIZE), HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_FONT_SIZE, Palette.TEXT)
 	# "›"
 	var chevron := Vector2(size.x - PAD - CHEVRON_WIDTH * 0.5, middle)
 	draw_polyline(PackedVector2Array([chevron + Vector2(-3, -6), chevron + Vector2(3, 0), chevron + Vector2(-3, 6)]), Palette.TEXT_LABEL, 2.0, true)
-
-
-## 넓이(room)에 맞게 자르고 넘치면 "…".
-static func _fit(font: Font, line: String, room: float) -> String:
-	if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_FONT_SIZE).x <= room:
-		return line
-	var cut := line
-	while cut.length() > 1 and font.get_string_size(cut + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, TITLE_FONT_SIZE).x > room:
-		cut = cut.substr(0, cut.length() - 1)
-	return cut + "…"

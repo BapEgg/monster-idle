@@ -4,7 +4,7 @@ extends TouchScreenButton
 ## 스킬 칸 하나(사용자 결정 2026-10-02: 공격 버튼 옆 6칸). 1~3번 = 파티 헨치 1~3의 고유 액티브,
 ## 4~6번 = 주인공 직업 액티브, 따로 하나 = 궁극기 칸. 누르면 그 스킬을 쓴다(풀오토가 아니어도).
 ## 그림은 주인(헨치 · 직업) 색 바탕 + 스킬 이름(두 줄)으로 대체한다. 대기 중에는 이름 대신 어두운 부채꼴과 남은 초가 보인다.
-## 아직 열리지 않은 칸(궁극기 Lv 25 전)은 locked_text("Lv 25")를 흐리게 보여 준다.
+## 아직 배우지 않은 궁극기 칸은 locked_text("Lv 25")를 보여 준다(레벨이 모자라면 빨강, 됐으면 회색 — 직업 창과 같은 뜻).
 ## 테두리: 쓸 수 있으면 금빛, 눌러서 쓰려고 기다리는 중이면 흰색.
 ## 원점 = 칸 가운데. 크기는 shape(RectangleShape2D)의 크기를 따른다(여섯 칸이 같은 shape를 함께 써서 한 번에 바뀐다).
 ## @tool: 에디터에서도 그려져서, hud.tscn을 열고 칸마다 끌어서 자리를 잡을 수 있다(에디터에서는 빈 칸으로 보인다).
@@ -20,8 +20,9 @@ const PIE_POINTS := 32
 
 ## 보여 줄 스킬(없으면 빈 칸). HUD가 매 프레임 넣어 준다.
 var skill: SkillTimer
-## 빈 칸일 때 흐리게 보일 글자(예: 궁극기 칸 "Lv 25")
+## 빈 칸일 때 보일 글자(예: 궁극기 칸 "Lv 25")와 색(레벨이 모자라면 빨강, 레벨은 됐는데 안 배웠으면 회색)
 var locked_text := ""
+var locked_color := Palette.TEXT_LABEL
 ## 스킬 주인(헨치) 색
 var tint := Color.TRANSPARENT
 ## 눌러서 쓰려고 기다리는 중
@@ -29,9 +30,10 @@ var requested := false
 
 
 ## 보여 줄 것을 한 번에 바꾸고 다시 그린다.
-func show_skill(of_skill: SkillTimer, of_tint: Color, is_requested: bool, of_locked := "") -> void:
+func show_skill(of_skill: SkillTimer, of_tint: Color, is_requested: bool, of_locked := "", of_locked_color := Palette.TEXT_LABEL) -> void:
 	skill = of_skill
 	locked_text = of_locked
+	locked_color = of_locked_color
 	tint = of_tint
 	requested = is_requested
 	queue_redraw()
@@ -56,7 +58,7 @@ func _draw() -> void:
 	draw_style_box(box, rect)
 	if skill == null:
 		if locked_text != "":
-			_draw_centered(locked_text, FONT_SIZE, FONT_SIZE * 0.35, Palette.TEXT_LABEL)
+			_draw_centered(locked_text, FONT_SIZE, FONT_SIZE * 0.35, locked_color)
 		return
 	if skill.is_ready():
 		_draw_title(skill.title)

@@ -1,7 +1,7 @@
 class_name JobDb
 extends RefCounted
 ## 주인공 직업 데이터(data/jobs.json, 기획서 3장): 직업 5종과 직업 스킬(MVP 액티브 5 · 패시브 2 · 궁극기 1).
-## 이름 · 해금 레벨 · 설명은 데이터 파일, 스킬 수치(대기 시간 · 효과 · 패시브 보정)는 GameConfig.JOB_SKILLS에 있다.
+## 이름 · 해금 레벨 · 설명 · 아이콘 그림 경로는 데이터 파일, 스킬 수치(대기 시간 · 효과 · 패시브 보정)는 GameConfig.JOB_SKILLS에 있다.
 ## 처음 찾을 때 한 번만 읽는다. 주의: 안드로이드로 내보낼 때 "리소스가 아닌 파일" 필터에 *.json 을 넣어야 함께 들어간다.
 
 const PATH := "res://data/jobs.json"
@@ -39,6 +39,8 @@ class Skill:
 	var unlock := 1
 	var desc := ""
 	var job_id := ""
+	## 아이콘 그림 경로(data/jobs.json의 icon_path 틀). 파일이 없으면 부르는 쪽이 도형으로 대신 그린다.
+	var icon_path := ""
 
 	## 수치(GameConfig.JOB_SKILLS): 액티브 · 궁극기 = {cooldown, effects}, 패시브 = {mods}.
 	func config() -> Dictionary:
@@ -51,6 +53,16 @@ class Skill:
 static var _jobs := {}
 static var _order: Array[String] = []
 static var _skills := {}
+static var _icons := {}
+
+
+## 스킬 아이콘(직업 창 스킬 칸). 그림 파일이 없으면 null.
+static func icon(skill: Skill) -> Texture2D:
+	if skill == null or skill.icon_path == "":
+		return null
+	if not _icons.has(skill.icon_path):
+		_icons[skill.icon_path] = load(skill.icon_path) as Texture2D if ResourceLoader.exists(skill.icon_path) else null
+	return _icons[skill.icon_path]
 
 
 ## id로 직업을 찾는다. 없으면 null.
@@ -90,6 +102,7 @@ static func parse(text: String) -> Dictionary:
 	if not root is Dictionary or not root.get("jobs") is Array:
 		push_error("직업 데이터를 읽지 못함: jobs 배열이 없음")
 		return result
+	var icon_template := str(root.get("icon_path", ""))
 	for row: Variant in root["jobs"]:
 		if not row is Dictionary:
 			continue
@@ -110,6 +123,7 @@ static func parse(text: String) -> Dictionary:
 			skill.unlock = int(skill_row.get("unlock", 1))
 			skill.desc = str(skill_row.get("desc", ""))
 			skill.job_id = job.id
+			skill.icon_path = icon_template.format({"job": job.id, "skill": skill.id}) if icon_template != "" else ""
 			if skill.id == "" or skill.type not in TYPES:
 				push_error("직업 스킬 데이터 오류: %s의 %s" % [job.id, skill.id])
 				continue

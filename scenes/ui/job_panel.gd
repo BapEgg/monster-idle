@@ -2,8 +2,9 @@ class_name JobPanel
 extends PanelContainer
 ## 직업 창(기획서 3장 스킬 시스템, 직업 1차): 오른쪽 위 "직업" 버튼으로 열고 닫는다.
 ## 왼쪽 = 주인공(직업 색 도형) · 직업 이름 · 역할 · 무기 · 인물 / 지금 능력치(패시브 포함) / 직업 바꾸기(개발용).
-## 오른쪽 = 장착 칸(액티브 3 · 패시브(Lv 10 · 30에 열림) · 궁극기) + 스킬 목록(액티브 5 · 패시브 2 · 궁극기 1).
-## 스킬을 누르면 스킬 상세 창(모션 미리보기 · 설명 · 계수, 사용자 결정 2026-10-03)이 뜨고, 그 아래 버튼으로 장착 · 해제 · 레벨 올리기.
+## 오른쪽 = 3섹터(사용자 결정 2026-10-03): 액티브(5) · 패시브(2) · 궁극기(1). 섹터마다 장착 수, 스킬마다 네모 그림 칸(JobSkillTile:
+## 오른쪽 위 레벨 배지 — 모자라면 빨강, 됐는데 안 배웠으면 회색, 배웠으면 없음 / 장착한 칸은 흰 테두리 + 칸 번호).
+## 스킬을 누르면 스킬 상세 창(모션 미리보기 · 설명 · 계수)이 뜨고, 그 아래 버튼으로 배우기 · 장착 · 해제 · 레벨 올리기.
 ## 위치 · 크기는 job_panel.tscn에서 에디터로 정한다.
 
 const TITLE_FONT_SIZE := 24
@@ -12,8 +13,8 @@ const NAME_FONT_SIZE := 26
 const SMALL_FONT_SIZE := 15
 const STAT_FONT_SIZE := 17
 const SWITCH_FONT_SIZE := 15
-const CHIP_HEIGHT := 50.0
-const LOCKED_ALPHA := 0.5
+const SECTION_TITLE_FONT_SIZE := 18
+const SECTION_PAD := 12.0
 
 var _job: JobState
 var _progress: PlayerProgress
@@ -34,10 +35,9 @@ var _refresh_queued := false
 @onready var _switch_title: Label = %SwitchTitle
 @onready var _switch: HBoxContainer = %Switch
 @onready var _divider: VSeparator = %Divider
-@onready var _equip_title: Label = %EquipTitle
-@onready var _equip: GridContainer = %Equip
-@onready var _list_title: Label = %ListTitle
-@onready var _list: GridContainer = %List
+@onready var _hint: Label = %Hint
+## 종류(active · passive · ultimate) → 섹터
+@onready var _sections := {"active": %ActiveSection as PanelContainer, "passive": %PassiveSection as PanelContainer, "ultimate": %UltimateSection as PanelContainer}
 
 
 func _ready() -> void:
@@ -54,11 +54,24 @@ func _ready() -> void:
 	UiKit.style_caption(_kind, TEXT_FONT_SIZE)
 	UiKit.style_caption(_person, SMALL_FONT_SIZE)
 	UiKit.style_label(_mods, SMALL_FONT_SIZE, Palette.STAT_BOOSTED)
-	for caption: Label in [_switch_title, _equip_title, _list_title]:
+	for caption: Label in [_switch_title, _hint]:
 		UiKit.style_caption(caption, SMALL_FONT_SIZE)
 	_switch_title.text = UiText.JOB_SWITCH
-	_equip_title.text = UiText.JOB_EQUIP_TITLE
-	_list_title.text = UiText.JOB_LIST_TITLE
+	_hint.text = UiText.JOB_HINT
+	for type: String in _sections:
+		var section: PanelContainer = _sections[type]
+		var box := StyleBoxFlat.new()
+		box.bg_color = Palette.JOB_SECTION_BG
+		box.border_color = Palette.PANEL_DIVIDER
+		box.set_border_width_all(1)
+		box.set_corner_radius_all(UiKit.PANEL_CORNER)
+		box.set_content_margin_all(SECTION_PAD)
+		section.add_theme_stylebox_override("panel", box)
+		var title := _section_part(type, "Title")
+		UiKit.style_label(title, SECTION_TITLE_FONT_SIZE, Palette.TEXT)
+		title.add_theme_font_override("font", UiKit.bold_font())
+		title.text = UiText.JOB_SECTION_TITLES[type]
+		UiKit.style_caption(_section_part(type, "Info"), SMALL_FONT_SIZE)
 	var line := StyleBoxLine.new()
 	line.vertical = true
 	line.color = Palette.PANEL_DIVIDER
@@ -119,8 +132,8 @@ func refresh() -> void:
 	_mods.visible = not parts.is_empty()
 	for button: Button in _switch.get_children():
 		button.disabled = button.name == job.id
-	_build_equip(job, level)
-	_build_list(job)
+	for type: String in JobDb.TYPES:
+		_build_section(job, type, level)
 	if _shown_skill != "" and _window.visible:
 		show_skill(_shown_skill)
 
@@ -155,71 +168,53 @@ func _build_switch() -> void:
 		_switch.add_child(button)
 
 
-## 장착 칸: 액티브 1~3 / 패시브 1~2 / 궁극기. 칸을 누르면 그 스킬의 상세 창.
-func _build_equip(job: JobDb.Job, level: int) -> void:
-	for child in _equip.get_children():
-		_equip.remove_child(child)
+func _section_part(type: String, part: String) -> Control:
+	return (_sections[type] as PanelContainer).find_child(part, true, false) as Control
+
+
+## 섹터 하나: 제목 옆에 장착 수 / 칸 수, 그 종류의 스킬마다 네모 칸.
+func _build_section(job: JobDb.Job, type: String, level: int) -> void:
+	var slots: Array[String] = _slots_of(type)
+	var open_slots := _open_slot_count(type, level)
+	var used := 0
+	for i in open_slots:
+		if slots[i] != "":
+			used += 1
+	(_section_part(type, "Info") as Label).text = UiText.JOB_SECTION_INFO[type] % [used, open_slots]
+	var tiles := _section_part(type, "Tiles")
+	for child in tiles.get_children():
+		tiles.remove_child(child)
 		child.queue_free()
-	for i in _job.actives.size():
-		_add_slot_chip("active", i, _job.actives[i], true, 0)
-	var open_count := JobRules.passive_slot_count(level)
-	for i in _job.passives.size():
-		_add_slot_chip("passive", i, _job.passives[i], i < open_count, int(GameConfig.JOB_PASSIVE_SLOT_LEVELS[i]))
-	var ultimate := job.skills_of("ultimate")
-	_add_slot_chip("ultimate", 0, _job.ultimate, ultimate.is_empty() or level >= ultimate[0].unlock, ultimate[0].unlock if not ultimate.is_empty() else 0)
+	for skill in job.skills_of(type):
+		var state := JobSkillTile.State.LEARNED
+		if _job.skill_level(skill.id) <= 0:
+			state = JobSkillTile.State.LEARNABLE if JobRules.is_unlocked(skill, level) else JobSkillTile.State.LOCKED
+		var slot := slots.find(skill.id)
+		var badge := ""
+		if slot >= 0:
+			badge = str(slot + 1) if type != "ultimate" else UiText.JOB_SECTION_TITLES[type]
+		var tile := JobSkillTile.create(skill, state, _job.skill_level(skill.id), badge)
+		tile.pressed.connect(show_skill.bind(skill.id))
+		tiles.add_child(tile)
 
 
-func _add_slot_chip(type: String, index: int, id: String, is_open: bool, open_level: int) -> void:
-	var chip := SkillChip.new()
-	chip.custom_minimum_size.y = CHIP_HEIGHT
-	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	chip.glyph = type
-	chip.caption = UiText.JOB_SLOT_CAPTIONS[type] % (index + 1) if type != "ultimate" else UiText.JOB_SLOT_CAPTIONS[type]
-	chip.accent = _accent(type)
-	var skill := JobDb.get_skill(id)
-	if skill != null:
-		chip.title = skill.name
-		chip.pressed.connect(show_skill.bind(id))
-	else:
-		chip.title = UiText.JOB_SLOT_EMPTY if is_open else UiText.JOB_SLOT_LOCKED % open_level
-		chip.modulate.a = 1.0 if is_open else LOCKED_ALPHA
-	_equip.add_child(chip)
-
-
-## 스킬 목록: 액티브 5 · 패시브 2 · 궁극기 1(해금 레벨 순). 못 배운 스킬은 흐리게 "Lv n에 배움".
-func _build_list(job: JobDb.Job) -> void:
-	for child in _list.get_children():
-		_list.remove_child(child)
-		child.queue_free()
-	for type: String in JobDb.TYPES:
-		for skill in job.skills_of(type):
-			var chip := SkillChip.new()
-			chip.name = skill.id
-			chip.custom_minimum_size.y = CHIP_HEIGHT
-			chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			chip.glyph = type
-			chip.accent = _accent(type)
-			chip.title = skill.name
-			var learned := _job.skill_level(skill.id)
-			var type_name: String = UiText.JOB_TYPE_NAMES[type]
-			if learned > 0:
-				chip.caption = UiText.JOB_CARD_CAPTION % [type_name, learned, GameConfig.JOB_SKILL_MAX_LEVEL]
-				if _job.is_equipped(skill.id):
-					chip.caption += UiText.JOB_CARD_EQUIPPED
-			else:
-				chip.caption = UiText.JOB_CARD_LOCKED % [type_name, skill.unlock]
-				chip.modulate.a = LOCKED_ALPHA
-			chip.pressed.connect(show_skill.bind(skill.id))
-			_list.add_child(chip)
-
-
-func _accent(type: String) -> Color:
+func _slots_of(type: String) -> Array[String]:
 	match type:
+		"active":
+			return _job.actives
 		"passive":
-			return Palette.CHIP_PASSIVE
-		"ultimate":
-			return Palette.JOB_ULTIMATE
-	return _job.job().color if _job != null else Palette.CHIP_PASSIVE
+			return _job.passives
+	var ultimate: Array[String] = [_job.ultimate]
+	return ultimate
+
+
+func _open_slot_count(type: String, level: int) -> int:
+	match type:
+		"active":
+			return _job.actives.size()
+		"passive":
+			return JobRules.passive_slot_count(level)
+	return 1
 
 
 ## 그 직업 스킬의 상세 창(모션 미리보기 · 설명 · 계수) + 아래 버튼(장착 · 해제 · 레벨 올리기).
@@ -229,7 +224,7 @@ func show_skill(id: String) -> void:
 		return
 	var level := _progress.level
 	var mods := _job.mods(level)
-	var sheet := SkillSheet.job_skill(skill, _job.skill_level(id), JobRules.player_stats(_job.job_id, level, mods), mods)
+	var sheet := SkillSheet.job_skill(skill, _job.skill_level(id), JobRules.player_stats(_job.job_id, level, mods), mods, level)
 	_shown_skill = id
 	_window.open(sheet, _job.job().color, _actions_for(skill))
 
@@ -240,6 +235,8 @@ func _actions_for(skill: JobDb.Skill) -> Array:
 	var id := skill.id
 	var skill_level := _job.skill_level(id)
 	if skill_level <= 0:
+		if _job.can_learn(id, level):
+			actions.append({"text": UiText.JOB_ACT_LEARN, "call": func() -> void: _job.learn(id, level), "accent": true})
 		return actions
 	if _job.is_equipped(id):
 		actions.append({"text": UiText.JOB_ACT_UNEQUIP, "call": func() -> void: _job.unequip(id)})
@@ -261,14 +258,17 @@ func _actions_for(skill: JobDb.Skill) -> Array:
 	return actions
 
 
-## 스킬 목록의 그 스킬 카드(실행 검사용). 없으면 null.
-func skill_chip(id: String) -> SkillChip:
-	return _list.get_node_or_null(id) as SkillChip
+## 그 스킬의 네모 칸(실행 검사용). 없으면 null.
+func skill_tile(id: String) -> JobSkillTile:
+	var skill := JobDb.get_skill(id)
+	if skill == null:
+		return null
+	return _section_part(skill.type, "Tiles").get_node_or_null(id) as JobSkillTile
 
 
-## 장착 칸 카드(실행 검사용): 0~2 = 액티브, 3~4 = 패시브, 5 = 궁극기.
-func equip_chip(index: int) -> SkillChip:
-	return _equip.get_child(index) as SkillChip
+## 섹터 제목 옆 장착 수 글자(실행 검사용).
+func section_info(type: String) -> String:
+	return (_section_part(type, "Info") as Label).text
 
 
 ## 직업 바꾸기 버튼(실행 검사용).

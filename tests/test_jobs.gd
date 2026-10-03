@@ -58,16 +58,21 @@ func test_passive_mods_change_player_stats() -> void:
 	expect_true(archer.attack_range > GameConfig.MELEE_RANGE_MAX and JobRules.player_stats("warrior", 1).attack_range <= GameConfig.MELEE_RANGE_MAX, "궁수는 원거리(화살), 전사는 근접")
 
 
-func test_job_state_sync_equip_level() -> void:
+## 사용자 결정(2026-10-03): 처음 스킬만 처음부터 배우고, 나머지는 레벨이 닿으면 직업 창에서 "배우기".
+func test_job_state_learn_equip_level() -> void:
 	var state := JobState.new()
 	expect_true(state.job_id == GameConfig.START_JOB, "처음 직업 = %s" % GameConfig.START_JOB)
 	var learned := state.sync(1)
-	expect_true(learned == ["shield_bash"] and state.actives[0] == "shield_bash", "Lv 1: 첫 액티브를 배우고 바로 장착")
-	learned = state.sync(12)
-	expect_true(learned == ["war_cry", "shield_block"] and state.actives == ["shield_bash", "war_cry", "shield_block"], "Lv 12: 액티브 둘을 더 배워 빈 칸에")
-	state.sync(26)
-	expect_true(state.levels.has("iron_stance") and state.passives[0] == "iron_stance" and state.ultimate == "fortress" and state.levels.has("charge") and not state.is_equipped("charge"), "Lv 26: 패시브는 열린 칸에, 궁극기도 장착, 액티브 칸이 차면 배우기만")
-	expect_true(state.points(26) == 25, "Lv 26 스킬 포인트 25")
+	expect_true(learned == ["shield_bash"] and state.actives[0] == "shield_bash", "Lv 1: 처음 스킬은 처음부터 배우고 바로 장착")
+	expect_true(state.sync(12).is_empty() and not state.levels.has("war_cry"), "레벨이 올라도 저절로 배우지 않는다")
+	expect_true(state.learnable(12) == ["war_cry", "shield_block"] and state.newly_learnable(1, 12) == ["war_cry", "shield_block"], "Lv 12: 배울 수 있는 스킬 = 도발 함성 · 방패 막기")
+	expect_true(not state.can_learn("charge", 12) and not state.learn("charge", 12), "레벨이 모자라면 못 배움(돌진 충격 Lv 20)")
+	expect_true(state.learn("war_cry", 12) and state.learn("shield_block", 12) and state.actives == ["shield_bash", "war_cry", "shield_block"], "배우면 빈 칸에 바로 장착")
+	expect_true(not state.learn("war_cry", 12), "이미 배운 스킬은 다시 못 배움")
+	for id in ["iron_stance", "fortress", "charge"]:
+		state.learn(id, 26)
+	expect_true(state.passives[0] == "iron_stance" and state.ultimate == "fortress" and state.levels.has("charge") and not state.is_equipped("charge"), "Lv 26: 패시브는 열린 칸에, 궁극기도 장착, 액티브 칸이 차면 배우기만")
+	expect_true(state.points(26) == 25, "Lv 26 스킬 포인트 25(배우기는 포인트를 쓰지 않음)")
 	expect_true(state.equip("charge", 1, 26) and state.actives == ["shield_bash", "charge", "shield_block"] and not state.is_equipped("war_cry"), "2번 칸에 돌진 충격 → 도발 함성은 빠짐")
 	expect_true(state.equip("charge", 0, 26) and state.actives == ["charge", "", "shield_block"], "같은 스킬을 다른 칸에 → 옮겨 간다")
 	expect_true(not state.equip("iron_stance", 1, 26), "Lv 26에는 패시브 2번 칸이 닫혀 있다")
@@ -85,6 +90,8 @@ func test_job_state_sync_equip_level() -> void:
 func test_job_state_save_and_change() -> void:
 	var state := JobState.new()
 	state.sync(26)
+	for id in state.learnable(26):
+		state.learn(id, 26)
 	state.level_up("shield_bash", 26)
 	state.equip("charge", 2, 26)
 	var row: Dictionary = JSON.parse_string(JSON.stringify(state.to_dict()))
@@ -92,10 +99,11 @@ func test_job_state_save_and_change() -> void:
 	again.load_dict(row, 26)
 	expect_true(again.to_dict() == state.to_dict(), "저장 → 다시 읽으면 같다")
 	var broken := JobState.new()
-	broken.load_dict({"job": "nope", "levels": {"double_slash": 3, "shield_bash": 99}, "actives": ["double_slash", "shield_bash", "shield_bash"]}, 5)
+	broken.load_dict({"job": "nope", "levels": {"double_slash": 3, "shield_bash": 99, "shield_throw": 1}, "actives": ["double_slash", "shield_bash", "shield_bash"]}, 5)
 	expect_true(broken.job_id == GameConfig.START_JOB and not broken.levels.has("double_slash") and broken.skill_level("shield_bash") == GameConfig.JOB_SKILL_MAX_LEVEL, "없는 직업 · 다른 직업 스킬은 버리고, 레벨은 상한까지")
+	expect_true(not broken.levels.has("shield_throw"), "레벨이 안 닿은 스킬(방패 던지기 Lv 30)은 버림")
 	expect_true(broken.actives.count("shield_bash") == 1, "같은 스킬이 두 칸에 들어가지 않는다")
-	expect_true(state.change_job("archer", 26) and state.levels.has("aimed_shot") and state.actives[0] == "aimed_shot" and not state.levels.has("shield_bash") and state.ultimate == "sky_splitter", "직업을 바꾸면(개발용) 처음부터 그 레벨까지 다시 배움")
+	expect_true(state.change_job("archer", 26) and state.levels.keys() == ["aimed_shot"] and state.actives[0] == "aimed_shot" and state.ultimate == "", "직업을 바꾸면(개발용) 처음 스킬만 다시 배움")
 
 
 func test_job_skill_runtime_and_sheet() -> void:

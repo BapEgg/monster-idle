@@ -34,6 +34,16 @@ static func thousands(value: int) -> String:
 	return ("-" if value < 0 else "") + digits + out
 
 
+## 넓이(room)에 맞게 글자를 자르고 넘치면 "…"(그 글꼴 · 크기로 잰다).
+static func fit_text(font: Font, line: String, room: float, font_size: int) -> String:
+	if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x <= room:
+		return line
+	var cut := line
+	while cut.length() > 1 and font.get_string_size(cut + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x > room:
+		cut = cut.substr(0, cut.length() - 1)
+	return cut + "…"
+
+
 ## 숫자: 흰색 굵게.
 static func style_number(label: Label, font_size: int) -> void:
 	style_label(label, font_size, Palette.TEXT)

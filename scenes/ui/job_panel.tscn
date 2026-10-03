@@ -127,24 +127,78 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="EquipTitle" type="Label" parent="Margin/Rows/Body/Right"]
+[node name="ActiveSection" type="PanelContainer" parent="Margin/Rows/Body/Right"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Equip" type="GridContainer" parent="Margin/Rows/Body/Right"]
-unique_name_in_owner = true
+[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection"]
 layout_mode = 2
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 3
+theme_override_constants/separation = 8
 
-[node name="ListTitle" type="Label" parent="Margin/Rows/Body/Right"]
-unique_name_in_owner = true
+[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows"]
 layout_mode = 2
 
-[node name="List" type="GridContainer" parent="Margin/Rows/Body/Right"]
+[node name="Title" type="Label" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Margin/Rows/Body/Right/ActiveSection/Rows/Header"]
+layout_mode = 2
+
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/ActiveSection/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Lower" type="HBoxContainer" parent="Margin/Rows/Body/Right"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PassiveSection" type="PanelContainer" parent="Margin/Rows/Body/Right/Lower"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 2
+size_flags_horizontal = 3
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows/Header"]
+layout_mode = 2
+
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/PassiveSection/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="UltimateSection" type="PanelContainer" parent="Margin/Rows/Body/Right/Lower"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Rows" type="VBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Info" type="Label" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows/Header"]
+layout_mode = 2
+
+[node name="Tiles" type="HBoxContainer" parent="Margin/Rows/Body/Right/Lower/UltimateSection/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Hint" type="Label" parent="Margin/Rows/Body/Right"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 3

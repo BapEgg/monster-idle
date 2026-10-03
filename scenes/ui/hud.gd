@@ -228,11 +228,14 @@ func _show_job_slot(slot: SkillSlot, index: int) -> void:
 	var skill: JobSkill = caster.skills[index] if index < caster.skills.size() else null
 	var job := JobDb.get_job(_player.job_id)
 	var locked := ""
-	if skill == null and index == JobCaster.SLOT_COUNT - 1 and job != null and _job != null and _job.ultimate == "":
+	var locked_color := Palette.JOB_LEVEL_READY
+	if skill == null and index == JobCaster.SLOT_COUNT - 1 and job != null and _job != null and _progress != null:
 		var ultimate := job.skills_of("ultimate")
-		if not ultimate.is_empty() and _progress != null and _progress.level < ultimate[0].unlock:
+		if not ultimate.is_empty() and _job.skill_level(ultimate[0].id) <= 0:
 			locked = UiText.SKILL_SLOT_LOCKED % ultimate[0].unlock
-	slot.show_skill(skill, job.color if job != null else Color.TRANSPARENT, caster.is_requested(index), locked)
+			if _progress.level < ultimate[0].unlock:
+				locked_color = Palette.JOB_LEVEL_SHORT
+	slot.show_skill(skill, job.color if job != null else Color.TRANSPARENT, caster.is_requested(index), locked, locked_color)
 
 
 func _on_bag_button() -> void:

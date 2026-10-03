@@ -9,7 +9,7 @@ extends Node2D
 ## 파티 코어도 같은 경험치를 받고(상한 = 주인공 레벨), 파티 밖 코어는 사냥에서 떨어지는 경험치 조각을 가방 정보창에서 먹인다.
 ## 파티 코어가 오르면 그 헨치 능력치도 바로 바뀐다.
 ## 섬의 왕 버튼으로 연습 보스전을 연다(프로토타입 6): 같은 필드에서 야생을 치우고 보스를 세운다. 지휘 버튼으로 무리를 움직인다.
-## 주인공 직업(기획서 3장, 직업 1차): 레벨이 오르면 직업 스킬을 배우고(JobState.sync), 직업 · 장착이 바뀌면 주인공 능력치 ·
+## 주인공 직업(기획서 3장, 직업 1차): 레벨이 오르면 배울 수 있게 된 직업 스킬을 알리고(직업 창에서 배운다), 직업 · 장착이 바뀌면 주인공 능력치 ·
 ## 스킬 칸 4~6 · 궁극기 칸 · 파티 헨치(패시브: 전우애 · 진찰)를 다시 맞춘다. 저장된다.
 
 ## 지금까지 처치한 야생 헨치 수.
@@ -23,6 +23,7 @@ var hunt_log := HuntLog.new()
 var progress: PlayerProgress = workshop.progress
 ## 주인공 직업 · 직업 스킬(레벨 · 장착)
 var job := JobState.new()
+var _job_level_seen := 1  # 레벨업 때 새로 배울 수 있게 된 스킬을 알리려고 지난 레벨을 기억한다
 ## 보스전 중인 섬의 왕(보스전 밖이면 null).
 var boss: Boss
 ## 세이브 저장소. 비워 두면 기기 파일(GameConfig.SAVE_PATH). 실행 검사는 장면을 띄우기 전에 따로 쓰는 파일을 넣는다.
@@ -55,6 +56,7 @@ func _ready() -> void:
 		_save_schedule.mark_dirty(true))
 	_load_game()
 	job.sync(progress.level)
+	_job_level_seen = progress.level
 	_player.set_level(progress.level)
 	_hud.bind_player(_player)
 	_hud.bind_progress(progress)
@@ -270,11 +272,12 @@ func _on_level_up(level: int) -> void:
 		if _party_core(i) == null:
 			_set_member_stats(party[i], _member_stats(party[i].species, null), level)
 	_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 40.0), UiText.LEVEL_UP % level, Palette.LEVEL_UP_TEXT)
-	var learned := job.sync(level)  # 새로 배운 직업 스킬(바뀌면 changed → _apply_job)
-	for i in learned.size():
-		var skill := JobDb.get_skill(learned[i])
-		_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 64.0 - 18.0 * i), UiText.JOB_LEARNED % skill.name, Palette.JOB_SKILL_CAST)
-	if learned.is_empty() and level in GameConfig.JOB_PASSIVE_SLOT_LEVELS:
+	var learnable := job.newly_learnable(_job_level_seen, level)  # 이번에 배울 수 있게 된 직업 스킬(직업 창에서 배운다)
+	_job_level_seen = level
+	for i in learnable.size():
+		var skill := JobDb.get_skill(learnable[i])
+		_field.show_number(_player.position + Vector2(0, -_player.overlay_height() - 64.0 - 18.0 * i), UiText.JOB_LEARNABLE % skill.name, Palette.JOB_SKILL_CAST)
+	if level in GameConfig.JOB_PASSIVE_SLOT_LEVELS:
 		_apply_job()  # 패시브 칸이 열렸다
 	_save_schedule.mark_dirty(true)
 

@@ -114,13 +114,17 @@ static func inherit(item: CoreItem) -> Dictionary:
 	}
 
 
-## 직업 스킬(기획서 3장). level = 스킬 레벨(0 = 아직 못 배움 → 1레벨 값으로 보여 줌), stats = 주인공 전투 능력치(없으면 지금 값 없이),
-## mods = 장착 패시브 보정(버프 · 회복이 커진다). 액티브 · 궁극기는 효과마다 계수 줄, 패시브는 보정 줄.
-static func job_skill(skill: JobDb.Skill, level: int, stats: UnitStats = null, mods: Dictionary = {}) -> Dictionary:
+## 직업 스킬(기획서 3장). level = 스킬 레벨(0 = 아직 안 배움 → 1레벨 값으로 보여 줌), stats = 주인공 전투 능력치(없으면 지금 값 없이),
+## mods = 장착 패시브 보정(버프 · 회복이 커진다), player_level = 주인공 레벨(안 배운 스킬이 "배울 수 있음"인지 "Lv n에 배움"인지).
+## 액티브 · 궁극기는 효과마다 계수 줄, 패시브는 보정 줄.
+static func job_skill(skill: JobDb.Skill, level: int, stats: UnitStats = null, mods: Dictionary = {}, player_level := 0) -> Dictionary:
 	var job := JobDb.get_job(skill.job_id)
 	var shown_level := maxi(level, 1)
 	var rows := []
-	rows.append([UiText.JOB_ROW_LEVEL, UiText.JOB_LEVEL_VALUE % [level, GameConfig.JOB_SKILL_MAX_LEVEL] if level > 0 else UiText.JOB_LEVEL_LOCKED % skill.unlock])
+	var level_text := UiText.JOB_LEVEL_VALUE % [level, GameConfig.JOB_SKILL_MAX_LEVEL]
+	if level <= 0:
+		level_text = UiText.JOB_LEVEL_LEARNABLE % skill.unlock if player_level >= skill.unlock else UiText.JOB_LEVEL_LOCKED % skill.unlock
+	rows.append([UiText.JOB_ROW_LEVEL, level_text])
 	var config := skill.config()
 	var motion := MOTION_PASSIVE
 	var amount := 0
